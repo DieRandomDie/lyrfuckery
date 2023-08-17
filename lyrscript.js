@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         lyrshit
+// @name         lyrscript
 // @namespace    http://tampermonkey.net/
 // @version      69.420
 // @description  deez
@@ -12,12 +12,20 @@
 const killscount = document.getElementById("killscount")
 const servertime = document.getElementById("serverTime")
 const counter = document.getElementById("sidecounter")
-const chat = document.getElementById("chatwindow")
+const chat = document.getElementById("chat")
+const chatwindow = document.getElementById("chatwindow")
+const channel = document.getElementById("chatchannel")
 const kph = document.createElement("span")
+const chattoggler = document.createElement("input")
 let kills = 0
+
 
 counter.appendChild(document.createElement("br"))
 counter.appendChild(kph)
+chattoggler.setAttribute("type","checkbox")
+chattoggler.setAttribute("class","chattogglebutton")
+chat.insertBefore(chattoggler, chat.childNodes[6])
+
 
 function getFloatTime() {
     let nowtime = servertime.innerHTML.split(':')
@@ -25,6 +33,32 @@ function getFloatTime() {
     let ftime = parseInt(nowtime[0])+(parseInt(nowtime[1])/60)+(parseInt(nowtime[2])/60/60)
     return ftime
 }
+
+const channelvalues = {
+    '0': 'mainchatcolor',
+    'l': 'gameschatcolor',
+    'g': 'guildchatcolor',
+    'o': 'officerchatcolor',
+    't': 'tradechatcolor',
+    'au': 'auctionchatcolor',
+    'p': 'pubchatcolor',
+    'a': 'areachatcolor'
+}
+
+channel.addEventListener("change",function() {
+    if (chattoggler.checked) {
+        $('div.chatline').show()
+        $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
+    }
+})
+
+chattoggler.addEventListener("change",function() {
+    if (chattoggler.checked) {
+        $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
+    } else {
+        $('div.chatline').show()
+    }
+})
 
 $( document ).ready(function() {
     const chatconfig = { attributes: true, childList: true, subtree: true };
@@ -43,6 +77,6 @@ $( document ).ready(function() {
         }
     }
     const observer = new MutationObserver(callback)
-    observer.observe(chat, chatconfig)
+    observer.observe(chatwindow, chatconfig)
     observer.observe(killscount, killsconfig)
-});
+})
