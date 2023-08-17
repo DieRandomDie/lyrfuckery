@@ -43,7 +43,8 @@ function getFloatTime() {
 function killGlobals() {
     if (globalkiller.checked) {
         $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
-        $(`div.chatline:not(":has('a')")`).hide()
+        // this gets rid of guild announcements so prob no bueno
+        //$(`div.chatline:not(":has('a')")`).hide()
     }
 }
 
