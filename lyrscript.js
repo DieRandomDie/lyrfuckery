@@ -20,7 +20,7 @@ const chattoggler = document.createElement("input")
 const globalkiller = document.createElement("input")
 let kills = 0
 
-
+kph.innerHTML = "KPH: 0"
 counter.appendChild(document.createElement("br"))
 counter.appendChild(kph)
 chattoggler.setAttribute("type","checkbox")
