@@ -21,6 +21,7 @@ counter.appendChild(kph)
 
 function getFloatTime() {
     let nowtime = servertime.innerHTML.split(':')
+    //idk a better way and idc~~ :D
     let ftime = parseInt(nowtime[0])+(parseInt(nowtime[1])/60)+(parseInt(nowtime[2])/60/60)
     return ftime
 }
