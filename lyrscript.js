@@ -40,6 +40,21 @@ function getFloatTime() {
     return ftime
 }
 
+function killGlobals() {
+    if (globalkiller.checked) {
+        $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
+        $(`div.chatline:not(":has('a')")`).hide()
+    }
+}
+
+function filterChat() {
+    $('div.chatline').show()
+    if (chattoggler.checked) {
+        $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
+    }
+    killGlobals()
+}
+
 const channelvalues = {
     '0': 'mainchatcolor',
     'l': 'gameschatcolor',
@@ -52,38 +67,15 @@ const channelvalues = {
 }
 
 channel.addEventListener("change",function() {
-    if (chattoggler.checked) {
-        $('div.chatline').show()
-        $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
-    }
-    if (globalkiller.checked) {
-        $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
-        $(`div.chatline:not(":has('a')")`).hide()
-    }
+    filterChat()
 })
 
 chattoggler.addEventListener("change",function() {
-    if (chattoggler.checked) {
-        $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
-    } else {
-        $('div.chatline').show()
-        if (globalkiller.checked) {
-            $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
-            $(`div.chatline:not(":has('a')")`).hide()
-        }
-    }
+    filterChat()
 })
 
 globalkiller.addEventListener("change",function() {
-    if (globalkiller.checked) {
-        $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
-        $(`div.chatline:not(":has('a')")`).hide()
-    } else {
-        $('div.chatline').show()
-        if (chattoggler.checked) {
-            $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
-        }
-    }
+    filterChat()
 })
 
 $( document ).ready(function() {
@@ -92,12 +84,8 @@ $( document ).ready(function() {
     const callback = (mutationList, observer) => {
         for (const mutation of mutationList) {
             if (mutation.type === "childList") {
-                if (mutation.target.parentNode.id === "chattabs" && globalkiller.checked) {
-                    $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
-                    $(`div.chatline:not(":has('a')")`).hide()
-                }
-                if (mutation.target.parentNode.id === "chattabs" && chattoggler.checked) {
-                    $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
+                if (mutation.target.parentNode.id === "chattabs") {
+                    filterChat()
                 }
                 if (mutation.target.parentNode.id === "sidecounter") {
                     kills = parseInt(killscount.innerHTML.replaceAll(',', ''))
