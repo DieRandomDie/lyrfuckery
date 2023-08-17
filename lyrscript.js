@@ -17,6 +17,7 @@ const chatwindow = document.getElementById("chatwindow")
 const channel = document.getElementById("chatchannel")
 const kph = document.createElement("span")
 const chattoggler = document.createElement("input")
+const globalkiller = document.createElement("input")
 let kills = 0
 
 
@@ -24,7 +25,12 @@ counter.appendChild(document.createElement("br"))
 counter.appendChild(kph)
 chattoggler.setAttribute("type","checkbox")
 chattoggler.setAttribute("class","chattogglebutton")
+chattoggler.setAttribute("data-tippy-content","Chat Tabs")
+globalkiller.setAttribute("type","checkbox")
+globalkiller.setAttribute("class","chattogglebutton")
+globalkiller.setAttribute("data-tippy-content","Global Destroyer")
 chat.insertBefore(chattoggler, chat.childNodes[6])
+chat.insertBefore(globalkiller, chat.childNodes[7])
 
 
 function getFloatTime() {
@@ -57,6 +63,20 @@ chattoggler.addEventListener("change",function() {
         $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
     } else {
         $('div.chatline').show()
+        if (globalkiller.checked) {
+            $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
+        }
+    }
+})
+
+globalkiller.addEventListener("change",function() {
+    if (globalkiller.checked) {
+        $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
+    } else {
+        $('div.chatline').show()
+        if (chattoggler.checked) {
+            $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
+        }
     }
 })
 
@@ -66,8 +86,8 @@ $( document ).ready(function() {
     const callback = (mutationList, observer) => {
         for (const mutation of mutationList) {
             if (mutation.type === "childList") {
-                if (mutation.target.parentNode.id === "chattabs") {
-                    $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).remove()
+                if (mutation.target.parentNode.id === "chattabs" && globalkiller.checked) {
+                    $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
                 }
                 if (mutation.target.parentNode.id === "sidecounter") {
                     kills = parseInt(killscount.innerHTML.replaceAll(',', ''))
