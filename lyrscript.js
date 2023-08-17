@@ -56,6 +56,10 @@ channel.addEventListener("change",function() {
         $('div.chatline').show()
         $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
     }
+    if (globalkiller.checked) {
+        $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
+        $(`div.chatline:not(":has('a')")`).hide()
+    }
 })
 
 chattoggler.addEventListener("change",function() {
@@ -65,6 +69,7 @@ chattoggler.addEventListener("change",function() {
         $('div.chatline').show()
         if (globalkiller.checked) {
             $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
+            $(`div.chatline:not(":has('a')")`).hide()
         }
     }
 })
@@ -72,6 +77,7 @@ chattoggler.addEventListener("change",function() {
 globalkiller.addEventListener("change",function() {
     if (globalkiller.checked) {
         $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
+        $(`div.chatline:not(":has('a')")`).hide()
     } else {
         $('div.chatline').show()
         if (chattoggler.checked) {
@@ -88,6 +94,7 @@ $( document ).ready(function() {
             if (mutation.type === "childList") {
                 if (mutation.target.parentNode.id === "chattabs" && globalkiller.checked) {
                     $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
+                    $(`div.chatline:not(":has('a')")`).hide()
                 }
                 if (mutation.target.parentNode.id === "chattabs" && chattoggler.checked) {
                     $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
