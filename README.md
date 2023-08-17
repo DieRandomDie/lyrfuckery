@@ -1,6 +1,9 @@
-Adds a toggle to remove all non-toggleable globals.
+- Adds a kill per hour tracker to left sidebar.
 
-Adds a kill per hour tracker to left sidebar.
+- Adds two checkbox near chat button to clean up chat.
+
 KPH is based on daily kills and server time, the number reflects your KPH for the day.
 
-Adds a checkbox near chat button to filter chat based on channel dropdown. Currently doesn't work with custom chats. Uncheck the box to use custom chat.
+Chat cleaner will filter chat based on the chatchannel dropdown. Global killer will remove all of the non-toggleable globals.
+
+Cleaner doesn't work with custom chats atm. Uncheck the box to use custom chat.
