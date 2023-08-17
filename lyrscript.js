@@ -89,6 +89,9 @@ $( document ).ready(function() {
                 if (mutation.target.parentNode.id === "chattabs" && globalkiller.checked) {
                     $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
                 }
+                if (mutation.target.parentNode.id === "chattabs" && chattoggler.checked) {
+                    $(`div.chatline:not(:has("span.${channelvalues[channel.value]}"))`).hide()
+                }
                 if (mutation.target.parentNode.id === "sidecounter") {
                     kills = parseInt(killscount.innerHTML.replaceAll(',', ''))
                     kph.innerHTML = "KPH: "+(kills/getFloatTime()).toFixed(1)
