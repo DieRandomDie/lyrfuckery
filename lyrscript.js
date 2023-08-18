@@ -5,6 +5,7 @@
 // @description  deez
 // @author       yo mama
 // @match        https://dev.lyrania.co.uk/game.php
+// @match        https://lyrania.co.uk/game.php
 // @icon         https://lyrania.co.uk/favicon.ico
 // @grant        none
 // ==/UserScript==
