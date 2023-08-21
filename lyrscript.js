@@ -19,6 +19,7 @@ const channel = document.getElementById("chatchannel")
 const kph = document.createElement("span")
 const chattoggler = document.createElement("input")
 const globalkiller = document.createElement("input")
+const whisperoption = document.createElement("option")
 let kills = 0
 
 kph.innerHTML = "KPH: 0"
@@ -30,6 +31,9 @@ chattoggler.setAttribute("data-tippy-content","Chat Tabs")
 globalkiller.setAttribute("type","checkbox")
 globalkiller.setAttribute("class","chattogglebutton")
 globalkiller.setAttribute("data-tippy-content","Global Destroyer")
+whisperoption.setAttribute("value","w")
+whisperoption.innerHTML = "Whispers"
+channel.appendChild(whisperoption)
 chat.insertBefore(chattoggler, chat.childNodes[6])
 chat.insertBefore(globalkiller, chat.childNodes[7])
 
@@ -44,7 +48,6 @@ function getFloatTime() {
 function killGlobals() {
     if (globalkiller.checked) {
         $(`div.chatline:has([style*='${globalchatcolor.toUpperCase()}'])`).hide()
-        // this gets rid of guild announcements so prob no bueno
         //$(`div.chatline:not(":has('a')")`).hide()
     }
 }
@@ -65,7 +68,8 @@ const channelvalues = {
     't': 'tradechatcolor',
     'au': 'auctionchatcolor',
     'p': 'pubchatcolor',
-    'a': 'areachatcolor'
+    'a': 'areachatcolor',
+    'w': 'whisperchatcolor'
 }
 
 channel.addEventListener("change",function() {
