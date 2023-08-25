@@ -36,17 +36,17 @@ timediv.appendChild(triplehour)
 chattoggler.setAttribute("type","checkbox")
 chattoggler.setAttribute("class","chattogglebutton")
 chattoggler.setAttribute("data-tippy-content","Chat Tabs")
-chat.insertBefore(chattoggler, chat.childNodes[6])
 
 globalkiller.setAttribute("type","checkbox")
 globalkiller.setAttribute("class","chattogglebutton")
 globalkiller.setAttribute("data-tippy-content","Global Destroyer")
-chat.insertBefore(globalkiller, chat.childNodes[7])
 
 whisperoption.setAttribute("value","w")
 whisperoption.innerHTML = "Whispers"
 channel.appendChild(whisperoption)
 
+chat.insertBefore(chattoggler, chat.childNodes[6])
+chat.insertBefore(globalkiller, chat.childNodes[7])
 
 
 class Time {
@@ -62,7 +62,7 @@ class Time {
         return this.hour+(this.minute/60)+(this.second/60/60)
     }
     tdpHour() {
-        let tdphour = 0
+        let tdphour = 24
         let tdphourstring = '00:00:00'
         let now = this.fTime()
         switch(this.day%5) {
@@ -76,6 +76,7 @@ class Time {
                 }
         }
         if (now > tdphour) {
+            console.log(now, tdphour)
             if (now < tdphour+1) {
                 tdphour = -1
             } else {
@@ -84,8 +85,10 @@ class Time {
         }
         if (tdphour < 0) {
             tdphourstring = "NOW"
-        } else if (tdphour > 0) {
+        } else if (tdphour < 24) {
             tdphourstring = `${tdphour}:00:00`
+        } else {
+            tdphourstring = '00:00:00'
         }
         return `Triple Hour: ${tdphourstring}`
     }
