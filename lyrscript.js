@@ -51,9 +51,9 @@ chat.insertBefore(globalkiller, chat.childNodes[7])
 
 class Time {
     constructor() {
-        let date = new Date().toLocaleString('en-GB', {timeZone: 'Europe/London'})
-        this.day = parseInt(date.split('/')[0])
-        let time = date.split(', ')[1].split(':')
+        let d = new Date().toLocaleString('en-GB', {timeZone: 'Europe/London'})
+        this.day = parseInt(d.split('/')[0])
+        let time = d.split(', ')[1].split(':')
         this.hour = parseInt(time[0])
         this.minute = parseInt(time[1])
         this.second = parseInt(time[2])
@@ -76,7 +76,6 @@ class Time {
                 }
         }
         if (now > tdphour) {
-            console.log(now, tdphour)
             if (now < tdphour+1) {
                 tdphour = -1
             } else {
@@ -139,22 +138,19 @@ $( document ).ready(function() {
     const callback = (mutationList, observer) => {
         for (const mutation of mutationList) {
             if (mutation.type === "childList") {
-                let time = new Time()
                 if (mutation.target.parentNode.id === "chattabs") {
                     filterChat()
                 }
-                if (mutation.target.parentNode.id === "sidecounter") {
-                    kills = parseInt(killscount.innerHTML.replaceAll(',', ''))
-                    kph.innerHTML = "KPH: "+(kills/time.fTime()).toFixed(1)
-                }
                 if (mutation.target.id === "serverTime") {
+                    let time = new Time()
                     triplehour.innerHTML = time.tdpHour()
+                    let kills = parseInt(killscount.innerHTML.replaceAll(',', ''))
+                    kph.innerHTML = "KPH: "+(kills/time.fTime()).toFixed(1)
                 }
             }
         }
     }
     const observer = new MutationObserver(callback)
     observer.observe(chatwindow, chatconfig)
-    observer.observe(killscount, killsconfig)
     observer.observe(servertime, killsconfig)
 })
