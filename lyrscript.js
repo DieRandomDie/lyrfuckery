@@ -151,6 +151,8 @@ $( document ).ready(function() {
         }
     }
     const observer = new MutationObserver(callback)
-    observer.observe(chatwindow, chatconfig)
-    observer.observe(servertime, killsconfig)
+    setTimeout( () => {
+        observer.observe(chatwindow, chatconfig)
+        observer.observe(servertime, killsconfig)
+    },1000)
 })
