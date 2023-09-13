@@ -176,12 +176,11 @@ function parselog(e) {
         } else if (e.indexOf('Opal') > 0) {
             updateloot(opal, ba, bo)
         } else {
-            console.log(e)
+            console.log('error at jade/frag/gems\n'+e)
         }
     } else if (e.indexOf('gained') > 0) {
         let l = parseInt(e.substring(e.indexOf('gained')+7,e.indexOf('gained')+8))
         let bo = l == 2 ? 1 : 0
-        console.log(bo)
         if (e.indexOf('Health') > 0) {
             updateloot(health, 1, bo)
         } else if (e.indexOf('Attack') > 0) {
@@ -193,7 +192,7 @@ function parselog(e) {
         } else if (e.indexOf('Evasion') > 0) {
             updateloot(evasion, 1, bo)
         } else {
-            console.log(e)
+            console.log('error at stats\n'+e)
         }
     } else if (e.indexOf('token') > 0) {
         let l = parseInt(e.substring(e.indexOf('(')+1,e.indexOf('(')+2))
@@ -222,7 +221,7 @@ function newLogLine(x, y, z) {
 }
 function newlootlog(e) {
     parselog(e)
-    if(e.indexOf("Welcome")>0){totalloots++}
+    if(e.indexOf("Welcome")){totalloots++}
     $("#logsum").html(`
     <div style="width:100%">
     Total loot drops: ${totalloots}
