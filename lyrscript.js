@@ -152,6 +152,31 @@ jade (51 +586 level bonus)
 fragments (159 + 437 level bonus)
 Ruby, Rubies, Opal, Emerald, Diamond, Sapphire
 */
+function parsegold(s, t) {
+    if(!t) {
+        let money = s.substring(s.indexOf('(')+1,s.indexOf('level')-1).split(' +')
+        let basestring = money[0] //50g
+        let baseint = parseInt(basestring) //50
+        let basetype = basestring.split(baseint)[1] //g
+        let basegold = basetype == 'g' ? baseint*10000 : baseint*100
+        let bonusstring = money[1].split(' ') //[1p, 15g]
+        let bonusgold = 0
+        for (let i = 0; i < bonusstring.length; i++) {
+            let bonusint = parseInt(bonusstring[i]) //50
+            let bonustype = bonusstring[i].split(bonusint)[1]
+            if(bonustype == 'p') {
+                bonusgold += bonusint*1000000
+            } else if (bonustype == 'g') {
+                bonusgold += bonusint*10000
+            } else {
+                bonusgold += bonusint*100
+            }
+        }
+        updateloot(gold,basegold,bonusgold)
+    } else {
+
+    }
+}
 function parselog(e) {
     let check = 0
     let l
@@ -175,6 +200,8 @@ function parselog(e) {
             updateloot(emerald, ba, bo)
         } else if (e.indexOf('Opal') > 0) {
             updateloot(opal, ba, bo)
+        } else if (e.indexOf('gold') > 0 || e.indexOf('silver') > 0) {
+        parsegold(e)
         } else {
             console.log('error at jade/frag/gems\n'+e)
         }
@@ -198,7 +225,7 @@ function parselog(e) {
         let l = parseInt(e.substring(e.indexOf('(')+1,e.indexOf('(')+2))
         updateloot(token, l, 0)
     } else {
-            console.log(e)
+        console.log(e)
     }
 }
 function updateloot(l, ba, bo) {
@@ -215,9 +242,11 @@ function format(n) {
 }
 function newLogLine(x, y, z) {
     let end = '</br>'
-    if(z){end='<hr>'}
-    return `${x}: <span data-tippy-content="Base: ${format(y.base)}</br>Bonus: ${format(y.bonus)}</br>Looted ${format(y.loots)} times.">${format(y.total)}</span>${end}`
-
+    if(!z) {
+        return `${x}: <span data-tippy-content="Base: ${format(y.base)}</br>Bonus: ${format(y.bonus)}</br>Looted ${format(y.loots)} times.">${format(y.total)}</span>${end}`
+    } else {
+        return `${x}: <span data-tippy-content="Base: ${parsegold(y.base,1)}</br>Bonus: ${parsegold(y.bonus,1)}</br>Looted ${parsegold(y.loots,1)} times.">${parsegold(y.total,1)}</span>${end}`
+    }
 }
 function newlootlog(e) {
     parselog(e)
@@ -229,7 +258,7 @@ function newlootlog(e) {
     <div style="flex-grow:1">
     ${newLogLine("Jade", jade)}
     ${newLogLine("Frag", frag)}
-    ${newLogLine("Gold", gold)}
+    ${newLogLine("Gold", gold, 1)}
     ${newLogLine("Token", token)}
     ${newLogLine("Diamond", diamond)}
     ${newLogLine("Sapphire", sapphire)}
