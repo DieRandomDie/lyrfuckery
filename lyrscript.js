@@ -249,6 +249,7 @@ function newlootlog(e) {
 
 $( document ).ready(function() {
     lootlog = newlootlog
+    $('#lootlog').prepend('<div id="logsum" class="lootlogitem" style="display:flex">')
     const chatconfig = { attributes: true, childList: true, subtree: true };
     const killsconfig = { characterData: false, attributes: false, childList: true, subtree: false };
     const callback = (mutationList, observer) => {
