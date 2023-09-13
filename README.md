@@ -9,3 +9,5 @@ KPH is based on daily kills and server time, the number reflects your KPH for th
 Chat cleaner will filter chat based on the chatchannel dropdown. Global killer will remove all of the non-toggleable globals.
 
 Cleaner doesn't work with custom chats atm. Uncheck the box to use custom chat.
+
+Lootlog currently doesn't track money drops, token drops, or party bag drops.
