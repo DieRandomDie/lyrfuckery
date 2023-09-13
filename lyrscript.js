@@ -195,7 +195,7 @@ function parselog(e) {
         } else {
             console.log(e)
         }
-    } else if(e.indexOf('token' > 0)) {
+    } else if (e.indexOf('token') > 0) {
         let l = parseInt(e.substring(e.indexOf('(')+1,e.indexOf('(')+2))
         updateloot(token, l, 0)
     } else {
@@ -222,7 +222,7 @@ function newLogLine(x, y, z) {
 }
 function newlootlog(e) {
     parselog(e)
-    totalloots++
+    if(e.indexOf("Welcome")>0){totalloots++}
     $("#logsum").html(`
     <div style="width:100%">
     Total loot drops: ${totalloots}
@@ -252,8 +252,9 @@ $( document ).ready(function() {
     lootlog = newlootlog
     $('#lootlog').css('overflow','hidden')
     $('#lootlog').prepend('<div id="newlog"></div>')
-    $('#newlog').prepend('<div id="logsum" class="lootlogitem" style="position:absolute;top:0;overflow:auto;width:20%;height:100%"></div>')
-    $('#newlog').prepend('<div id="loggies" style="position:absolute;top:0;left:20%;overflow:auto;width:80%;height:100%;border-left:1px solid white"></div>')
+    $('#newlog').prepend('<div id="logsum" class="lootlogitem" style="position:absolute;top:5px;overflow:auto;width:20%;height:100%"></div>')
+    $('#newlog').prepend('<div id="loggies" style="position:absolute;top:5px;left:20%;overflow:auto;width:80%;height:100%;border-left:1px solid white"></div>')
+    newlootlog('Welcome to Lyrania!')
     const chatconfig = { attributes: true, childList: true, subtree: true };
     const killsconfig = { characterData: false, attributes: false, childList: true, subtree: false };
     const callback = (mutationList, observer) => {
