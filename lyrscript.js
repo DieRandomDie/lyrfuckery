@@ -178,7 +178,7 @@ function parselog(e) {
         } else {
             console.log(e)
         }
-    } else if (e.indexOf('gained')) {
+    } else if (e.indexOf('gained') > 0) {
         let l = parseInt(e.substring(e.indexOf('gained')+7,e.indexOf('gained')+8))
         let bo = l == 2 ? 1 : 0
         console.log(bo)
@@ -195,6 +195,9 @@ function parselog(e) {
         } else {
             console.log(e)
         }
+    } else if(e.indexOf('token' > 0)) {
+        let l = parseInt(e.substring(e.indexOf('(')+1,e.indexOf('(')+2))
+        updateloot(token, l, 0)
     } else {
             console.log(e)
     }
@@ -209,47 +212,48 @@ function updateloot(l, ba, bo) {
     }
 }
 function format(n) {
-    let f = n > 1e3 ? 1 : 0
-    f = n > 1e6 ? 2 : f
-    switch(f) {
-        case 2: return (n/1e6).toFixed(1)+"m"
-        case 1: return (n/1e3).toFixed(1)+"k"
-        default: return n
-    }
+    return n.toLocaleString()
+}
+function newLogLine(x, y, z) {
+    let end = '</br>'
+    if(z){end='<hr>'}
+    return `${x}: <span data-tippy-content="Base: ${format(y.base)}</br>Bonus: ${format(y.bonus)}</br>Looted ${format(y.loots)} times.">${format(y.total)}</span>${end}`
+
 }
 function newlootlog(e) {
     parselog(e)
     totalloots++
     $("#logsum").html(`
-    <div style="flex-grow:1;width:33%">
-    Total loot drops: ${totalloots}</br>
-    Jade: ${format(jade.total)} (${format(jade.base)} + ${format(jade.bonus)}) Looted ${format(jade.loots)} times.</br>
-    Frag: ${format(frag.total)} (${format(frag.base)} + ${format(frag.bonus)}) Looted ${format(frag.loots)} times.</br>
-    Gold: ${'?'} (${'?'} + ${'?'}) Looted ${gold.loots} times.</br>
-    Tokens: ${'?'} (${'?'} + ${'?'}) Looted ${token.loots} times.<hr>
+    <div style="width:100%">
+    Total loot drops: ${totalloots}
     </div>
-    <div style="flex-grow:1;width:33%">
-    Diamond: ${format(diamond.total)} (${format(diamond.base)} + ${format(diamond.bonus)}) Looted ${format(diamond.loots)} times.</br>
-    Sapphire: ${format(sapphire.total)} (${format(sapphire.base)} + ${format(sapphire.bonus)}) Looted ${format(sapphire.loots)} times.</br>
-    Ruby: ${format(ruby.total)} (${format(ruby.base)} + ${format(ruby.bonus)}) Looted ${format(ruby.loots)} times.</br>
-    Emerald: ${format(emerald.total)} (${format(emerald.base)} + ${format(emerald.bonus)}) Looted ${format(emerald.loots)} times.</br>
-    Opal: ${format(opal.total)} (${format(opal.base)} + ${format(opal.bonus)}) Looted ${format(opal.loots)} times.<hr>
-    </div>
-    <div style="flex-grow:1;width:33%">
-    Health: ${format(health.total)} (${format(health.base)} + ${format(health.bonus)}) Looted ${format(health.loots)} times.</br>
-    Attack: ${format(attack.total)} (${format(attack.base)} + ${format(attack.bonus)}) Looted ${format(attack.loots)} times.</br>
-    Defence: ${format(defence.total)} (${format(defence.base)} + ${format(defence.bonus)}) Looted ${format(defence.loots)} times.</br>
-    Accuracy: ${format(accuracy.total)} (${format(accuracy.base)} + ${format(accuracy.bonus)}) Looted ${format(accuracy.loots)} times.</br>
-    Evasion: ${format(evasion.total)} (${format(evasion.base)} + ${format(evasion.bonus)}) Looted ${format(evasion.loots)} times.<hr>
-    </div>
+    <div style="flex-grow:1">
+    ${newLogLine("Jade", jade)}
+    ${newLogLine("Frag", frag)}
+    ${newLogLine("Gold", gold)}
+    ${newLogLine("Token", token)}
+    ${newLogLine("Diamond", diamond)}
+    ${newLogLine("Sapphire", sapphire)}
+    ${newLogLine("Ruby", ruby)}
+    ${newLogLine("Emerald", emerald)}
+    ${newLogLine("Opal", opal)}
+    ${newLogLine("Health", health)}
+    ${newLogLine("Attack", attack)}
+    ${newLogLine("Defence", defence)}
+    ${newLogLine("Accuracy", accuracy)}
+    ${newLogLine("Evasion", evasion)}
     `)
-    $("#lootlog").prepend($('#logsum'), "<div class='lootlogitem'>" + e + "</div>")
+    $("#newlog").prepend($('#logsum'))
+    $("#loggies").prepend("<div class='lootlogitem'>" + e + "</div>")
     $("#lootlog div.lootlogitem:gt(999)").remove()
 }
 
 $( document ).ready(function() {
     lootlog = newlootlog
-    $('#lootlog').prepend('<div id="logsum" class="lootlogitem" style="display:flex">')
+    $('#lootlog').css('overflow','hidden')
+    $('#lootlog').prepend('<div id="newlog"></div>')
+    $('#newlog').prepend('<div id="logsum" class="lootlogitem" style="position:absolute;top:0;overflow:auto;width:20%;height:100%"></div>')
+    $('#newlog').prepend('<div id="loggies" style="position:absolute;top:0;left:20%;overflow:auto;width:80%;height:100%;border-left:1px solid white"></div>')
     const chatconfig = { attributes: true, childList: true, subtree: true };
     const killsconfig = { characterData: false, attributes: false, childList: true, subtree: false };
     const callback = (mutationList, observer) => {
