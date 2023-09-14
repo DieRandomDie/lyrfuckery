@@ -10,4 +10,4 @@ Chat cleaner will filter chat based on the chatchannel dropdown. Global killer w
 
 Cleaner doesn't work with custom chats atm. Uncheck the box to use custom chat.
 
-Lootlog currently doesn't track money drops, token drops, or party bag drops.
+Lootlog currently doesn't track party bag drops.
