@@ -174,7 +174,7 @@ function parsegold(s, t) {
         }
         updateloot(gold,basegold,bonusgold)
     } else {
-
+        return `${format(Math.floor(s/1e6))}p ${Math.floor(s%1e6/10000)}g ${s%1e4/100}s ${s%100}c`
     }
 }
 function parselog(e) {
@@ -241,11 +241,10 @@ function format(n) {
     return n.toLocaleString()
 }
 function newLogLine(x, y, z) {
-    let end = '</br>'
     if(!z) {
-        return `${x}: <span data-tippy-content="Base: ${format(y.base)}</br>Bonus: ${format(y.bonus)}</br>Looted ${format(y.loots)} times.">${format(y.total)}</span>${end}`
+        return `${x}: <span data-tippy-content="Base: ${format(y.base)}</br>Bonus: ${format(y.bonus)}</br>Looted ${format(y.loots)} times.">${format(y.total)}</span></br>`
     } else {
-        return `${x}: <span data-tippy-content="Base: ${parsegold(y.base,1)}</br>Bonus: ${parsegold(y.bonus,1)}</br>Looted ${parsegold(y.loots,1)} times.">${parsegold(y.total,1)}</span>${end}`
+        return `${x}: <span data-tippy-content="Base: ${parsegold(y.base,1)}</br>Bonus: ${parsegold(y.bonus,1)}</br>Looted ${parsegold(y.loots,1)} times.">${parsegold(y.total,1)}</span></br>`
     }
 }
 function newlootlog(e) {
