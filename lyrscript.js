@@ -158,7 +158,14 @@ function parsegold(s, t) {
         let basestring = money[0] //50g
         let baseint = parseInt(basestring) //50
         let basetype = basestring.split(baseint)[1] //g
-        let basegold = basetype == 'g' ? baseint*10000 : baseint*100
+        let basegold = 0
+        if(basetype == 'p') {
+            basegold = baseint*1000000
+        } else if (basetype == 'g') {
+            basegold = baseint*10000
+        } else {
+            basegold = baseint*100
+        }
         let bonusstring = money[1].split(' ') //[1p, 15g]
         let bonusgold = 0
         for (let i = 0; i < bonusstring.length; i++) {
@@ -200,7 +207,7 @@ function parselog(e) {
             updateloot(emerald, ba, bo)
         } else if (e.indexOf('Opal') > 0) {
             updateloot(opal, ba, bo)
-        } else if (e.indexOf('gold') > 0 || e.indexOf('silver') > 0) {
+        } else if (e.indexOf('gold') > 0 || e.indexOf('silver') > 0 || e.indexOf('platinum') > 0) {
         parsegold(e)
         } else {
             console.log('error at jade/frag/gems\n'+e)
