@@ -229,7 +229,8 @@ function parselog(e) {
             console.log('error at stats\n'+e)
         }
     } else if (e.indexOf('token') > 0) {
-        let l = parseInt(e.substring(e.indexOf('(')+1,e.indexOf('(')+2))
+        let l = parseInt(e.substring(e.indexOf('token')-2,e.indexOf('token')-1))
+        console.log(l)
         updateloot(token, l, 0)
     } else {
         console.log(e)
