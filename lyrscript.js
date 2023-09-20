@@ -146,12 +146,6 @@ let attack = {total:0,base:0,bonus:0,loots:0}
 let defence = {total:0,base:0,bonus:0,loots:0}
 let accuracy = {total:0,base:0,bonus:0,loots:0}
 let evasion = {total:0,base:0,bonus:0,loots:0}
-/*gold (10g +1p 15g level bonus)
-silver (50s +6g 50s level bonus)
-jade (51 +586 level bonus)
-fragments (159 + 437 level bonus)
-Ruby, Rubies, Opal, Emerald, Diamond, Sapphire
-*/
 function parsegold(s, t) {
     if(!t) {
         let money = s.substring(s.indexOf('(')+1,s.indexOf('level')-1).split(' +')
@@ -184,6 +178,11 @@ function parsegold(s, t) {
         return `${format(Math.floor(s/1e6))}p ${Math.floor(s%1e6/10000)}g ${s%1e4/100}s ${s%100}c`
     }
 }
+//You found a lockbox of jade (59 +767 level bonus) but it was donated to the jade god!
+//You found a Bottle of Rum! - pirate day
+//You found a Pirate Flag! - pirate day
+//You found a Tricorn! - pirate day
+//You found a [Blue|Green|Orange|Red|Yellow] Party Bag!
 function parselog(e) {
     let check = 0
     let l
