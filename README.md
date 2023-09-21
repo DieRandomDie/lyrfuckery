@@ -1,3 +1,5 @@
+Using with permission from Midith ~~
+
 - Adds a kill per hour tracker to left sidebar.
 - Adds next tdp hour time below server time. (this is jank af y'all)
 - Adds two checkbox near chat button to clean up chat.
