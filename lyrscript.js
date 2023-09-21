@@ -291,6 +291,7 @@ function newwhisper(e, f) {
         document.getElementById("inputchat").focus(),
         document.getElementById("inputchat").style.color = "#DD77DD"
     }
+}
 $( document ).ready(function() {
     lootlog = newlootlog
     whisper = newwhisper
