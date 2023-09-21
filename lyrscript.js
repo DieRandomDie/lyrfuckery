@@ -285,9 +285,29 @@ function newlootlog(e) {
     $("#loggies").prepend("<div class='lootlogitem'>" + e + "</div>")
     $("#lootlog div.lootlogitem:gt(999)").remove()
 }
-
+function newwhisper(e, f) {
+    if(f) {
+        document.getElementById("inputchat").value = "/" + f + " " + e + " ",
+        document.getElementById("inputchat").focus(),
+        document.getElementById("inputchat").style.color = "#DD77DD"
+    }
 $( document ).ready(function() {
     lootlog = newlootlog
+    whisper = newwhisper
+    }$(document).on("click", function(e) {
+        $('#shortcut').remove()
+        if (e.target.classList[0] === 'chatname') {
+            let name = e.target.innerHTML
+            e.target.innerHTML = `${name}<div id="shortcut" style='display:inline;position:absolute;margin:3px;padding:3px;border: 1px solid white;background-color:black'>
+                <a href='javascript:profile("${name}")'>Profile</a></br>
+                <a href='javascript:whisper("${name}", "w")'>Whisper</a></br>
+                <a href='javascript:post(0,"${name}","")'>Mail</a></br>
+                <a href='javascript:whisper("${name}","wire")'>Wire Plat</a></br>
+                <a href='javascript:whisper("${name}","wirejade")'>Wire Jade</a></br>
+                <a href='javascript:whisper("${name}","wireitem")'>Wire Item</a>
+            </div>`
+        }
+    })
     $('#lootlog').css('overflow','hidden')
     $('#lootlog').prepend('<div id="newlog"></div>')
     $('#newlog').prepend('<div id="logsum" class="lootlogitem" style="position:absolute;top:5px;overflow:auto;width:20%;height:100%"></div>')
