@@ -229,11 +229,9 @@ function parselog(e) {
         }
     } else if (e.indexOf('token source') > 0) {
         let l = parseInt(e.substring(e.indexOf('(')+1,e.indexOf('(')+2))
-        console.log(l)
         updateloot(token, l, 0)
     } else if (e.indexOf('token') > 0) {
         let l = parseInt(e.substring(e.indexOf('token')-2,e.indexOf('token')-1))
-        console.log(l)
         updateloot(token, l, 0)
     } else {
         console.log(e)
@@ -295,7 +293,8 @@ function newwhisper(e, f) {
 $( document ).ready(function() {
     lootlog = newlootlog
     whisper = newwhisper
-    }$(document).on("click", function(e) {
+}
+    $(document).on("click", function(e) {
         $('#shortcut').remove()
         if (e.target.classList[0] === 'chatname') {
             let name = e.target.innerHTML
