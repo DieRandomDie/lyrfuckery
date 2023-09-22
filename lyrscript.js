@@ -293,7 +293,6 @@ function newwhisper(e, f) {
 $( document ).ready(function() {
     lootlog = newlootlog
     whisper = newwhisper
-}
     $(document).on("click", function(e) {
         $('#shortcut').remove()
         if (e.target.classList[0] === 'chatname') {
