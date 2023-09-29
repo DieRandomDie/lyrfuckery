@@ -253,7 +253,7 @@ function newLogLine(x, y, z) {
     if(!z) {
         return `${x}: <span data-tippy-content="Base: ${format(y.base)}</br>Bonus: ${format(y.bonus)}</br>Looted ${format(y.loots)} times.">${format(y.total)}</span></br>`
     } else {
-        return `${x}: <span data-tippy-content="Base: ${parsegold(y.base,1)}</br>Bonus: ${parsegold(y.bonus,1)}</br>Looted ${parsegold(y.loots,1)} times.">${parsegold(y.total,1)}</span></br>`
+        return `${x}: <span data-tippy-content="Base: ${parsegold(y.base,1)}</br>Bonus: ${parsegold(y.bonus,1)}</br>Looted ${parsegold(y.loots,1)} times.">${format(y.total)}</span></br>`
     }
 }
 function newlootlog(e) {
