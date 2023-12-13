@@ -1,5 +1,3 @@
-
-
 // removes case-sensitivity from jQuery's contains
 jQuery.expr[':'].icontains = function(a, i, m) {
   return jQuery(a).text().toUpperCase()
