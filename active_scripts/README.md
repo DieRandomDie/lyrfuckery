@@ -1,10 +1,17 @@
 **chat.js**
 
-  toggleable hidden globals. (requires globals to be on, will show boss globals at :45, :55, :00, and death.)
-  ![no globals from 3 minute boss](https://i.imgur.com/Pvo0WjL.png)
-  
-  toggleable chat filtering. Chat dropdown will allow you to see only the selected channels. Doesn't work for custom chats, kinda janky.
-  ![example of filtered chat](https://i.imgur.com/lPtTQYk.png)
+toggleable hidden globals. (requires globals to be on, will show boss globals at :45, :55, :00, and death.)
+![no globals from 3 minute boss](https://i.imgur.com/Pvo0WjL.png)
+
+toggleable chat filtering. Chat dropdown will allow you to see only the selected channels. Doesn't work for custom chats, kinda janky.
+![example of filtered chat](https://i.imgur.com/lPtTQYk.png)
+
+
+**dptimers.js**
+
+hides inactive dp timers
+
+![hidden dp timers](https://i.imgur.com/c07emw7.png)
 
 
 **dungeonmap.js**
