@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         New Chat Mod
 // @namespace    http://tampermonkey.net/
-// @version      2024-02-23
-// @description  try to take over the world!
+// @version      2024-02-27
+// @description  chat similar to ava
 // @author       You
 // @match        https://lyrania.co.uk/game.php
 // @match        https://dev.lyrania.co.uk/game.php
@@ -100,4 +100,3 @@ $( document ).ready(function() {
         observer.observe(chatwindow, chatconfig)
     },1000)
 })
-
