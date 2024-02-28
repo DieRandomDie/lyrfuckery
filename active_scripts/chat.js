@@ -3,7 +3,6 @@
 // @version      20240228.1
 // @description  Adds toggleable chat filter and global removal (globals need to be on).
 // @author       DieRandomDie
-// @updateURL    https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/chat.js
 // @downloadURL  https://github.com/DieRandomDie/lyrfuckery/blob/main/active_scripts/chat.js
 // @match        https://lyrania.co.uk/game.php
 // @match        https://dev.lyrania.co.uk/game.php
