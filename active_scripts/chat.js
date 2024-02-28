@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         Chat Mod
-// @version      2024-02-23
+// @version      2024-02-28
 // @description  Adds toggleable chat filter and global removal (globals need to be on).
 // @author       DieRandomDie
 // @updateURL    https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/chat.js
+// @downloadURL  https://github.com/DieRandomDie/lyrfuckery/blob/main/active_scripts/chat.js
 // @match        https://lyrania.co.uk/game.php
 // @match        https://dev.lyrania.co.uk/game.php
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=lyrania.co.uk
