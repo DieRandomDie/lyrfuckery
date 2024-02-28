@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Chat Mod
-// @version      2024-02-28
+// @version      20240228.1
 // @description  Adds toggleable chat filter and global removal (globals need to be on).
 // @author       DieRandomDie
 // @updateURL    https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/chat.js
