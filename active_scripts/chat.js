@@ -1,13 +1,12 @@
 // ==UserScript==
 // @name         Chat Mod
-// @namespace    http://tampermonkey.net/
 // @version      2024-02-23
-// @description  try to take over the world!
-// @author       You
+// @description  Adds toggleable chat filter and global removal (globals need to be on).
+// @author       DieRandomDie
+// @updateURL    https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/chat.js
 // @match        https://lyrania.co.uk/game.php
 // @match        https://dev.lyrania.co.uk/game.php
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=lyrania.co.uk
-// @grant        none
 // ==/UserScript==
 
 const chat = document.getElementById("chat")
