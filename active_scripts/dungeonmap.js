@@ -39,6 +39,7 @@ function newdungeonmap(x) {
     $('.dungeonmapRoomType:eq(1)').text(`Regular Rooms (${reg}) | `)
     $('.dungeonmapRoomType:eq(2)').text(`Challenge Rooms (${chal}) | `)
     $('.dungeonmapRoomType:eq(3)').text(`Empty Rooms (${empty})`)
+    $("#dungeonmapcontainer img").css("opacity",0)
     //END NEW STUFF
         }
     }
