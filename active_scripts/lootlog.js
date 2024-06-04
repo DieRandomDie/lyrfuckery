@@ -92,7 +92,7 @@ function parselog(e) {
         }
     } else if (e.indexOf('gained') > 0) {
         let l = parseInt(e.substring(e.indexOf('gained')+7,e.indexOf('gained')+8))
-        let bo = l == 2 ? 1 : 0
+        let bo = l >= 2 ? l-1 : 0
         if (e.indexOf('Health') > 0) {
             updateloot(health, 1, bo)
         } else if (e.indexOf('Attack') > 0) {
