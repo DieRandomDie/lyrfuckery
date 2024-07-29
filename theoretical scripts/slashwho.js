@@ -8,3 +8,10 @@ function getWho(p) {
       }, index * interval);
     })
 }
+let names = []
+$('#popup div:nth-child(2)').each(function(x) {
+    names.push($(this).text().split(' ')[0])
+})
+names.splice(1, 1)
+closepage()
+getWho(names)
