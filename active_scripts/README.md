@@ -1,4 +1,4 @@
-**chat.js**
+**chat.js (USE NEWCHAT.JS)**
 
 toggleable hidden globals. (requires globals to be on, will show boss globals at :45, :55, :00, and death.)
 ![no globals from 3 minute boss](https://i.imgur.com/Pvo0WjL.png)
