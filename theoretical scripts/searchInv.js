@@ -3,6 +3,15 @@
 // add text input for filter
 $('<input type="text" oninput="filterItems(this.value)">').insertBefore($('#limit').next())
 
+//change select all data
+$('.select_all').attr('class','select_shown')
+
+$(document).on("change", ".select_shown", function(e) {
+    var t = $('.unequippedItems tbody tr td input:enabled')
+    $(t).prop("checked", $(this).is(":checked"))
+    invCheck()
+})
+
 // overrides the existing client code for the check-all box in inventory
 $(document).on("change", ".select_all", function(e) {
     $('.unequippedItems tbody tr td input:hidden').prop("checked", false);
@@ -17,10 +26,12 @@ jQuery.expr[':'].icontains = function(a, i, m) {
 function filterItems(j) {
     // show hidden stuff
     $('.unequippedItems tbody tr').show()
+    $('.unequippedItems tbody tr td input').attr('disabled', false)
     $('.unequippedItems tbody tr').each(function(i) {
         if(i>3){
             // hide anything that doesn't match input text
             $(this).not(`:has(td:icontains("${j}"))`).hide()
         }
       })
+    $('.unequippedItems tbody tr td input:hidden').attr('disabled', true)
 }
