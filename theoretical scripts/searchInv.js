@@ -1,3 +1,5 @@
+//adds a filter to inventory (not persistent) paste into console after opening inventory and showing all jewels
+
 // add text input for filter
 $('<input type="text" oninput="filterItems(this.value)">').insertBefore($('#limit').next())
 
