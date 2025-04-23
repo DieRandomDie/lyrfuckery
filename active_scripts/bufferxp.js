@@ -31,7 +31,6 @@ async function newupdategems(...e) {
             expgain = parseInt($('#content div.lrow').eq(1).text().split("Exp: ")[1].split(" ")[0].replaceAll(",",""))
         } catch(e) {}
         bufferincrease = Number(Math.sqrt((numeral(e[11]).value()+1)**2 + (2*(numeral(e[12]).value()+(expgain-(numeral(e[11]).value()+1)*25))/25))-Math.sqrt(numeral(e[11]).value()**2 + (2*numeral(e[12]).value()/25))-1).toFixed(2)
-        console.log((numeral(e[12]).value()+(expgain-(numeral(e[11]).value()+1)*25)))
         $("#expli").html("<span data-tippy-content='" + numeral(e[12]).format("0,0") + "/" + numeral(25 * e[11]).format("0,0") + "'>" + Math.round(Math.sqrt(numeral(e[11]).value()**2 + (2*numeral(e[12]).value()/25))).toLocaleString() + " (" +bufferincrease+ ")</span>")
         $("#Healthli").html(numeral(e[13]).format("0,0"))
         $("#Attackli").html(numeral(e[14]).format("0,0"))
