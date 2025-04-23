@@ -7,6 +7,13 @@ toggleable chat filtering. Chat dropdown will allow you to see only the selected
 ![example of filtered chat](https://i.imgur.com/lPtTQYk.png)
 
 
+**bufferxp.js**
+
+Replaces the 100% xp with the level your current buffer can take you to. The number in parenthesis is the levels gained per kill.
+For example, my buffer level is 15,191,864 and needs 379,796,600xp to add a level. I gain 384,043,264 xp per kill, the number will show the excess xp as a percent of the level added to the buffer level. (0.01 in my case). Once my buffer level's xp req is below my exp per kill the number will go into the negatives.
+
+![buffer xp as future level](https://i.imgur.com/9VyIgib.png)
+
 **dptimers.js**
 
 hides inactive dp timers
