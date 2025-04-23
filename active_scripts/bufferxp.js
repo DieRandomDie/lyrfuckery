@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         bufferXP
 // @namespace    http://tampermonkey.net/
-// @version      2024-10-24
+// @version      2025-04-23
 // @description  replaces the useless xp% with current ending level
-// @author       You
+// @author       DieRandomDie
 // @match        https://lyrania.co.uk/game.php
 // @match        https://dev.lyrania.co.uk/game.php
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=lyrania.co.uk
