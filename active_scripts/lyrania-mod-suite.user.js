@@ -1,7 +1,8 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.5.0
+// @namespace    https://dev.lyrania.co.uk/
+// @version      2.6.0
 // @description  A configurable collection of chat, timer, statistics, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -45,12 +46,15 @@
         persistentLootLog: true,
 
         // Prevents normal auto-battles and boss battles from running together.
-        preventOverlappingBattles: true
+        preventOverlappingBattles: true,
+
+        // Summarizes dungeon rooms and hides non-chest map icons.
+        dungeonMapSummary: true
     });
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.5.0';
+    const SCRIPT_VERSION = '2.6.0';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
     const UPDATE_CHECK_STORAGE_KEY = 'lyrania-mod-suite:update-check';
@@ -1332,6 +1336,88 @@
         return true;
     }
 
+    function enhanceDungeonMap() {
+        const container = document.getElementById('dungeonmapcontainer');
+        const labels = document.querySelectorAll('.dungeonmapRoomType');
+        if (!container || labels.length < 4) return false;
+
+        let mobsLeft = 0;
+        let regularRooms = 0;
+        let challengeRooms = 0;
+        let emptyRooms = 0;
+
+        const roomElements = Array.from(container.querySelectorAll('div div'))
+            .filter((element) => !element.querySelector('img'));
+
+        roomElements.forEach((room) => {
+            room.style.color = 'white';
+            const mobCount = Number.parseInt(room.textContent.trim(), 10);
+
+            if (!Number.isFinite(mobCount) || mobCount <= 0) {
+                emptyRooms += 1;
+                return;
+            }
+
+            mobsLeft += mobCount;
+            const strokeColor = getComputedStyle(room).webkitTextStrokeColor;
+            if (strokeColor === 'rgb(255, 215, 0)') regularRooms += 1;
+            if (strokeColor === 'rgb(139, 0, 0)') challengeRooms += 1;
+        });
+
+        labels[0].textContent = `Mobs Left (${mobsLeft}) | `;
+        labels[1].textContent = `Regular Rooms (${regularRooms}) | `;
+        labels[2].textContent = `Challenge Rooms (${challengeRooms}) | `;
+        labels[3].textContent = `Empty Rooms (${emptyRooms})`;
+
+        container.querySelectorAll('img').forEach((image) => {
+            let pathname = '';
+            try {
+                pathname = new URL(image.src, window.location.href).pathname;
+            } catch (_error) {
+                pathname = image.getAttribute('src') || '';
+            }
+
+            const isChest = pathname.endsWith('/images/dungeons/open-chest.svg')
+                || pathname.endsWith('/images/dungeons/chest.svg');
+            if (!isChest) image.style.opacity = '0';
+        });
+
+        return true;
+    }
+
+    function waitForDungeonMap() {
+        if (enhanceDungeonMap()) return;
+
+        let scheduled = false;
+        const observer = new MutationObserver(() => {
+            if (scheduled) return;
+            scheduled = true;
+            requestAnimationFrame(() => {
+                scheduled = false;
+                if (enhanceDungeonMap()) observer.disconnect();
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+        window.setTimeout(() => observer.disconnect(), 15000);
+    }
+
+    function initializeDungeonMapSummary() {
+        if (!MODS.dungeonMapSummary) return true;
+        if (window.dungeonmap?.lyraniaDungeonMapSummaryWrapper) return true;
+        if (typeof window.dungeonmap !== 'function') return false;
+
+        const originalDungeonMap = window.dungeonmap;
+        const wrappedDungeonMap = function (...args) {
+            const result = originalDungeonMap.apply(this, args);
+            waitForDungeonMap();
+            return result;
+        };
+        wrappedDungeonMap.lyraniaDungeonMapSummaryWrapper = true;
+        window.dungeonmap = wrappedDungeonMap;
+        return true;
+    }
+
     function parseVersion(version) {
         const match = String(version || '').trim().match(/^\d+(?:\.\d+)*$/);
         return match ? match[0].split('.').map(Number) : null;
@@ -1475,7 +1561,8 @@
         initializeInactiveDpTimerHider,
         initializeBufferXp,
         initializePersistentLootLog,
-        initializeCombatOverlapGuard
+        initializeCombatOverlapGuard,
+        initializeDungeonMapSummary
     ];
 
     function initializeEnabledMods() {
