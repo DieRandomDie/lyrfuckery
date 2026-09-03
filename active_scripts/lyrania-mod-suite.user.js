@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.9.1
+// @version      2.11.0
 // @description  A configurable collection of chat, timer, statistics, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -39,6 +39,9 @@
         // Hides Double, Triple, and Quad DP timers while they are inactive.
         hideInactiveDpTimers: true,
 
+        // Preserves action cooldowns across menus and queues the next action.
+        actionTimerFix: true,
+
         // Replaces Buffer XP percentage with projected level information.
         bufferXp: true,
 
@@ -51,12 +54,28 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.9.1';
+    const SCRIPT_VERSION = '2.11.0';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
     const UPDATE_CHECK_STORAGE_KEY = 'lyrania-mod-suite:update-check';
     const UPDATE_DISMISSED_STORAGE_KEY = 'lyrania-mod-suite:update-dismissed';
-    const CHANNEL_CLASS_NAMES = {
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    const LONDON_TIME_FORMATTER = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23'
+    });
+    const TRIPLE_DP_HOURS = Object.freeze([
+        [0, 20],
+        [16],
+        [12],
+        [8],
+        [4]
+    ]);
+    const CHANNEL_CLASS_NAMES = Object.freeze({
         '0': 'mainchatcolor',
         l: 'gameschatcolor',
         g: 'guildchatcolor',
@@ -66,7 +85,8 @@
         p: 'pubchatcolor',
         a: 'areachatcolor',
         w: 'whisperchatcolor'
-    };
+    });
+    const CHANNEL_CLASS_ENTRIES = Object.entries(CHANNEL_CLASS_NAMES);
     const NATIVE_CHAT_CONTROLS = Object.freeze({
         '0': { buttonId: 'mainchatbutton', command: 'killchat' },
         l: { buttonId: 'Litechatbutton', command: 'gamesroom' },
@@ -81,7 +101,10 @@
     let selectedChannel = 'all';
     let showGlobalChat = true;
     const enabledAllChannels = new Set();
+    const serverClockSubscribers = new Set();
+    let chatChannelMarkers = [];
     let quickMenu = null;
+    let serverClockObserver = null;
 
     function addStyles() {
         const style = document.createElement('style');
@@ -296,28 +319,29 @@
             return true;
         }
 
-        return Array.from(line.querySelectorAll('a[href]')).some((link) => {
+        for (const link of line.querySelectorAll('a[href]')) {
             const href = (link.getAttribute('href') || '').replace(/\s+/g, '').toLowerCase();
-            return href.includes('performnav(9)')
+            if (href.includes('performnav(9)')
                 || href.includes('contract()')
-                || href.includes('boss');
-        });
+                || href.includes('boss')) return true;
+        }
+        return false;
     }
 
-    function lineMatchesSelectedChannel(line, channelSelect) {
+    function lineMatchesSelectedChannel(line) {
         if (selectedChannel === 'all') {
             if (isGlobalOrBossAnnouncement(line)) return showGlobalChat;
             if (line.querySelector('.whisperchatcolor')) return true;
 
-            for (const [channel, className] of Object.entries(CHANNEL_CLASS_NAMES)) {
+            for (const [channel, className] of CHANNEL_CLASS_ENTRIES) {
                 if (channel !== 'w' && line.querySelector(`.${className}`)) {
                     return enabledAllChannels.has(channel);
                 }
             }
 
-            for (const option of Array.from(channelSelect.options)) {
-                if (line.textContent.includes(`[ ${option.text.trim()} ]`)) {
-                    return enabledAllChannels.has(option.value);
+            for (const channel of chatChannelMarkers) {
+                if (line.textContent.includes(channel.marker)) {
+                    return enabledAllChannels.has(channel.value);
                 }
             }
             return true;
@@ -335,18 +359,35 @@
             return Boolean(line.querySelector(`.${className}`));
         }
 
-        const option = Array.from(channelSelect.options).find(
+        const channel = chatChannelMarkers.find(
             (item) => item.value === selectedChannel
         );
-        return Boolean(option && line.textContent.includes(`[ ${option.text.trim()} ]`));
+        return Boolean(channel && line.textContent.includes(channel.marker));
+    }
+
+    function updateChatLineVisibility(line) {
+        line.style.display = lineMatchesSelectedChannel(line) ? '' : 'none';
     }
 
     function filterChat() {
-        const channelSelect = document.getElementById('chatchannel');
-        if (!channelSelect) return;
+        const chatWindow = document.getElementById('chatwindow');
+        if (!chatWindow) return;
 
-        document.querySelectorAll('#chatwindow .chatline').forEach((line) => {
-            line.style.display = lineMatchesSelectedChannel(line, channelSelect) ? '' : 'none';
+        chatWindow.querySelectorAll('.chatline').forEach((line) => {
+            updateChatLineVisibility(line);
+        });
+    }
+
+    function filterAddedChatLines(records) {
+        records.forEach((record) => {
+            record.addedNodes.forEach((node) => {
+                if (node.nodeType === 1 && node.matches('.chatline')) {
+                    updateChatLineVisibility(node);
+                }
+                node.querySelectorAll?.('.chatline').forEach((line) => {
+                    updateChatLineVisibility(line);
+                });
+            });
         });
     }
 
@@ -357,8 +398,10 @@
 
         const channels = Array.from(channelSelect.options, (option) => ({
                 value: option.value,
-                label: normalizeChannelLabel(option.text)
+                label: normalizeChannelLabel(option.text),
+                marker: `[ ${option.text.trim()} ]`
             }));
+        chatChannelMarkers = channels.map(({ value, marker }) => ({ value, marker }));
 
         const allButton = document.createElement('button');
         allButton.type = 'button';
@@ -561,7 +604,7 @@
         if (wantsSidebar && !document.getElementById(`${SCRIPT_ID}-channels`)) {
             createChannelSidebar(chatRow, channelSelect);
 
-            const observer = new MutationObserver(filterChat);
+            const observer = new MutationObserver(filterAddedChatLines);
             observer.observe(chatWindow, { childList: true });
             filterChat();
         }
@@ -573,15 +616,18 @@
         return true;
     }
 
-    function getLondonTime() {
-        const parts = new Intl.DateTimeFormat('en-GB', {
-            timeZone: 'Europe/London',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hourCycle: 'h23'
-        }).formatToParts(new Date());
+    function getEstimatedServerTimestamp() {
+        try {
+            const timestamp = Number(window.estimatedServerNow?.());
+            if (Number.isFinite(timestamp) && timestamp > 0) return timestamp;
+        } catch (_error) {
+            // Fall back to the browser clock until server synchronization completes.
+        }
+        return Date.now();
+    }
+
+    function getLondonTime(timestamp = getEstimatedServerTimestamp()) {
+        const parts = LONDON_TIME_FORMATTER.formatToParts(new Date(timestamp));
         const value = (type) => Number(parts.find((part) => part.type === type)?.value || 0);
         return {
             day: value('day'),
@@ -591,20 +637,45 @@
         };
     }
 
-    function getTripleDpHour() {
-        const london = getLondonTime();
-        const currentHour = london.hour + london.minute / 60 + london.second / 3600;
-        const scheduledHours = { 0: 4, 1: 20, 2: 16, 3: 12, 4: 8 };
-        const scheduledHour = scheduledHours[london.day % 5];
+    function getTripleDpHours(dayOfMonth) {
+        return TRIPLE_DP_HOURS[(dayOfMonth - 1) % TRIPLE_DP_HOURS.length];
+    }
 
-        if (currentHour >= scheduledHour && currentHour < scheduledHour + 1) {
-            return 'Now';
+    function formatTripleDpHour(hour) {
+        return `${String(hour).padStart(2, '0')}:00:00`;
+    }
+
+    function getTripleDpHour(timestamp = getEstimatedServerTimestamp()) {
+        const london = getLondonTime(timestamp);
+        const secondsToday = london.hour * 3600 + london.minute * 60 + london.second;
+
+        for (const hour of getTripleDpHours(london.day)) {
+            const startsAt = hour * 3600;
+            if (secondsToday < startsAt) return formatTripleDpHour(hour);
+            if (secondsToday < startsAt + 3600) return 'Now';
         }
 
-        const displayHour = currentHour >= scheduledHour + 1
-            ? (scheduledHour + 20) % 24
-            : scheduledHour;
-        return `${String(displayHour).padStart(2, '0')}:00:00`;
+        const tomorrow = getLondonTime(timestamp + ONE_DAY_MS);
+        return formatTripleDpHour(getTripleDpHours(tomorrow.day)[0]);
+    }
+
+    function subscribeToServerClock(callback) {
+        const serverTime = document.getElementById('serverTime');
+        if (!serverTime) return false;
+
+        serverClockSubscribers.add(callback);
+        if (!serverClockObserver) {
+            serverClockObserver = new MutationObserver(() => {
+                serverClockSubscribers.forEach((subscriber) => subscriber());
+            });
+            serverClockObserver.observe(serverTime, {
+                childList: true,
+                characterData: true,
+                subtree: true
+            });
+        }
+        callback();
+        return true;
     }
 
     function initializeTripleDpHour() {
@@ -620,10 +691,14 @@
         serverTimeRow.insertAdjacentElement('afterend', row);
 
         const output = row.querySelector('span');
-        const update = () => { output.textContent = getTripleDpHour(); };
-        update();
-        window.setInterval(update, 1000);
-        return true;
+        let lastMinute = '';
+        return subscribeToServerClock(() => {
+            const serverMinute = document.getElementById('serverTime')?.textContent.slice(0, 5);
+            if (serverMinute && serverMinute === lastMinute) return;
+            lastMinute = serverMinute;
+            const display = getTripleDpHour();
+            if (output.textContent !== display) output.textContent = display;
+        });
     }
 
     function parseFormattedNumber(value) {
@@ -638,24 +713,25 @@
         const sideCounter = document.getElementById('sidecounter');
         if (!sideCounter) return false;
 
+        const serverTime = document.getElementById('serverTime');
+        const killCount = document.getElementById('killscount');
+        if (!serverTime || !killCount) return false;
+
         const row = document.createElement('div');
         row.innerHTML = `Kills Per Hour: <span id="${SCRIPT_ID}-kph">0.0</span>`;
         sideCounter.appendChild(row);
 
+        const output = row.querySelector('span');
         const update = () => {
-            const kills = parseFormattedNumber(document.getElementById('killscount')?.textContent);
-            const timeParts = (document.getElementById('serverTime')?.textContent || '')
-                .split(':')
-                .map(Number);
+            const kills = parseFormattedNumber(killCount.textContent);
+            const timeParts = serverTime.textContent.split(':').map(Number);
             if (timeParts.length !== 3 || timeParts.some((part) => !Number.isFinite(part))) return;
 
             const elapsedHours = timeParts[0] + timeParts[1] / 60 + timeParts[2] / 3600;
-            const output = document.getElementById(`${SCRIPT_ID}-kph`);
-            if (output) output.textContent = elapsedHours > 0 ? (kills / elapsedHours).toFixed(1) : '0.0';
+            const display = elapsedHours > 0 ? (kills / elapsedHours).toFixed(1) : '0.0';
+            if (output.textContent !== display) output.textContent = display;
         };
-        update();
-        window.setInterval(update, 1000);
-        return true;
+        return subscribeToServerClock(update);
     }
 
     function initializeInactiveDpTimerHider() {
@@ -684,6 +760,350 @@
             subtree: true
         });
         update();
+        return true;
+    }
+
+    function initializeActionTimerFix() {
+        if (!MODS.actionTimerFix) return true;
+        if (window.__lyraniaActionTimerFixInstalled) return true;
+
+        const actionTimerScriptId = 'lyrania-action-timer-fix';
+        const queueableControlSelector = [
+            '#content .kung_fu_button',
+            '#content #attackboss',
+            '#content input[onclick*="auto("]',
+            '#content input[onclick*="battle("]',
+            '#content input[onclick*="boss("]',
+            '#content input[onclick*="gboss("]',
+            '#content button[onclick*="auto("]',
+            '#content button[onclick*="battle("]',
+            '#content button[onclick*="boss("]',
+            '#content button[onclick*="gboss("]'
+        ].join(',');
+        const requiredFunctions = [
+            'timer',
+            'timer2',
+            'scheduleServerAction',
+            'clearServerAction',
+            'performnav',
+            'moblist',
+            'improvedmoblist',
+            'map',
+            'gmap',
+            'guildpage',
+            'auto',
+            'improvedauto',
+            'battle',
+            'improvedbattle',
+            'dungeonbattle',
+            'improveddungeonbattle',
+            'boss',
+            'gboss'
+        ];
+
+        if (!window.jQuery
+            || requiredFunctions.some((name) => typeof window[name] !== 'function')) return false;
+
+        window.__lyraniaActionTimerFixInstalled = true;
+
+        const originalTimer = window.timer;
+        const originalScheduleServerAction = window.scheduleServerAction;
+        const trackedActionSchedules = new Set();
+        const activeActionRequests = new Set();
+        let menuNavigationActive = false;
+        let preservedDeadline = 0;
+        let queuedAction = null;
+        let queuedActionHandle = null;
+
+        const style = document.createElement('style');
+        style.id = `${actionTimerScriptId}-styles`;
+        style.textContent = `
+            #timer[data-lyrania-action-queued="true"]::after {
+                content: " — Action queued";
+                color: #ffcc33;
+                font-weight: bold;
+            }
+        `;
+        document.head.appendChild(style);
+
+        function isActionRequestUrl(url) {
+            const cleanUrl = String(url || '').split('?')[0].toLowerCase();
+            return /(?:^|\/)(?:auto|improvedauto|battle|improvedbattle|dungeonbattle|improveddungeonbattle|bosses|gboss)\.php$/.test(cleanUrl);
+        }
+
+        window.jQuery(document).on(
+            'ajaxSend.lyraniaActionTimerFix',
+            (_event, request, settings) => {
+                if (!isActionRequestUrl(settings?.url)) return;
+                activeActionRequests.add(request);
+                request.always(() => {
+                    window.setTimeout(() => {
+                        activeActionRequests.delete(request);
+                        runQueuedActionWhenReady();
+                    }, 0);
+                });
+            }
+        );
+
+        function serverNow() {
+            try {
+                if (typeof estimatedServerNow === 'function') return estimatedServerNow();
+            } catch (_error) {
+                // Use the browser clock until the game has synchronized its clock.
+            }
+            return Date.now();
+        }
+
+        function currentDeadline() {
+            try {
+                if (typeof actionTimerEndsAt !== 'undefined' && Number(actionTimerEndsAt) > 0) {
+                    return Number(actionTimerEndsAt);
+                }
+                const remaining = Math.max(
+                    typeof timertime !== 'undefined' ? Number(timertime) || 0 : 0,
+                    typeof timer2time !== 'undefined' ? Number(timer2time) || 0 : 0
+                );
+                return remaining > 0 ? serverNow() + remaining : 0;
+            } catch (_error) {
+                return 0;
+            }
+        }
+
+        function remainingCooldownMs() {
+            const deadline = Math.max(currentDeadline(), preservedDeadline);
+            return Math.max(0, deadline - serverNow());
+        }
+
+        function isActionSchedule(callback) {
+            const source = Function.prototype.toString.call(callback);
+            return /\b(?:fun|boss|gboss|dungeonbattle|improveddungeonbattle)\s*\(/.test(source);
+        }
+
+        window.scheduleServerAction = function (delay, callback) {
+            if (!isActionSchedule(callback)) {
+                return originalScheduleServerAction.apply(this, arguments);
+            }
+
+            let handle;
+            const trackedCallback = function () {
+                trackedActionSchedules.delete(handle);
+                return callback.apply(this, arguments);
+            };
+            handle = originalScheduleServerAction.call(this, delay, trackedCallback);
+            trackedActionSchedules.add(handle);
+            return handle;
+        };
+
+        function cancelTrackedActionSchedules() {
+            trackedActionSchedules.forEach((handle) => window.clearServerAction(handle));
+            trackedActionSchedules.clear();
+            try {
+                if (typeof autotimer !== 'undefined' && autotimer) {
+                    window.clearServerAction(autotimer);
+                    autotimer = null;
+                }
+            } catch (_error) {
+                // No active auto-action handle exists.
+            }
+        }
+
+        function stopRepeatingActions() {
+            cancelTrackedActionSchedules();
+            try {
+                const autoWasRunning = (typeof autoing !== 'undefined' && Number(autoing) !== 0)
+                    || (typeof am !== 'undefined' && Number(am) > 0)
+                    || (typeof funcheck !== 'undefined' && Boolean(funcheck));
+
+                if (typeof varstopauto !== 'undefined') varstopauto = 1;
+                if (typeof autoing !== 'undefined') autoing = 0;
+                if (typeof am !== 'undefined') am = 0;
+                if (typeof stopboss !== 'undefined') stopboss = 1;
+                if (typeof clearAutoBattleResumeState === 'function') clearAutoBattleResumeState();
+
+                if (autoWasRunning) {
+                    fetch('stopauto.php', { method: 'GET', credentials: 'same-origin' }).catch(() => {});
+                }
+            } catch (error) {
+                console.warn(`[${actionTimerScriptId}] Could not completely stop the prior repeating action.`, error);
+            }
+        }
+
+        function renderPreservedTimer() {
+            const timerDisplay = document.getElementById('timer');
+            if (!timerDisplay) return;
+
+            if (queuedAction) timerDisplay.dataset.lyraniaActionQueued = 'true';
+            else delete timerDisplay.dataset.lyraniaActionQueued;
+
+            document.querySelectorAll(queueableControlSelector).forEach((control) => {
+                control.disabled = Boolean(queuedAction);
+            });
+        }
+
+        function cancelQueuedAction() {
+            queuedAction = null;
+            if (queuedActionHandle) window.clearServerAction(queuedActionHandle);
+            queuedActionHandle = null;
+            renderPreservedTimer();
+        }
+
+        function beginMenuNavigation(cancelPendingAction = false) {
+            if (cancelPendingAction) cancelQueuedAction();
+            const deadline = currentDeadline();
+            if (deadline > serverNow()) preservedDeadline = Math.max(preservedDeadline, deadline);
+            stopRepeatingActions();
+            menuNavigationActive = true;
+            renderPreservedTimer();
+        }
+
+        window.timer = function (delay) {
+            const milliseconds = Math.max(0, Number(delay) || 0);
+            if (menuNavigationActive) {
+                if (remainingCooldownMs() > 0) {
+                    renderPreservedTimer();
+                    return undefined;
+                }
+
+                if (activeActionRequests.size > 0 && milliseconds > 0) {
+                    preservedDeadline = serverNow() + milliseconds;
+                    return originalTimer.apply(this, arguments);
+                }
+
+                renderPreservedTimer();
+                return undefined;
+            }
+
+            preservedDeadline = 0;
+            return originalTimer.apply(this, arguments);
+        };
+        window.timer2 = function () {
+            return window.timer.apply(this, arguments);
+        };
+
+        function prepareAction(actionType) {
+            menuNavigationActive = false;
+            preservedDeadline = 0;
+            try {
+                if (actionType === 'boss') {
+                    if (typeof stopboss !== 'undefined') stopboss = 0;
+                } else if (typeof varstopauto !== 'undefined') {
+                    varstopauto = 0;
+                }
+            } catch (_error) {
+                // The native action will initialize any unavailable state.
+            }
+        }
+
+        function scheduleQueuedActionCheck(delay = remainingCooldownMs()) {
+            if (!queuedAction) return;
+            if (queuedActionHandle) window.clearServerAction(queuedActionHandle);
+            queuedActionHandle = originalScheduleServerAction.call(
+                window,
+                Math.max(0, delay),
+                () => {
+                    queuedActionHandle = null;
+                    runQueuedActionWhenReady();
+                }
+            );
+        }
+
+        function runQueuedActionWhenReady() {
+            if (!queuedAction) return;
+            const remaining = remainingCooldownMs();
+            if (remaining > 0 || activeActionRequests.size > 0) {
+                renderPreservedTimer();
+                scheduleQueuedActionCheck(remaining > 0 ? remaining : 100);
+                return;
+            }
+
+            const action = queuedAction;
+            cancelQueuedAction();
+            try {
+                if (typeof finishActionTimer === 'function') finishActionTimer();
+            } catch (_error) {
+                // The queued action can still initialize its own timer.
+            }
+            prepareAction(action.actionType);
+            action.original.apply(action.context, action.args);
+        }
+
+        function executeOrQueue(actionType, original, context, args) {
+            if (remainingCooldownMs() <= 0 && activeActionRequests.size === 0) {
+                prepareAction(actionType);
+                return original.apply(context, args);
+            }
+
+            queuedAction = { actionType, original, context, args };
+            renderPreservedTimer();
+            scheduleQueuedActionCheck();
+            return undefined;
+        }
+
+        function wrapAction(functionName, actionType = 'regular') {
+            const original = window[functionName];
+            const wrapped = function (...args) {
+                return executeOrQueue(actionType, original, this, args);
+            };
+            window[functionName] = wrapped;
+        }
+
+        const originalPerformNav = window.performnav;
+        window.performnav = function () {
+            beginMenuNavigation(true);
+            return originalPerformNav.apply(this, arguments);
+        };
+
+        function wrapMenuLoader(functionName) {
+            const original = window[functionName];
+            const wrapped = function (...args) {
+                beginMenuNavigation();
+                return original.apply(this, args);
+            };
+            window[functionName] = wrapped;
+        }
+
+        wrapMenuLoader('moblist');
+        wrapMenuLoader('improvedmoblist');
+        wrapMenuLoader('map');
+        wrapMenuLoader('gmap');
+
+        const originalGuildPage = window.guildpage;
+        window.guildpage = function (...args) {
+            if (Number(args[0]) === 11) beginMenuNavigation();
+            return originalGuildPage.apply(this, args);
+        };
+
+        wrapAction('auto');
+        wrapAction('improvedauto');
+        wrapAction('battle');
+        wrapAction('improvedbattle');
+        wrapAction('dungeonbattle');
+        wrapAction('improveddungeonbattle');
+
+        const originalBoss = window.boss;
+        window.boss = function (...args) {
+            if (Number(args[0]) !== 1) {
+                beginMenuNavigation();
+                return originalBoss.apply(this, args);
+            }
+            return executeOrQueue('boss', originalBoss, this, args);
+        };
+
+        const originalGuildBoss = window.gboss;
+        window.gboss = function (...args) {
+            if (Number(args[0]) !== 1) {
+                beginMenuNavigation();
+                return originalGuildBoss.apply(this, args);
+            }
+            return executeOrQueue('boss', originalGuildBoss, this, args);
+        };
+
+        const content = document.getElementById('content');
+        if (content) {
+            new MutationObserver(() => {
+                if (menuNavigationActive || queuedAction) renderPreservedTimer();
+            }).observe(content, { childList: true, subtree: true });
+        }
         return true;
     }
 
@@ -734,18 +1154,20 @@
     }
 
     function findLatestActionXp() {
-        const rows = Array.from(document.querySelectorAll(
-            '#content .lrow, #content, #popup .lrow, #popupresponse .lrow, #rightinfo'
-        ));
-        for (const row of rows) {
-            const actionXp = parseActionXpText(row.textContent);
+        for (const selector of ['#content', '#popupresponse', '#popup', '#rightinfo']) {
+            const root = document.querySelector(selector);
+            const exactActionXp = findExactRenderedActionXp(root);
+            if (exactActionXp > 0) return exactActionXp;
+
+            const actionXp = parseActionXpText(root?.textContent);
             if (actionXp > 0) return actionXp;
         }
         return 0;
     }
 
-    function findExactRenderedActionXp() {
-        const titledValues = document.querySelectorAll('.text-center span[title]');
+    function findExactRenderedActionXp(root) {
+        if (!root) return 0;
+        const titledValues = root.querySelectorAll('.text-center span[title]');
         for (const value of titledValues) {
             const label = value.querySelector('strong')?.textContent.trim().toLowerCase();
             if (label !== 'exp:') continue;
@@ -786,10 +1208,9 @@
 
         const projectedLevel = projectedBufferLevel(level, bufferXp);
         const endingLevel = Math.floor(projectedLevel + Number.EPSILON);
-        const exactActionXp = findExactRenderedActionXp();
         const displayedActionXp = findLatestActionXp();
         const derivedActionXp = calculateBufferXpGain(lastBufferState, level, bufferXp);
-        const actionXp = exactActionXp || displayedActionXp || derivedActionXp;
+        const actionXp = displayedActionXp || derivedActionXp;
         lastBufferState = { level, bufferXp };
         const requiredXp = 25 * level;
         const bufferLevelXpCost = 25 * endingLevel;
@@ -814,7 +1235,7 @@
         if (!output) return;
 
         const content = document.getElementById('content');
-        const actionXp = findExactRenderedActionXp()
+        const actionXp = findExactRenderedActionXp(content)
             || parseRewardActionXpText(content?.textContent || content?.innerText);
         if (actionXp <= 0) return;
 
@@ -852,7 +1273,19 @@
         wrappedUpdateGems.lyraniaBufferXpWrapper = true;
         wrappedUpdateGems.lyraniaBufferXpWrapperVersion = SCRIPT_VERSION;
         window.updategems = wrappedUpdateGems;
-        window.setInterval(enforceRenderedBufferActionRate, 250);
+
+        const content = document.getElementById('content');
+        if (content) {
+            let updateScheduled = false;
+            new MutationObserver(() => {
+                if (updateScheduled) return;
+                updateScheduled = true;
+                requestAnimationFrame(() => {
+                    updateScheduled = false;
+                    enforceRenderedBufferActionRate();
+                });
+            }).observe(content, { childList: true, characterData: true, subtree: true });
+        }
         enforceRenderedBufferActionRate();
 
         const label = document.getElementById('expli')?.previousElementSibling;
@@ -1070,13 +1503,17 @@
                 grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
                 gap: 8px;
                 align-items: stretch;
+                min-height: 0;
                 height: 100%;
+                overflow: hidden;
             }
             #${SCRIPT_ID}-chat-column {
                 display: grid;
                 grid-template-rows: auto minmax(0, 1fr);
                 min-width: 0;
+                min-height: 0;
                 height: 100%;
+                overflow: hidden;
             }
             #${SCRIPT_ID}-chat-composer {
                 display: flex;
@@ -1101,11 +1538,17 @@
             }
             #chattabs.${SCRIPT_ID}-chat-loot-split #chatwindow {
                 display: block !important;
+                box-sizing: border-box;
                 width: auto !important;
                 min-width: 0;
+                min-height: 0;
                 height: 100% !important;
                 padding-right: 8px;
                 border-right: 1px solid rgba(255, 255, 255, 0.4);
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                overscroll-behavior: contain;
+                scrollbar-gutter: stable;
             }
             #chattabs.${SCRIPT_ID}-chat-loot-split #lootlog.${SCRIPT_ID}-loot-layout {
                 display: grid !important;
@@ -1443,16 +1886,32 @@
         initializeInactiveDpTimerHider,
         initializeBufferXp,
         initializePersistentLootLog,
-        initializeDungeonMapSummary
+        initializeDungeonMapSummary,
+        initializeActionTimerFix
     ];
+    const pendingInitializers = new Set(initializers);
 
     function initializeEnabledMods() {
-        return initializers.every((initializeMod) => initializeMod());
+        pendingInitializers.forEach((initializeMod) => {
+            try {
+                if (initializeMod()) pendingInitializers.delete(initializeMod);
+            } catch (error) {
+                pendingInitializers.delete(initializeMod);
+                console.error(`[${SCRIPT_ID}] ${initializeMod.name} failed to initialize.`, error);
+            }
+        });
+        return pendingInitializers.size === 0;
     }
 
     if (!initializeEnabledMods()) {
+        let initializationScheduled = false;
         const startupObserver = new MutationObserver(() => {
-            if (initializeEnabledMods()) startupObserver.disconnect();
+            if (initializationScheduled) return;
+            initializationScheduled = true;
+            requestAnimationFrame(() => {
+                initializationScheduled = false;
+                if (initializeEnabledMods()) startupObserver.disconnect();
+            });
         });
         startupObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
