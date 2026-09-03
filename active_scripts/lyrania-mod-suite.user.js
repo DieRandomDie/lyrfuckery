@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.6.0
+// @version      2.9.1
 // @description  A configurable collection of chat, timer, statistics, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -45,16 +45,13 @@
         // Tracks loot totals locally and displays chat beside the Loot Log.
         persistentLootLog: true,
 
-        // Prevents normal auto-battles and boss battles from running together.
-        preventOverlappingBattles: true,
-
         // Summarizes dungeon rooms and hides non-chest map icons.
         dungeonMapSummary: true
     });
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.6.0';
+    const SCRIPT_VERSION = '2.9.1';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
     const UPDATE_CHECK_STORAGE_KEY = 'lyrania-mod-suite:update-check';
@@ -711,16 +708,75 @@
             : 0;
     }
 
+    function parseRewardActionXpText(value) {
+        const source = String(value || '');
+        const plainText = source.includes('<')
+            ? new DOMParser().parseFromString(source, 'text/html').body.textContent
+            : source;
+        const match = plainText.match(
+            /Money\s*:[\s\S]{0,200}?Exp\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i
+        );
+        return match ? parseCompactExperience(match[1], match[2]) : 0;
+    }
+
+    function parseActionXpText(value) {
+        const rewardXp = parseRewardActionXpText(value);
+        if (rewardXp > 0) return rewardXp;
+
+        const source = String(value || '');
+        const plainText = source.includes('<')
+            ? new DOMParser().parseFromString(source, 'text/html').body.textContent
+            : source;
+        const genericMatch = plainText.match(
+            /(?:Exp|Experience)\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i
+        );
+        return genericMatch ? parseCompactExperience(genericMatch[1], genericMatch[2]) : 0;
+    }
+
     function findLatestActionXp() {
-        const rows = Array.from(document.querySelectorAll('#content .lrow, #main .lrow'));
+        const rows = Array.from(document.querySelectorAll(
+            '#content .lrow, #content, #popup .lrow, #popupresponse .lrow, #rightinfo'
+        ));
         for (const row of rows) {
-            const match = row.textContent.match(
-                /(?:Exp|Experience)\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i
-            );
-            if (match) return parseCompactExperience(match[1], match[2]);
+            const actionXp = parseActionXpText(row.textContent);
+            if (actionXp > 0) return actionXp;
         }
         return 0;
     }
+
+    function findExactRenderedActionXp() {
+        const titledValues = document.querySelectorAll('.text-center span[title]');
+        for (const value of titledValues) {
+            const label = value.querySelector('strong')?.textContent.trim().toLowerCase();
+            if (label !== 'exp:') continue;
+
+            const actionXp = parseFormattedNumber(value.getAttribute('title'));
+            if (actionXp > 0) return actionXp;
+        }
+        return 0;
+    }
+
+    function readDisplayedBufferState() {
+        const level = parseFormattedNumber(document.getElementById('lvlli')?.textContent);
+        const tooltip = document.querySelector('#expli [data-tippy-content]')
+            ?.getAttribute('data-tippy-content');
+        const bufferMatch = String(tooltip || '').match(/^\s*([\d,]+)/);
+        const bufferXp = bufferMatch ? parseFormattedNumber(bufferMatch[1]) : 0;
+        return level > 0 && bufferXp >= 0 ? { level, bufferXp } : null;
+    }
+
+    function calculateBufferXpGain(previousState, level, bufferXp) {
+        if (!previousState || level < previousState.level) return 0;
+
+        const levelsGained = level - previousState.level;
+        const spentOnLevels = levelsGained > 0
+            ? 25 * levelsGained * (previousState.level + level - 1) / 2
+            : 0;
+        const gainedXp = bufferXp - previousState.bufferXp + spentOnLevels;
+        return Number.isFinite(gainedXp) && gainedXp > 0 ? Math.round(gainedXp) : 0;
+    }
+
+    let lastBufferState = null;
 
     function renderBufferXp(updateArguments) {
         const level = parseFormattedNumber(updateArguments[11]);
@@ -730,14 +786,16 @@
 
         const projectedLevel = projectedBufferLevel(level, bufferXp);
         const endingLevel = Math.floor(projectedLevel + Number.EPSILON);
-        const actionXp = findLatestActionXp();
-        const nextLevel = level + 1;
-        const nextLevelXpCost = 25 * nextLevel;
-        const bufferAfterAction = bufferXp + actionXp - nextLevelXpCost;
-        const levelsPerAction = actionXp > 0
-            ? projectedBufferLevel(nextLevel, bufferAfterAction) - projectedLevel - 1
-            : 0;
+        const exactActionXp = findExactRenderedActionXp();
+        const displayedActionXp = findLatestActionXp();
+        const derivedActionXp = calculateBufferXpGain(lastBufferState, level, bufferXp);
+        const actionXp = exactActionXp || displayedActionXp || derivedActionXp;
+        lastBufferState = { level, bufferXp };
         const requiredXp = 25 * level;
+        const bufferLevelXpCost = 25 * endingLevel;
+        const levelsPerAction = actionXp > 0
+            ? actionXp / bufferLevelXpCost - 1
+            : 0;
         const roundedChange = Math.abs(levelsPerAction) < 0.005 ? 0 : levelsPerAction;
         const changePrefix = roundedChange > 0 ? '+' : '';
         const actionText = actionXp > 0
@@ -751,11 +809,40 @@
         output.appendChild(value);
     }
 
+    function enforceRenderedBufferActionRate() {
+        const output = document.getElementById('expli');
+        if (!output) return;
+
+        const content = document.getElementById('content');
+        const actionXp = findExactRenderedActionXp()
+            || parseRewardActionXpText(content?.textContent || content?.innerText);
+        if (actionXp <= 0) return;
+
+        const value = output.firstElementChild || output;
+        const bufferLevelMatch = value.textContent.match(/^\s*([\d,]+)/);
+        const bufferLevel = bufferLevelMatch
+            ? parseFormattedNumber(bufferLevelMatch[1])
+            : 0;
+        if (bufferLevel <= 0) return;
+
+        const change = actionXp / (25 * bufferLevel) - 1;
+        const roundedChange = Math.abs(change) < 0.005 ? 0 : change;
+        const prefix = roundedChange > 0 ? '+' : '';
+        const expectedSuffix = `(${prefix}${roundedChange.toFixed(2)} per action)`;
+        if (value.textContent.includes(expectedSuffix)) return;
+
+        const baseText = value.textContent
+            .replace(/\s*\([^)]*\sper action\)\s*$/i, '')
+            .trim();
+        value.textContent = `${baseText} ${expectedSuffix}`;
+    }
+
     function initializeBufferXp() {
         if (!MODS.bufferXp) return true;
-        if (window.updategems?.lyraniaBufferXpWrapper) return true;
+        if (window.updategems?.lyraniaBufferXpWrapperVersion === SCRIPT_VERSION) return true;
         if (typeof window.updategems !== 'function' || !document.getElementById('expli')) return false;
 
+        lastBufferState = readDisplayedBufferState();
         const originalUpdateGems = window.updategems;
         const wrappedUpdateGems = async function (...args) {
             const result = await originalUpdateGems.apply(this, args);
@@ -763,7 +850,10 @@
             return result;
         };
         wrappedUpdateGems.lyraniaBufferXpWrapper = true;
+        wrappedUpdateGems.lyraniaBufferXpWrapperVersion = SCRIPT_VERSION;
         window.updategems = wrappedUpdateGems;
+        window.setInterval(enforceRenderedBufferActionRate, 250);
+        enforceRenderedBufferActionRate();
 
         const label = document.getElementById('expli')?.previousElementSibling;
         if (label) label.textContent = 'Buffer Level:';
@@ -1128,214 +1218,6 @@
         return true;
     }
 
-    function initializeCombatOverlapGuard() {
-        if (!MODS.preventOverlappingBattles) return true;
-        if (window.__lyraniaCombatOverlapGuard) return true;
-
-        const requiredFunctions = [
-            'scheduleServerAction',
-            'clearServerAction',
-            'auto',
-            'improvedauto',
-            'boss',
-            'gboss'
-        ];
-        if (!window.jQuery || requiredFunctions.some((name) => typeof window[name] !== 'function')) {
-            return false;
-        }
-
-        window.__lyraniaCombatOverlapGuard = true;
-        const scheduledNormalActions = new Set();
-        const scheduledBossActions = new Set();
-        const activeNormalRequests = new Set();
-        const activeBossRequests = new Set();
-        let combatMode = null;
-        let pendingNormalStart = false;
-        let pendingBossStart = false;
-
-        try {
-            const currentNavigation = document.getElementById('mainnav')?.value;
-            if (currentNavigation === '9' || document.getElementById('attackboss')) {
-                combatMode = 'boss';
-            } else if ((typeof autoing !== 'undefined' && autoing)
-                || (typeof funcheck !== 'undefined' && funcheck)) {
-                combatMode = 'normal';
-            }
-        } catch (_error) {
-            combatMode = null;
-        }
-
-        function classifyRequest(url) {
-            const cleanUrl = String(url || '').split('?')[0].toLowerCase();
-            if (/(?:^|\/)(?:bosses|gboss|loot_aboss)\.php$/.test(cleanUrl)) return 'boss';
-            if (/(?:^|\/)(?:auto|improvedauto|battle|improvedbattle|dungeonbattle|improveddungeonbattle)\.php$/.test(cleanUrl)) {
-                return 'normal';
-            }
-            return null;
-        }
-
-        window.jQuery(document).on(
-            'ajaxSend.lyraniaCombatGuard',
-            (_event, request, settings) => {
-                const type = classifyRequest(settings?.url);
-                const requestSet = type === 'normal'
-                    ? activeNormalRequests
-                    : type === 'boss'
-                        ? activeBossRequests
-                        : null;
-                if (!requestSet) return;
-                requestSet.add(request);
-                request.always(() => requestSet.delete(request));
-            }
-        );
-
-        const originalScheduleServerAction = window.scheduleServerAction;
-        window.scheduleServerAction = function (delay, callback) {
-            const callbackSource = Function.prototype.toString.call(callback);
-            const type = /\b(?:boss|gboss)\s*\(/.test(callbackSource)
-                ? 'boss'
-                : /\b(?:fun|dungeonbattle|improveddungeonbattle)\s*\(/.test(callbackSource)
-                    ? 'normal'
-                    : null;
-            const actionSet = type === 'boss'
-                ? scheduledBossActions
-                : type === 'normal'
-                    ? scheduledNormalActions
-                    : null;
-            let handle;
-            const guardedCallback = function () {
-                if (actionSet) actionSet.delete(handle);
-                if ((type === 'normal' && combatMode === 'boss')
-                    || (type === 'boss' && combatMode === 'normal')) return;
-                return callback.apply(this, arguments);
-            };
-            handle = originalScheduleServerAction.call(this, delay, guardedCallback);
-            if (actionSet) actionSet.add(handle);
-            return handle;
-        };
-
-        function cancelScheduledActions(actionSet) {
-            actionSet.forEach((handle) => window.clearServerAction(handle));
-            actionSet.clear();
-        }
-
-        function cancelNormalBattleWork(notifyServer = false) {
-            try {
-                if (typeof clearAutoBattleResumeState === 'function') clearAutoBattleResumeState();
-                if (typeof autotimer !== 'undefined' && autotimer) {
-                    window.clearServerAction(autotimer);
-                    autotimer = null;
-                }
-                if (typeof varstopauto !== 'undefined') varstopauto = 1;
-                if (typeof autoing !== 'undefined') autoing = 0;
-                if (typeof am !== 'undefined') am = 0;
-            } catch (error) {
-                console.warn(`[${SCRIPT_ID}] Normal auto-battle state could not be fully cleared.`, error);
-            }
-            cancelScheduledActions(scheduledNormalActions);
-            if (notifyServer) {
-                fetch('stopauto.php', { method: 'GET', credentials: 'same-origin' }).catch(() => {});
-            }
-        }
-
-        function cancelBossBattleWork() {
-            try {
-                if (typeof stopboss !== 'undefined') stopboss = 1;
-            } catch (error) {
-                console.warn(`[${SCRIPT_ID}] Boss auto-battle state could not be fully cleared.`, error);
-            }
-            cancelScheduledActions(scheduledBossActions);
-        }
-
-        function waitForRequestsToFinish(requestSet, callback) {
-            if (requestSet.size === 0) {
-                callback();
-                return;
-            }
-            window.setTimeout(() => waitForRequestsToFinish(requestSet, callback), 50);
-        }
-
-        function hasNormalAutoWork() {
-            if (activeNormalRequests.size > 0 || scheduledNormalActions.size > 0 || pendingNormalStart) {
-                return true;
-            }
-            try {
-                const scheduledAutoExists = typeof autotimer !== 'undefined'
-                    && autotimer
-                    && !autotimer.cancelled;
-                return Boolean(scheduledAutoExists
-                    || (typeof autoing !== 'undefined' && autoing)
-                    || (typeof funcheck !== 'undefined' && funcheck)
-                    || (typeof am !== 'undefined' && Number(am) > 0));
-            } catch (_error) {
-                return false;
-            }
-        }
-
-        function wrapNormalAuto(functionName) {
-            const original = window[functionName];
-            const wrapped = function (...args) {
-                if (combatMode !== 'boss') {
-                    if (hasNormalAutoWork()) return undefined;
-                    combatMode = 'normal';
-                    return original.apply(this, args);
-                }
-                if (pendingNormalStart) return undefined;
-
-                pendingNormalStart = true;
-                combatMode = 'normal';
-                cancelBossBattleWork();
-                const context = this;
-                waitForRequestsToFinish(activeBossRequests, () => {
-                    pendingNormalStart = false;
-                    cancelBossBattleWork();
-                    original.apply(context, args);
-                });
-                return undefined;
-            };
-            wrapped.lyraniaCombatGuardWrapper = true;
-            window[functionName] = wrapped;
-        }
-
-        function wrapBossBattle(functionName) {
-            const original = window[functionName];
-            const wrapped = function (...args) {
-                if (combatMode === 'boss') return original.apply(this, args);
-                if (pendingBossStart) return undefined;
-
-                pendingBossStart = true;
-                combatMode = 'boss';
-                cancelNormalBattleWork(true);
-                const context = this;
-                waitForRequestsToFinish(activeNormalRequests, () => {
-                    pendingBossStart = false;
-                    cancelNormalBattleWork(false);
-
-                    // A normal-auto shutdown can leave the game's shared boss
-                    // stop flag set. Clear it only for this new boss sequence;
-                    // recursive boss attacks still retain the game's own state.
-                    if (typeof stopboss !== 'undefined') stopboss = 0;
-
-                    // The delayed call must not make the game's action lock
-                    // disable whichever control received focus in the meantime.
-                    if (document.activeElement instanceof HTMLElement) {
-                        document.activeElement.blur();
-                    }
-                    original.apply(context, args);
-                });
-                return undefined;
-            };
-            wrapped.lyraniaCombatGuardWrapper = true;
-            window[functionName] = wrapped;
-        }
-
-        wrapNormalAuto('auto');
-        wrapNormalAuto('improvedauto');
-        wrapBossBattle('boss');
-        wrapBossBattle('gboss');
-        return true;
-    }
-
     function enhanceDungeonMap() {
         const container = document.getElementById('dungeonmapcontainer');
         const labels = document.querySelectorAll('.dungeonmapRoomType');
@@ -1561,7 +1443,6 @@
         initializeInactiveDpTimerHider,
         initializeBufferXp,
         initializePersistentLootLog,
-        initializeCombatOverlapGuard,
         initializeDungeonMapSummary
     ];
 
