@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.16.0
+// @version      2.17.0
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -63,7 +63,7 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.16.0';
+    const SCRIPT_VERSION = '2.17.0';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -1056,7 +1056,8 @@
         ];
         const menuFunctions = ['moblist', 'improvedmoblist', 'map', 'gmap'];
         const requiredFunctions = [
-            'timer', 'timer2', 'scheduleServerAction', 'clearServerAction',
+            'timer', 'timer2', 'finishActionTimer',
+            'scheduleServerAction', 'clearServerAction',
             'performnav', 'guildpage', 'boss', 'gboss',
             ...actionFunctions, ...menuFunctions
         ];
@@ -1066,9 +1067,11 @@
         window.__lyraniaActionTimerFixInstalled = true;
         const originalTimer = window.timer;
         const originalSchedule = window.scheduleServerAction;
+        const originalFinishTimer = window.finishActionTimer;
         const actionSchedules = new Set();
         const controlSelector = [
             '#content .kung_fu_button',
+            '#content #bb',
             '#content #attackboss',
             '#content [onclick*="auto("]',
             '#content [onclick*="battle("]',
@@ -1105,15 +1108,57 @@
             );
         }
 
+        const primaryActionSelector = [
+            '#content input#bb',
+            '#content button#bb',
+            '#content #attackboss',
+            '#content input[type="button"][value="Attack!"]',
+            '#content input[type="button"][value="Fight"]',
+            '#content input[type="button"][value="Continue"]'
+        ].join(',');
+
         function renderQueue() {
             const timerDisplay = document.getElementById('timer');
             if (timerDisplay) {
                 if (queuedAction) timerDisplay.dataset.lyraniaActionQueued = 'true';
                 else delete timerDisplay.dataset.lyraniaActionQueued;
             }
-            document.querySelectorAll(controlSelector).forEach((control) => {
-                control.disabled = Boolean(queuedAction);
+            document.querySelectorAll('[data-lyrania-queued-control]').forEach((control) => {
+                delete control.dataset.lyraniaQueuedControl;
             });
+            if (queuedAction?.source?.isConnected) {
+                queuedAction.source.dataset.lyraniaQueuedControl = 'true';
+            }
+        }
+
+        function visiblePrimaryAction() {
+            return [...document.querySelectorAll(primaryActionSelector)].find((control) => (
+                !control.disabled
+                && control.getClientRects().length > 0
+                && getComputedStyle(control).visibility !== 'hidden'
+            ));
+        }
+
+        function restorePrimaryActionFocus() {
+            if (remainingCooldown() > 0 || activeRequests > 0 || queuedAction) return;
+
+            const popupHolder = document.getElementById('popupholder');
+            if (popupHolder && getComputedStyle(popupHolder).visibility === 'visible') return;
+
+            const active = document.activeElement;
+            const focusIsFree = !active
+                || active === document.body
+                || active === document.documentElement
+                || !active.isConnected;
+            if (!focusIsFree) return;
+
+            const primaryAction = visiblePrimaryAction();
+            if (!primaryAction) return;
+            try {
+                primaryAction.focus({ preventScroll: true });
+            } catch (_error) {
+                primaryAction.focus();
+            }
         }
 
         function isActionSchedule(callback) {
@@ -1172,22 +1217,26 @@
             renderQueue();
         }
 
-        window.timer = function (delay) {
+        window.timer = function (delay, ...rest) {
             const milliseconds = Math.max(0, Number(delay) || 0);
             if (!navigating) {
                 preservedDeadline = 0;
-                return originalTimer.apply(this, arguments);
+                return originalTimer.call(this, milliseconds, ...rest);
             }
-            if (remainingCooldown() > 0) {
-                renderQueue();
-                return undefined;
-            }
-            if (activeRequests > 0 && milliseconds > 0) {
-                preservedDeadline = getEstimatedServerTimestamp() + milliseconds;
-                return originalTimer.apply(this, arguments);
-            }
+
+            // Raw-XHR pages such as moblist are not represented by ajaxSend. The
+            // previous implementation consequently discarded their native two-second
+            // timer and left the new Attack/Fight/Continue button at timer zero.
+            const serverNow = getEstimatedServerTimestamp();
+            const carriedMilliseconds = Math.max(0, preservedDeadline - serverNow);
+            const effectiveMilliseconds = Math.max(milliseconds, carriedMilliseconds);
+            preservedDeadline = effectiveMilliseconds > 0
+                ? serverNow + effectiveMilliseconds
+                : 0;
+
+            const result = originalTimer.call(this, effectiveMilliseconds, ...rest);
             renderQueue();
-            return undefined;
+            return result;
         };
         window.timer2 = function (...args) {
             return window.timer.apply(this, args);
@@ -1225,7 +1274,7 @@
             const action = queuedAction;
             cancelQueuedAction();
             try {
-                if (typeof finishActionTimer === 'function') finishActionTimer();
+                originalFinishTimer.call(window);
             } catch (_error) {
                 // The queued action can initialize its own timer.
             }
@@ -1238,7 +1287,9 @@
                 prepareAction(type);
                 return original.apply(context, args);
             }
-            queuedAction = { type, original, context, args };
+            const activeControl = document.activeElement;
+            const source = activeControl?.matches?.(controlSelector) ? activeControl : null;
+            queuedAction = { type, original, context, args, source };
             renderQueue();
             scheduleQueueCheck();
             return undefined;
@@ -1258,11 +1309,18 @@
                 if (!/(?:^|\/)(?:auto|improvedauto|battle|improvedbattle|dungeonbattle|improveddungeonbattle|bosses|gboss)\.php$/.test(url)) return;
                 activeRequests += 1;
                 request.always(() => window.setTimeout(() => {
-                    activeRequests -= 1;
+                    activeRequests = Math.max(0, activeRequests - 1);
                     runQueuedAction();
                 }, 0));
             }
         );
+
+        window.finishActionTimer = function (...args) {
+            const result = originalFinishTimer.apply(this, args);
+            runQueuedAction();
+            window.setTimeout(restorePrimaryActionFocus, 0);
+            return result;
+        };
 
         wrap('performnav', (original, context, args) => {
             beginNavigation(true);
@@ -1289,10 +1347,17 @@
 
         const content = document.getElementById('content');
         if (content) {
+            let focusFrame = 0;
             new MutationObserver(() => {
                 if (navigating || queuedAction) renderQueue();
+                if (focusFrame) window.cancelAnimationFrame(focusFrame);
+                focusFrame = window.requestAnimationFrame(() => {
+                    focusFrame = 0;
+                    restorePrimaryActionFocus();
+                });
             }).observe(content, { childList: true, subtree: true });
         }
+        window.setTimeout(restorePrimaryActionFocus, 0);
         return true;
     }
     function projectedBufferLevel(level, bufferXp) {
