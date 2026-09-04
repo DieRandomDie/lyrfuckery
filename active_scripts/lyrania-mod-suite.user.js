@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.17.4
+// @version      2.17.5
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -42,7 +42,7 @@
         // Preserves action cooldowns across menus and queues the next action.
         actionTimerFix: true,
 
-        // Replaces browser alerts and ignores Enter while they are open.
+        // Cancels held Enter for alerts until the key is released and pressed again.
         heldEnterAlertGuard: true,
 
         // Replaces Buffer XP percentage with projected level information.
@@ -66,7 +66,7 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.17.4';
+    const SCRIPT_VERSION = '2.17.5';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -446,6 +446,7 @@
             #${SCRIPT_ID}-alert-dialog {
                 box-sizing: border-box;
                 width: min(460px, calc(100vw - 32px));
+                max-height: calc(100vh - 32px);
                 max-height: calc(100dvh - 32px);
                 padding: 18px;
                 overflow: hidden auto;
@@ -1116,14 +1117,44 @@
         if (window.alert?.lyraniaHeldEnterAlertGuardVersion === SCRIPT_VERSION) return true;
         if (typeof window.alert !== 'function') return false;
 
-        const nativeAlert = window.alert;
+        // Unwrap this suite's older guards if a new version is installed without
+        // first reloading the page.
+        let nativeAlert = window.alert;
+        for (let index = 0; index < 5; index += 1) {
+            const priorNativeAlert = nativeAlert?.lyraniaNativeAlert;
+            if (typeof priorNativeAlert !== 'function' || priorNativeAlert === nativeAlert) break;
+            nativeAlert = priorNativeAlert;
+        }
+
+        const ENTER_RELEASE_QUIET_MS = 300;
         const pendingAlerts = [];
+        let enterIsDown = false;
+        let enterBlockedUntilRelease = false;
+        let keyboardArmed = false;
+        let releaseTimer = 0;
         let activeAlert = null;
         let okPointerArmed = false;
 
         const isEnter = (event) => event.key === 'Enter'
             || event.code === 'Enter'
             || event.code === 'NumpadEnter';
+
+        function clearReleaseTimer() {
+            if (!releaseTimer) return;
+            window.clearTimeout(releaseTimer);
+            releaseTimer = 0;
+        }
+
+        function scheduleKeyboardArm() {
+            clearReleaseTimer();
+            if (enterIsDown) return;
+            releaseTimer = window.setTimeout(() => {
+                releaseTimer = 0;
+                if (enterIsDown) return;
+                enterBlockedUntilRelease = false;
+                if (activeAlert) keyboardArmed = true;
+            }, ENTER_RELEASE_QUIET_MS);
+        }
 
         function createAlertElements() {
             let overlay = document.getElementById(`${SCRIPT_ID}-alert-overlay`);
@@ -1168,13 +1199,15 @@
         function showNextAlert() {
             if (activeAlert || !pendingAlerts.length || !document.body) return;
             const elements = createAlertElements();
-            activeAlert = { ...pendingAlerts.shift(), ...elements };
-            window.__lyraniaAlertOpen = true;
-            activeAlert.message.textContent = activeAlert.text;
-            activeAlert.overlay.hidden = false;
+            activeAlert = { messageText: pendingAlerts.shift(), ...elements };
+            enterBlockedUntilRelease = true;
+            keyboardArmed = false;
+            okPointerArmed = false;
+            clearReleaseTimer();
+            if (!enterIsDown) scheduleKeyboardArm();
 
-            // The dialog itself receives focus. The OK button never inherits the
-            // keypress that caused the alert to appear.
+            activeAlert.message.textContent = String(activeAlert.messageText ?? '');
+            activeAlert.overlay.hidden = false;
             try {
                 activeAlert.dialog.focus({ preventScroll: true });
             } catch (_error) {
@@ -1182,41 +1215,45 @@
             }
         }
 
-        function closeActiveAlert() {
+        function closeActiveAlert(fromKeyboard = false) {
             if (!activeAlert) return;
-            okPointerArmed = false;
             activeAlert.overlay.hidden = true;
             activeAlert = null;
-            window.__lyraniaAlertOpen = false;
-            document.dispatchEvent(new Event('lyrania-alert-closed'));
+            keyboardArmed = false;
+            okPointerArmed = false;
+
+            // The Enter press that closes the alert is also consumed through its
+            // release, so it cannot fall through to the game underneath.
+            if (fromKeyboard) {
+                enterBlockedUntilRelease = true;
+                clearReleaseTimer();
+            }
             window.setTimeout(showNextAlert, 0);
         }
 
-        document.addEventListener('keydown', (event) => {
-            if (!activeAlert) return;
+        window.addEventListener('keydown', (event) => {
+            if (!isEnter(event)) return;
+            enterIsDown = true;
+            clearReleaseTimer();
+            if (!activeAlert && !enterBlockedUntilRelease) return;
 
-            if (isEnter(event)) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                return;
-            }
-
-            // Keep keyboard focus inside the notice while it is open.
-            if (event.key === 'Tab') {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                activeAlert.okButton.focus({ preventScroll: true });
-            }
-        }, true);
-
-        document.addEventListener('keyup', (event) => {
-            if (!activeAlert || !isEnter(event)) return;
             event.preventDefault();
             event.stopImmediatePropagation();
+            if (activeAlert && keyboardArmed && !event.repeat) {
+                closeActiveAlert(true);
+            }
         }, true);
 
-        // Only a trusted mouse/touch press can arm OK. Keyboard activation can
-        // synthesize a click, so click metadata alone is not a reliable guard.
+        window.addEventListener('keyup', (event) => {
+            if (!isEnter(event)) return;
+            enterIsDown = false;
+            if (!activeAlert && !enterBlockedUntilRelease) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            scheduleKeyboardArm();
+        }, true);
+
         document.addEventListener('pointerdown', (event) => {
             if (!activeAlert) return;
             okPointerArmed = event.isTrusted
@@ -1230,9 +1267,6 @@
         document.addEventListener('pointercancel', () => {
             okPointerArmed = false;
         }, true);
-
-        // Block clicks through the overlay. OK closes only when the click was
-        // preceded by the trusted pointer press above.
         document.addEventListener('click', (event) => {
             if (!activeAlert) return;
             if (event.target === activeAlert.okButton) {
@@ -1240,7 +1274,7 @@
                 okPointerArmed = false;
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                if (allowClose) closeActiveAlert();
+                if (allowClose) closeActiveAlert(false);
                 return;
             }
             okPointerArmed = false;
@@ -1251,13 +1285,12 @@
         }, true);
 
         const guardedAlert = function (message) {
-            pendingAlerts.push({ text: String(message ?? '') });
+            pendingAlerts.push(message);
             showNextAlert();
             return undefined;
         };
         guardedAlert.lyraniaHeldEnterAlertGuardVersion = SCRIPT_VERSION;
         guardedAlert.lyraniaNativeAlert = nativeAlert;
-        window.__lyraniaAlertOpen = false;
         window.alert = guardedAlert;
         return true;
     }
@@ -1365,7 +1398,6 @@
 
         function restorePrimaryActionFocus() {
             if (remainingCooldown() > 0 || activeRequests > 0 || queuedAction) return;
-            if (window.__lyraniaAlertOpen) return;
             if (botCheckIsVisible()) return;
 
             const popupHolder = document.getElementById('popupholder');
@@ -1504,11 +1536,6 @@
 
         function runQueuedAction() {
             if (!queuedAction) return;
-            if (window.__lyraniaAlertOpen) {
-                renderQueue();
-                scheduleQueueCheck(250);
-                return;
-            }
             const remaining = remainingCooldown();
             if (remaining > 0 || activeRequests > 0) {
                 renderQueue();
