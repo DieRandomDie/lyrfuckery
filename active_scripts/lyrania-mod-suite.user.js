@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name Lyrania Mod Suite
 // @namespace https://lyrania.co.uk/
-// @version 2.18.2
+// @version 2.18.3
 // @match https://lyrania.co.uk/game.php*
 // @match https://dev.lyrania.co.uk/game.php*
 // @updateURL https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js
@@ -46,7 +46,7 @@
       dungeonMapSummary: 1,
     }),
     $ = "lyrania-chat-enhancements",
-    C = "2.18.2",
+    C = "2.18.3",
     w =
       "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css",
     S = "lyrania-mod-suite:remote-theme-cache",
@@ -960,6 +960,14 @@
         },
         1,
       ),
+        p("keydown", (t) => {
+          l &&
+            b(t) &&
+            ((i = 1),
+            g(),
+            t.preventDefault(),
+            t.stopImmediatePropagation());
+        }),
         m(
           "keyup",
           (t) => {
