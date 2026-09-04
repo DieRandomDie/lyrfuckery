@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name Lyrania Mod Suite
 // @namespace https://lyrania.co.uk/
-// @version 2.18.0
+// @version 2.18.1
 // @match https://lyrania.co.uk/game.php*
 // @match https://dev.lyrania.co.uk/game.php*
 // @updateURL https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js
