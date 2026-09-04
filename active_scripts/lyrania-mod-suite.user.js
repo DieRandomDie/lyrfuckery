@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name Lyrania Mod Suite
 // @namespace https://lyrania.co.uk/
-// @version 2.18.3
+// @version 2.18.5
 // @match https://lyrania.co.uk/game.php*
 // @match https://dev.lyrania.co.uk/game.php*
 // @updateURL https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js
@@ -46,7 +46,7 @@
       dungeonMapSummary: 1,
     }),
     $ = "lyrania-chat-enhancements",
-    C = "2.18.3",
+    C = "2.18.5",
     w =
       "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css",
     S = "lyrania-mod-suite:remote-theme-cache",
@@ -930,6 +930,7 @@
           (s = 0),
           (f = 0),
           g(),
+          i || w(),
           (l.message.textContent = o(l.messageText ?? "")),
           (l.overlay.hidden = 0));
         try {
@@ -960,21 +961,14 @@
         },
         1,
       ),
-        p("keydown", (t) => {
-          l &&
-            b(t) &&
-            ((i = 1),
-            g(),
-            t.preventDefault(),
-            t.stopImmediatePropagation());
-        }),
         m(
           "keyup",
           (t) => {
             b(t) &&
               ((i = 0),
               (l || a) &&
-                (t.preventDefault(), t.stopImmediatePropagation(), w()));
+                (t.preventDefault(), t.stopImmediatePropagation(), w()),
+              !l && r.length && y(S, 0));
           },
           1,
         ),
@@ -1016,7 +1010,7 @@
           1,
         ));
       const x = function (t) {
-        (r.push(t), S());
+        (r.push(t), i || S());
       };
       return (
         (x.lyraniaHeldEnterAlertGuardVersion = C),
