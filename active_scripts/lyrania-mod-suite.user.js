@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.17.0
+// @version      2.17.1
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -63,7 +63,7 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.17.0';
+    const SCRIPT_VERSION = '2.17.1';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -1083,6 +1083,9 @@
         let preservedDeadline = 0;
         let queuedAction = null;
         let queuedHandle = null;
+        let manualCombatPendingContinue = false;
+        let allowNextMoblistCooldown = false;
+        let navigationAcceptsRequestedCooldown = false;
 
         function currentDeadline() {
             try {
@@ -1209,9 +1212,15 @@
             renderQueue();
         }
 
-        function beginNavigation(cancelPending = false) {
+        function clearManualCombatCycle() {
+            manualCombatPendingContinue = false;
+            allowNextMoblistCooldown = false;
+        }
+
+        function beginNavigation(cancelPending = false, acceptRequestedCooldown = false) {
             if (cancelPending) cancelQueuedAction();
             preservedDeadline = Math.max(preservedDeadline, currentDeadline());
+            navigationAcceptsRequestedCooldown = Boolean(acceptRequestedCooldown);
             stopRepeatingActions();
             navigating = true;
             renderQueue();
@@ -1221,15 +1230,22 @@
             const milliseconds = Math.max(0, Number(delay) || 0);
             if (!navigating) {
                 preservedDeadline = 0;
+                navigationAcceptsRequestedCooldown = false;
                 return originalTimer.call(this, milliseconds, ...rest);
             }
 
-            // Raw-XHR pages such as moblist are not represented by ajaxSend. The
-            // previous implementation consequently discarded their native two-second
-            // timer and left the new Attack/Fight/Continue button at timer zero.
+            // A newly requested mob-list timer is valid only after a manual combat
+            // result's Continue button. Initial Battle navigation and auto completion
+            // should return immediately, while an already-running cooldown is carried.
             const serverNow = getEstimatedServerTimestamp();
             const carriedMilliseconds = Math.max(0, preservedDeadline - serverNow);
-            const effectiveMilliseconds = Math.max(milliseconds, carriedMilliseconds);
+            const requestedMilliseconds = navigationAcceptsRequestedCooldown
+                ? milliseconds
+                : 0;
+            const effectiveMilliseconds = Math.max(
+                requestedMilliseconds,
+                carriedMilliseconds
+            );
             preservedDeadline = effectiveMilliseconds > 0
                 ? serverNow + effectiveMilliseconds
                 : 0;
@@ -1245,6 +1261,7 @@
         function prepareAction(type) {
             navigating = false;
             preservedDeadline = 0;
+            navigationAcceptsRequestedCooldown = false;
             try {
                 if (type === 'boss' && typeof stopboss !== 'undefined') stopboss = 0;
                 if (type !== 'boss' && typeof varstopauto !== 'undefined') varstopauto = 0;
@@ -1322,16 +1339,49 @@
             return result;
         };
 
+        document.addEventListener('click', (event) => {
+            const control = event.target.closest?.(
+                '#content input[type="button"], #content input[type="submit"], #content button'
+            );
+            if (!control) return;
+
+            const label = String(control.value || control.textContent || '')
+                .trim()
+                .toLowerCase();
+            if (/^(?:attack!?|fight!?)$/.test(label)) {
+                manualCombatPendingContinue = true;
+                allowNextMoblistCooldown = false;
+            } else if (label === 'continue') {
+                allowNextMoblistCooldown = manualCombatPendingContinue;
+                manualCombatPendingContinue = false;
+            }
+        }, true);
+
         wrap('performnav', (original, context, args) => {
-            beginNavigation(true);
+            clearManualCombatCycle();
+            beginNavigation(true, false);
             return original.apply(context, args);
         });
-        menuFunctions.forEach((name) => wrap(name, (original, context, args) => {
-            beginNavigation();
+        ['moblist', 'improvedmoblist'].forEach((name) => wrap(name, (original, context, args) => {
+            const acceptRequestedCooldown = allowNextMoblistCooldown;
+            clearManualCombatCycle();
+            beginNavigation(false, acceptRequestedCooldown);
             return original.apply(context, args);
         }));
+        wrap('map', (original, context, args) => {
+            clearManualCombatCycle();
+            beginNavigation(false, false);
+            return original.apply(context, args);
+        });
+        wrap('gmap', (original, context, args) => {
+            beginNavigation(false, false);
+            return original.apply(context, args);
+        });
         wrap('guildpage', (original, context, args) => {
-            if (Number(args[0]) === 11) beginNavigation();
+            if (Number(args[0]) === 11) {
+                clearManualCombatCycle();
+                beginNavigation(false, false);
+            }
             return original.apply(context, args);
         });
         actionFunctions.forEach((name) => wrap(name, (original, context, args) => (
@@ -1341,7 +1391,8 @@
             if (Number(args[0]) === 1) {
                 return executeOrQueue('boss', original, context, args);
             }
-            beginNavigation();
+            clearManualCombatCycle();
+            beginNavigation(false, false);
             return original.apply(context, args);
         }));
 
