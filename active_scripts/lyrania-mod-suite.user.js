@@ -2,8 +2,8 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.11.0
-// @description  A configurable collection of chat, timer, statistics, and interface improvements for Lyrania.
+// @version      2.13.1
+// @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
 // @match        https://dev.lyrania.co.uk/game.php*
@@ -48,33 +48,31 @@
         // Tracks loot totals locally and displays chat beside the Loot Log.
         persistentLootLog: true,
 
+        // Keeps all six simplified-inventory tabs in a permanent responsive panel.
+        persistentInventory: true,
+
         // Summarizes dungeon rooms and hides non-chest map icons.
         dungeonMapSummary: true
     });
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.11.0';
+    const SCRIPT_VERSION = '2.13.1';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
+    const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
+    const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
     const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
     const UPDATE_CHECK_STORAGE_KEY = 'lyrania-mod-suite:update-check';
     const UPDATE_DISMISSED_STORAGE_KEY = 'lyrania-mod-suite:update-dismissed';
-    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
     const LONDON_TIME_FORMATTER = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Europe/London',
+        year: 'numeric',
+        month: 'numeric',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
         hourCycle: 'h23'
     });
-    const TRIPLE_DP_HOURS = Object.freeze([
-        [0, 20],
-        [16],
-        [12],
-        [8],
-        [4]
-    ]);
+    const TRIPLE_DP_INTERVAL_HOURS = 20;
     const CHANNEL_CLASS_NAMES = Object.freeze({
         '0': 'mainchatcolor',
         l: 'gameschatcolor',
@@ -97,6 +95,13 @@
         a: { buttonId: 'areachatbutton', command: 'area' },
         global: { buttonId: 'globalschatbutton', command: 'killglobals' }
     });
+    const CHANNEL_LABELS = Object.freeze({
+        GamesRoom: 'Games Room',
+        gboss: 'Guild Boss',
+        NewPlayers: 'New Players',
+        Icedraffle: 'Iced Raffle',
+        CatsCafe: 'Cats Cafe'
+    });
 
     let selectedChannel = 'all';
     let showGlobalChat = true;
@@ -106,7 +111,21 @@
     let quickMenu = null;
     let serverClockObserver = null;
 
+    function createButton(label, className = '') {
+        const button = document.createElement('button');
+        Object.assign(button, { type: 'button', className, textContent: label });
+        return button;
+    }
+
+    function plainText(value) {
+        const source = String(value ?? '');
+        return source.includes('<')
+            ? new DOMParser().parseFromString(source, 'text/html').body.textContent
+            : source;
+    }
+
     function addStyles() {
+        if (document.getElementById(`${SCRIPT_ID}-styles`)) return;
         const style = document.createElement('style');
         style.id = `${SCRIPT_ID}-styles`;
         style.textContent = `
@@ -116,7 +135,6 @@
                 gap: 8px;
                 overflow: visible;
             }
-
             #${SCRIPT_ID}-channels {
                 box-sizing: border-box;
                 flex: 0 0 auto;
@@ -128,11 +146,9 @@
                 border: 1px solid rgba(255, 255, 255, 0.65);
                 border-radius: 10px;
                 background: rgba(0, 0, 0, 0.78);
-                overflow-x: hidden;
-                overflow-y: auto;
+                overflow: hidden auto;
                 scrollbar-gutter: stable;
             }
-
             #${SCRIPT_ID}-channels .lyrania-chat-filter {
                 display: block;
                 width: 100%;
@@ -147,7 +163,6 @@
                 white-space: nowrap;
                 cursor: pointer;
             }
-
             #${SCRIPT_ID}-channels .lyrania-channel-row {
                 display: grid;
                 grid-template-columns: minmax(0, 1fr) 34px;
@@ -155,15 +170,10 @@
                 align-items: center;
                 margin-bottom: 4px;
             }
-
-            #${SCRIPT_ID}-channels .lyrania-channel-row.lyrania-no-toggle {
-                grid-template-columns: minmax(0, 1fr);
-            }
-
+            #${SCRIPT_ID}-channels .lyrania-no-toggle { grid-template-columns: minmax(0, 1fr); }
             #${SCRIPT_ID}-channels .lyrania-channel-row .lyrania-chat-filter {
                 margin: 0;
             }
-
             #${SCRIPT_ID}-channels .lyrania-channel-toggle {
                 box-sizing: border-box;
                 min-width: 34px;
@@ -177,39 +187,28 @@
                 line-height: 1;
                 cursor: pointer;
             }
-
             #${SCRIPT_ID}-channels .lyrania-channel-toggle.is-enabled {
                 color: #fff;
                 background: #286b35;
             }
-
             #${SCRIPT_ID}-channels .lyrania-chat-filter:hover,
             #${SCRIPT_ID}-channels .lyrania-chat-filter:focus-visible {
                 background: #222;
                 outline: 1px solid rgba(255, 255, 255, 0.35);
             }
-
-            #${SCRIPT_ID}-channels .lyrania-chat-filter.is-selected {
-                background: #555;
-            }
-
+            #${SCRIPT_ID}-channels .lyrania-chat-filter.is-selected { background: #555; }
             #${SCRIPT_ID}-channels .lyrania-special-row {
                 margin-top: 7px;
                 border-top: 1px solid rgba(255, 255, 255, 0.25);
                 padding-top: 8px;
             }
-
-            #chat > .chatToggleButton {
-                display: none !important;
-            }
-
+            #chat_row.${SCRIPT_ID}-layout #chat > .chatToggleButton { display: none !important; }
             #chat_row.${SCRIPT_ID}-layout > #chat {
                 box-sizing: border-box;
                 flex: 1 1 auto;
                 min-width: 0;
                 width: auto !important;
             }
-
             #${SCRIPT_ID}-quick-menu {
                 position: fixed;
                 z-index: 2147483647;
@@ -221,7 +220,6 @@
                 background: #050505;
                 box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
             }
-
             #${SCRIPT_ID}-quick-menu button {
                 display: block;
                 width: 100%;
@@ -235,31 +233,293 @@
                 white-space: nowrap;
                 cursor: pointer;
             }
-
             #${SCRIPT_ID}-quick-menu button:hover,
             #${SCRIPT_ID}-quick-menu button:focus-visible {
                 background: #333;
                 outline: none;
             }
-
-            @media (max-width: 760px) {
-                #${SCRIPT_ID}-channels {
-                    padding: 6px;
-                }
+            #timer[data-lyrania-action-queued="true"]::after {
+                content: " — Action queued";
+                color: #ffcc33;
+                font-weight: bold;
             }
+            #chattabs.${SCRIPT_ID}-chat-loot-split > #chatpanes {
+                display: grid;
+                grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+                gap: 8px;
+                align-items: stretch;
+                min-height: 0;
+                height: 100%;
+                overflow: hidden;
+            }
+            #${SCRIPT_ID}-chat-column {
+                display: grid;
+                grid-template-rows: auto minmax(0, 1fr);
+                min-width: 0;
+                min-height: 0;
+                height: 100%;
+                overflow: hidden;
+            }
+            #${SCRIPT_ID}-chat-composer {
+                display: flex;
+                align-items: stretch;
+                gap: 4px;
+                min-width: 0;
+                padding-right: 8px;
+                border-right: 1px solid rgba(255, 255, 255, 0.4);
+            }
+            #${SCRIPT_ID}-chat-composer > #inputchat {
+                box-sizing: border-box;
+                flex: 1 1 auto;
+                min-width: 0;
+                width: auto !important;
+            }
+            #${SCRIPT_ID}-chat-composer > #chatbutton {
+                box-sizing: border-box;
+                flex: 0 0 auto;
+            }
+            #chattabs.${SCRIPT_ID}-chat-loot-split > nav { display: none !important; }
+            #chattabs.${SCRIPT_ID}-chat-loot-split #chatwindow {
+                display: block !important;
+                box-sizing: border-box;
+                width: auto !important;
+                min-width: 0;
+                min-height: 0;
+                height: 100% !important;
+                padding-right: 8px;
+                border-right: 1px solid rgba(255, 255, 255, 0.4);
+                overflow: hidden auto !important;
+                overscroll-behavior: contain;
+                scrollbar-gutter: stable;
+            }
+            #chattabs.${SCRIPT_ID}-chat-loot-split #lootlog.${SCRIPT_ID}-loot-layout {
+                display: grid !important;
+                grid-template-rows: auto minmax(70px, 1fr);
+                gap: 8px;
+                width: auto !important;
+                min-width: 0;
+                height: 100% !important;
+                overflow: hidden;
+            }
+            #${SCRIPT_ID}-loot-summary,
+            #${SCRIPT_ID}-loot-messages {
+                box-sizing: border-box;
+                min-width: 0;
+                height: 100%;
+                overflow: auto;
+            }
+            #${SCRIPT_ID}-loot-summary {
+                height: auto;
+                overflow: visible;
+                padding-bottom: 6px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-heading {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+            #${SCRIPT_ID}-loot-summary button {
+                padding: 2px 8px;
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                border-radius: 4px;
+                color: #fff;
+                background: #222;
+                cursor: pointer;
+            }
+            #${SCRIPT_ID}-loot-summary button:hover { background: #444; }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-total { margin-bottom: 6px; }
+            #${SCRIPT_ID}-loot-summary table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 11px;
+            }
+            #${SCRIPT_ID}-loot-summary th,
+            #${SCRIPT_ID}-loot-summary td {
+                padding: 2px 4px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+                text-align: right;
+                white-space: nowrap;
+            }
+            #${SCRIPT_ID}-loot-summary th:first-child { text-align: left; }
+            #${SCRIPT_ID}-update-banner {
+                position: fixed;
+                right: 16px;
+                bottom: 16px;
+                z-index: 1000000;
+                box-sizing: border-box;
+                width: min(390px, calc(100vw - 32px));
+                padding: 14px;
+                border: 1px solid #ffcc33;
+                border-radius: 6px;
+                color: #fff;
+                background: #161616;
+                box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+                font: 14px/1.4 Arial, sans-serif;
+                text-align: left;
+            }
+            #${SCRIPT_ID}-update-banner strong {
+                display: block;
+                margin-bottom: 6px;
+                color: #ffcc33;
+                font-size: 15px;
+            }
+            #${SCRIPT_ID}-update-banner div { margin-bottom: 10px; }
+            #${SCRIPT_ID}-update-banner a {
+                display: inline-block;
+                margin-right: 10px;
+                padding: 6px 10px;
+                border-radius: 4px;
+                color: #111;
+                background: #ffcc33;
+                font-weight: bold;
+                text-decoration: none;
+            }
+            #${SCRIPT_ID}-update-banner button {
+                padding: 5px 10px;
+                border: 1px solid #777;
+                border-radius: 4px;
+                color: #fff;
+                background: #333;
+                cursor: pointer;
+            }
+            :where(#${SCRIPT_ID}-inventory-dock) {
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+                max-height: min(760px, 75vh);
+                margin: 10px 0;
+                border: 1px solid rgba(255, 255, 255, 0.35);
+                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.72);
+                overflow: hidden;
+            }
+            :where(#${SCRIPT_ID}-inventory-bar) {
+                box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 9px 12px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            :where(#${SCRIPT_ID}-inventory-heading) {
+                display: grid;
+                gap: 1px;
+                min-width: 0;
+            }
+            :where(#${SCRIPT_ID}-inventory-heading) small {
+                color: #aaa;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+            :where(#${SCRIPT_ID}-inventory-heading) strong { font-size: 15px; }
+            :where(#${SCRIPT_ID}-inventory-refresh) {
+                flex: 0 0 auto;
+                min-width: 72px;
+                padding: 5px 9px;
+                border: 1px solid rgba(255, 255, 255, 0.45);
+                border-radius: 5px;
+                color: #fff;
+                background: #222;
+                font: inherit;
+                cursor: pointer;
+            }
+            :where(#${SCRIPT_ID}-inventory-refresh):disabled {
+                cursor: wait;
+                opacity: 0.65;
+            }
+            :where(#${SCRIPT_ID}-inventory-status) {
+                padding: 10px 12px;
+                color: #ccc;
+                font-size: 12px;
+            }
+            :where(#${SCRIPT_ID}-inventory-status):empty { display: none; }
+            :where(#${SCRIPT_ID}-inventory-scroll) {
+                box-sizing: border-box;
+                min-width: 0;
+                min-height: 0;
+                padding: 10px;
+                overflow: auto;
+                overscroll-behavior: contain;
+            }
+            :where(#${SCRIPT_ID}-inventory-content) { min-width: 0; }
+            :where(#${SCRIPT_ID}-inventory-content > #inventory_shell) {
+                box-sizing: border-box;
+                width: 100%;
+                min-width: 0;
+                margin-left: 0 !important;
+            }
+            :where(#holder.${SCRIPT_ID}-has-inventory-dock > #${SCRIPT_ID}-inventory-dock) {
+                grid-area: inventory;
+            }
+            #dungeonmapcontainer.lyrania-dungeon-summary .map_room_moblist_grid {
+                color: #fff !important;
+            }
+            @media (max-width: 760px) { #${SCRIPT_ID}-channels { padding: 6px; } }
         `;
         document.head.appendChild(style);
     }
 
+    function installRemoteTheme(cssText) {
+        const css = String(cssText || '').trim();
+        if (css.length < 100 || !css.includes('{') || css.startsWith('```')) return false;
+
+        let style = document.getElementById(`${SCRIPT_ID}-remote-theme`);
+        if (!style) {
+            style = document.createElement('style');
+            style.id = `${SCRIPT_ID}-remote-theme`;
+            document.head.appendChild(style);
+        }
+        style.textContent = css;
+        return true;
+    }
+
+    function readCachedRemoteTheme() {
+        try {
+            const cached = JSON.parse(localStorage.getItem(REMOTE_THEME_CACHE_KEY));
+            return cached?.url === REMOTE_THEME_URL && typeof cached.css === 'string'
+                ? cached.css
+                : '';
+        } catch (_error) {
+            return '';
+        }
+    }
+
+    async function loadRemoteTheme() {
+        const cachedCss = readCachedRemoteTheme();
+        if (cachedCss) installRemoteTheme(cachedCss);
+
+        try {
+            const response = await fetch(REMOTE_THEME_URL, {
+                cache: 'no-cache',
+                credentials: 'omit'
+            });
+            if (!response.ok) throw new Error(`GitHub returned HTTP ${response.status}`);
+
+            const css = await response.text();
+            if (!installRemoteTheme(css)) throw new Error('The downloaded theme was not valid CSS text.');
+            try {
+                localStorage.setItem(REMOTE_THEME_CACHE_KEY, JSON.stringify({
+                    url: REMOTE_THEME_URL,
+                    css
+                }));
+            } catch (_error) {
+                // The live theme still works when browser storage is unavailable.
+            }
+        } catch (error) {
+            if (!cachedCss) console.warn(`[${SCRIPT_ID}] Could not load the remote theme.`, error);
+        }
+    }
+
     function normalizeChannelLabel(label) {
-        const corrections = {
-            GamesRoom: 'Games Room',
-            gboss: 'Guild Boss',
-            NewPlayers: 'New Players',
-            Icedraffle: 'Iced Raffle',
-            CatsCafe: 'Cats Cafe'
-        };
-        return corrections[label.trim()] || label.trim();
+        const trimmed = label.trim();
+        return CHANNEL_LABELS[trimmed] || trimmed;
     }
 
     function setSelectedButton(sidebar) {
@@ -366,7 +626,7 @@
     }
 
     function updateChatLineVisibility(line) {
-        line.style.display = lineMatchesSelectedChannel(line) ? '' : 'none';
+        line.hidden = !lineMatchesSelectedChannel(line);
     }
 
     function filterChat() {
@@ -403,11 +663,8 @@
             }));
         chatChannelMarkers = channels.map(({ value, marker }) => ({ value, marker }));
 
-        const allButton = document.createElement('button');
-        allButton.type = 'button';
-        allButton.className = 'lyrania-chat-filter lyrania-channel-select';
+        const allButton = createButton('All', 'lyrania-chat-filter lyrania-channel-select');
         allButton.dataset.channel = 'all';
-        allButton.textContent = 'All';
         allButton.addEventListener('click', () => {
             selectedChannel = 'all';
             channelSelect.value = '0';
@@ -422,11 +679,8 @@
             const row = document.createElement('div');
             row.className = `lyrania-channel-row ${extraClass}`.trim();
 
-            const selectButton = document.createElement('button');
-            selectButton.type = 'button';
-            selectButton.className = 'lyrania-chat-filter lyrania-channel-select';
+            const selectButton = createButton(label, 'lyrania-chat-filter lyrania-channel-select');
             selectButton.dataset.channel = value;
-            selectButton.textContent = label;
             selectButton.addEventListener('click', () => {
                 ensureNativeChatEnabled(value);
                 selectedChannel = value;
@@ -442,9 +696,7 @@
                 return;
             }
 
-            const toggleButton = document.createElement('button');
-            toggleButton.type = 'button';
-            toggleButton.className = 'lyrania-channel-toggle';
+            const toggleButton = createButton('', 'lyrania-channel-toggle');
             updateChannelToggle(toggleButton, enabled);
             toggleButton.addEventListener('click', () => {
                 const nextEnabled = !enabledAllChannels.has(value);
@@ -485,9 +737,6 @@
         chatRow.classList.add(`${SCRIPT_ID}-layout`);
         chatRow.insertBefore(sidebar, chatRow.firstChild);
         channelSelect.hidden = true;
-        document.querySelectorAll('#chat > .chatToggleButton').forEach((button) => {
-            button.hidden = true;
-        });
 
         const chat = document.getElementById('chat');
         if (chat) {
@@ -498,7 +747,6 @@
             };
             constrainSidebarHeight();
             new ResizeObserver(constrainSidebarHeight).observe(chat);
-            window.addEventListener('resize', constrainSidebarHeight);
         }
         setSelectedButton(sidebar);
     }
@@ -526,9 +774,7 @@
     }
 
     function addQuickMenuAction(menu, label, action) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = label;
+        const button = createButton(label);
         button.addEventListener('click', (event) => {
             event.stopPropagation();
             closeQuickMenu();
@@ -594,14 +840,13 @@
         const wantsQuickMenu = MODS.chatQuickMenu;
         if (!wantsSidebar && !wantsQuickMenu) return true;
 
-        const chatRow = document.getElementById('chat_row');
         const chatWindow = document.getElementById('chatwindow');
-        const channelSelect = document.getElementById('chatchannel');
-        if (!chatRow || !chatWindow || !channelSelect) return false;
-
-        if (!document.getElementById(`${SCRIPT_ID}-styles`)) addStyles();
+        if (!chatWindow) return false;
 
         if (wantsSidebar && !document.getElementById(`${SCRIPT_ID}-channels`)) {
+            const chatRow = document.getElementById('chat_row');
+            const channelSelect = document.getElementById('chatchannel');
+            if (!chatRow || !channelSelect) return false;
             createChannelSidebar(chatRow, channelSelect);
 
             const observer = new MutationObserver(filterAddedChatLines);
@@ -627,36 +872,38 @@
     }
 
     function getLondonTime(timestamp = getEstimatedServerTimestamp()) {
-        const parts = LONDON_TIME_FORMATTER.formatToParts(new Date(timestamp));
-        const value = (type) => Number(parts.find((part) => part.type === type)?.value || 0);
-        return {
-            day: value('day'),
-            hour: value('hour'),
-            minute: value('minute'),
-            second: value('second')
-        };
-    }
-
-    function getTripleDpHours(dayOfMonth) {
-        return TRIPLE_DP_HOURS[(dayOfMonth - 1) % TRIPLE_DP_HOURS.length];
+        return Object.fromEntries(
+            LONDON_TIME_FORMATTER.formatToParts(new Date(timestamp))
+                .filter(({ type }) => type !== 'literal')
+                .map(({ type, value }) => [type, Number(value)])
+        );
     }
 
     function formatTripleDpHour(hour) {
         return `${String(hour).padStart(2, '0')}:00:00`;
     }
 
+    function getDisplayedServerTime() {
+        const match = document.getElementById('serverTime')?.textContent.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+        if (!match) return null;
+
+        const [, hour, minute, second] = match.map(Number);
+        if (hour > 23 || minute > 59 || second > 59) return null;
+        return { hour, minute, second };
+    }
+
     function getTripleDpHour(timestamp = getEstimatedServerTimestamp()) {
         const london = getLondonTime(timestamp);
-        const secondsToday = london.hour * 3600 + london.minute * 60 + london.second;
+        const serverTime = getDisplayedServerTime() || london;
+        const elapsedHours = (london.day - 1) * 24 + serverTime.hour;
+        const hoursSinceTripleDp = elapsedHours % TRIPLE_DP_INTERVAL_HOURS;
+        if (hoursSinceTripleDp === 0) return 'Now';
 
-        for (const hour of getTripleDpHours(london.day)) {
-            const startsAt = hour * 3600;
-            if (secondsToday < startsAt) return formatTripleDpHour(hour);
-            if (secondsToday < startsAt + 3600) return 'Now';
-        }
+        const nextStart = elapsedHours + TRIPLE_DP_INTERVAL_HOURS - hoursSinceTripleDp;
+        const hoursInMonth = new Date(Date.UTC(london.year, london.month, 0)).getUTCDate() * 24;
 
-        const tomorrow = getLondonTime(timestamp + ONE_DAY_MS);
-        return formatTripleDpHour(getTripleDpHours(tomorrow.day)[0]);
+        // The cycle starts over at 00:00 UK server time on the first of every month.
+        return formatTripleDpHour(nextStart >= hoursInMonth ? 0 : nextStart % 24);
     }
 
     function subscribeToServerClock(callback) {
@@ -724,10 +971,9 @@
         const output = row.querySelector('span');
         const update = () => {
             const kills = parseFormattedNumber(killCount.textContent);
-            const timeParts = serverTime.textContent.split(':').map(Number);
-            if (timeParts.length !== 3 || timeParts.some((part) => !Number.isFinite(part))) return;
-
-            const elapsedHours = timeParts[0] + timeParts[1] / 60 + timeParts[2] / 3600;
+            const time = getDisplayedServerTime();
+            if (!time) return;
+            const elapsedHours = time.hour + time.minute / 60 + time.second / 3600;
             const display = elapsedHours > 0 ? (kills / elapsedHours).toFixed(1) : '0.0';
             if (output.textContent !== display) output.textContent = display;
         };
@@ -741,16 +987,12 @@
         if (bonusDisplay.dataset.lyraniaInactiveDpHider) return true;
         bonusDisplay.dataset.lyraniaInactiveDpHider = 'installed';
 
-        const timers = [
-            ['doubledp', 'ddpword'],
-            ['tripledp', 'tdpword'],
-            ['quaddp', 'qdpword']
-        ];
         const update = () => {
-            timers.forEach(([timerId, rowId]) => {
-                const timer = document.getElementById(timerId);
-                const row = document.getElementById(rowId);
-                if (timer && row) row.hidden = timer.textContent.trim().toLowerCase() === 'inactive';
+            ['doubledp', 'tripledp', 'quaddp'].forEach((id) => {
+                const timer = document.getElementById(id);
+                if (timer?.parentElement) {
+                    timer.parentElement.hidden = timer.textContent.trim().toLowerCase() === 'inactive';
+                }
             });
         };
 
@@ -764,151 +1006,97 @@
     }
 
     function initializeActionTimerFix() {
-        if (!MODS.actionTimerFix) return true;
-        if (window.__lyraniaActionTimerFixInstalled) return true;
+        if (!MODS.actionTimerFix || window.__lyraniaActionTimerFixInstalled) return true;
 
-        const actionTimerScriptId = 'lyrania-action-timer-fix';
-        const queueableControlSelector = [
-            '#content .kung_fu_button',
-            '#content #attackboss',
-            '#content input[onclick*="auto("]',
-            '#content input[onclick*="battle("]',
-            '#content input[onclick*="boss("]',
-            '#content input[onclick*="gboss("]',
-            '#content button[onclick*="auto("]',
-            '#content button[onclick*="battle("]',
-            '#content button[onclick*="boss("]',
-            '#content button[onclick*="gboss("]'
-        ].join(',');
-        const requiredFunctions = [
-            'timer',
-            'timer2',
-            'scheduleServerAction',
-            'clearServerAction',
-            'performnav',
-            'moblist',
-            'improvedmoblist',
-            'map',
-            'gmap',
-            'guildpage',
-            'auto',
-            'improvedauto',
-            'battle',
-            'improvedbattle',
-            'dungeonbattle',
-            'improveddungeonbattle',
-            'boss',
-            'gboss'
+        const actionFunctions = [
+            'auto', 'improvedauto', 'battle', 'improvedbattle',
+            'dungeonbattle', 'improveddungeonbattle'
         ];
-
+        const menuFunctions = ['moblist', 'improvedmoblist', 'map', 'gmap'];
+        const requiredFunctions = [
+            'timer', 'timer2', 'scheduleServerAction', 'clearServerAction',
+            'performnav', 'guildpage', 'boss', 'gboss',
+            ...actionFunctions, ...menuFunctions
+        ];
         if (!window.jQuery
             || requiredFunctions.some((name) => typeof window[name] !== 'function')) return false;
 
         window.__lyraniaActionTimerFixInstalled = true;
-
         const originalTimer = window.timer;
-        const originalScheduleServerAction = window.scheduleServerAction;
-        const trackedActionSchedules = new Set();
-        const activeActionRequests = new Set();
-        let menuNavigationActive = false;
+        const originalSchedule = window.scheduleServerAction;
+        const actionSchedules = new Set();
+        const controlSelector = [
+            '#content .kung_fu_button',
+            '#content #attackboss',
+            '#content [onclick*="auto("]',
+            '#content [onclick*="battle("]',
+            '#content [onclick*="boss("]',
+            '#content [onclick*="gboss("]'
+        ].join(',');
+        let activeRequests = 0;
+        let navigating = false;
         let preservedDeadline = 0;
         let queuedAction = null;
-        let queuedActionHandle = null;
-
-        const style = document.createElement('style');
-        style.id = `${actionTimerScriptId}-styles`;
-        style.textContent = `
-            #timer[data-lyrania-action-queued="true"]::after {
-                content: " — Action queued";
-                color: #ffcc33;
-                font-weight: bold;
-            }
-        `;
-        document.head.appendChild(style);
-
-        function isActionRequestUrl(url) {
-            const cleanUrl = String(url || '').split('?')[0].toLowerCase();
-            return /(?:^|\/)(?:auto|improvedauto|battle|improvedbattle|dungeonbattle|improveddungeonbattle|bosses|gboss)\.php$/.test(cleanUrl);
-        }
-
-        window.jQuery(document).on(
-            'ajaxSend.lyraniaActionTimerFix',
-            (_event, request, settings) => {
-                if (!isActionRequestUrl(settings?.url)) return;
-                activeActionRequests.add(request);
-                request.always(() => {
-                    window.setTimeout(() => {
-                        activeActionRequests.delete(request);
-                        runQueuedActionWhenReady();
-                    }, 0);
-                });
-            }
-        );
-
-        function serverNow() {
-            try {
-                if (typeof estimatedServerNow === 'function') return estimatedServerNow();
-            } catch (_error) {
-                // Use the browser clock until the game has synchronized its clock.
-            }
-            return Date.now();
-        }
+        let queuedHandle = null;
 
         function currentDeadline() {
             try {
-                if (typeof actionTimerEndsAt !== 'undefined' && Number(actionTimerEndsAt) > 0) {
-                    return Number(actionTimerEndsAt);
-                }
+                const exact = typeof actionTimerEndsAt === 'undefined'
+                    ? 0
+                    : Number(actionTimerEndsAt);
+                if (exact > 0) return exact;
+
                 const remaining = Math.max(
-                    typeof timertime !== 'undefined' ? Number(timertime) || 0 : 0,
-                    typeof timer2time !== 'undefined' ? Number(timer2time) || 0 : 0
+                    typeof timertime === 'undefined' ? 0 : Number(timertime) || 0,
+                    typeof timer2time === 'undefined' ? 0 : Number(timer2time) || 0
                 );
-                return remaining > 0 ? serverNow() + remaining : 0;
+                return remaining > 0 ? getEstimatedServerTimestamp() + remaining : 0;
             } catch (_error) {
                 return 0;
             }
         }
 
-        function remainingCooldownMs() {
-            const deadline = Math.max(currentDeadline(), preservedDeadline);
-            return Math.max(0, deadline - serverNow());
+        function remainingCooldown() {
+            return Math.max(
+                0,
+                Math.max(currentDeadline(), preservedDeadline) - getEstimatedServerTimestamp()
+            );
+        }
+
+        function renderQueue() {
+            const timerDisplay = document.getElementById('timer');
+            if (timerDisplay) {
+                if (queuedAction) timerDisplay.dataset.lyraniaActionQueued = 'true';
+                else delete timerDisplay.dataset.lyraniaActionQueued;
+            }
+            document.querySelectorAll(controlSelector).forEach((control) => {
+                control.disabled = Boolean(queuedAction);
+            });
         }
 
         function isActionSchedule(callback) {
-            const source = Function.prototype.toString.call(callback);
-            return /\b(?:fun|boss|gboss|dungeonbattle|improveddungeonbattle)\s*\(/.test(source);
+            return /\b(?:fun|boss|gboss|dungeonbattle|improveddungeonbattle)\s*\(/
+                .test(Function.prototype.toString.call(callback));
         }
 
         window.scheduleServerAction = function (delay, callback) {
             if (!isActionSchedule(callback)) {
-                return originalScheduleServerAction.apply(this, arguments);
+                return originalSchedule.apply(this, arguments);
             }
 
             let handle;
-            const trackedCallback = function () {
-                trackedActionSchedules.delete(handle);
-                return callback.apply(this, arguments);
-            };
-            handle = originalScheduleServerAction.call(this, delay, trackedCallback);
-            trackedActionSchedules.add(handle);
+            handle = originalSchedule.call(this, delay, function (...args) {
+                actionSchedules.delete(handle);
+                return callback.apply(this, args);
+            });
+            actionSchedules.add(handle);
             return handle;
         };
 
-        function cancelTrackedActionSchedules() {
-            trackedActionSchedules.forEach((handle) => window.clearServerAction(handle));
-            trackedActionSchedules.clear();
-            try {
-                if (typeof autotimer !== 'undefined' && autotimer) {
-                    window.clearServerAction(autotimer);
-                    autotimer = null;
-                }
-            } catch (_error) {
-                // No active auto-action handle exists.
-            }
-        }
-
         function stopRepeatingActions() {
-            cancelTrackedActionSchedules();
+            actionSchedules.forEach((handle) => window.clearServerAction(handle));
+            actionSchedules.clear();
+
             try {
                 const autoWasRunning = (typeof autoing !== 'undefined' && Number(autoing) !== 0)
                     || (typeof am !== 'undefined' && Number(am) > 0)
@@ -919,100 +1107,76 @@
                 if (typeof am !== 'undefined') am = 0;
                 if (typeof stopboss !== 'undefined') stopboss = 1;
                 if (typeof clearAutoBattleResumeState === 'function') clearAutoBattleResumeState();
-
                 if (autoWasRunning) {
-                    fetch('stopauto.php', { method: 'GET', credentials: 'same-origin' }).catch(() => {});
+                    fetch('stopauto.php', { credentials: 'same-origin' }).catch(() => {});
                 }
             } catch (error) {
-                console.warn(`[${actionTimerScriptId}] Could not completely stop the prior repeating action.`, error);
+                console.warn('[lyrania-action-timer-fix] Could not stop the prior action.', error);
             }
-        }
-
-        function renderPreservedTimer() {
-            const timerDisplay = document.getElementById('timer');
-            if (!timerDisplay) return;
-
-            if (queuedAction) timerDisplay.dataset.lyraniaActionQueued = 'true';
-            else delete timerDisplay.dataset.lyraniaActionQueued;
-
-            document.querySelectorAll(queueableControlSelector).forEach((control) => {
-                control.disabled = Boolean(queuedAction);
-            });
         }
 
         function cancelQueuedAction() {
             queuedAction = null;
-            if (queuedActionHandle) window.clearServerAction(queuedActionHandle);
-            queuedActionHandle = null;
-            renderPreservedTimer();
+            if (queuedHandle) window.clearServerAction(queuedHandle);
+            queuedHandle = null;
+            renderQueue();
         }
 
-        function beginMenuNavigation(cancelPendingAction = false) {
-            if (cancelPendingAction) cancelQueuedAction();
-            const deadline = currentDeadline();
-            if (deadline > serverNow()) preservedDeadline = Math.max(preservedDeadline, deadline);
+        function beginNavigation(cancelPending = false) {
+            if (cancelPending) cancelQueuedAction();
+            preservedDeadline = Math.max(preservedDeadline, currentDeadline());
             stopRepeatingActions();
-            menuNavigationActive = true;
-            renderPreservedTimer();
+            navigating = true;
+            renderQueue();
         }
 
         window.timer = function (delay) {
             const milliseconds = Math.max(0, Number(delay) || 0);
-            if (menuNavigationActive) {
-                if (remainingCooldownMs() > 0) {
-                    renderPreservedTimer();
-                    return undefined;
-                }
-
-                if (activeActionRequests.size > 0 && milliseconds > 0) {
-                    preservedDeadline = serverNow() + milliseconds;
-                    return originalTimer.apply(this, arguments);
-                }
-
-                renderPreservedTimer();
+            if (!navigating) {
+                preservedDeadline = 0;
+                return originalTimer.apply(this, arguments);
+            }
+            if (remainingCooldown() > 0) {
+                renderQueue();
                 return undefined;
             }
-
-            preservedDeadline = 0;
-            return originalTimer.apply(this, arguments);
+            if (activeRequests > 0 && milliseconds > 0) {
+                preservedDeadline = getEstimatedServerTimestamp() + milliseconds;
+                return originalTimer.apply(this, arguments);
+            }
+            renderQueue();
+            return undefined;
         };
-        window.timer2 = function () {
-            return window.timer.apply(this, arguments);
+        window.timer2 = function (...args) {
+            return window.timer.apply(this, args);
         };
 
-        function prepareAction(actionType) {
-            menuNavigationActive = false;
+        function prepareAction(type) {
+            navigating = false;
             preservedDeadline = 0;
             try {
-                if (actionType === 'boss') {
-                    if (typeof stopboss !== 'undefined') stopboss = 0;
-                } else if (typeof varstopauto !== 'undefined') {
-                    varstopauto = 0;
-                }
+                if (type === 'boss' && typeof stopboss !== 'undefined') stopboss = 0;
+                if (type !== 'boss' && typeof varstopauto !== 'undefined') varstopauto = 0;
             } catch (_error) {
-                // The native action will initialize any unavailable state.
+                // The native action will initialize unavailable state.
             }
         }
 
-        function scheduleQueuedActionCheck(delay = remainingCooldownMs()) {
+        function scheduleQueueCheck(delay = remainingCooldown()) {
             if (!queuedAction) return;
-            if (queuedActionHandle) window.clearServerAction(queuedActionHandle);
-            queuedActionHandle = originalScheduleServerAction.call(
-                window,
-                Math.max(0, delay),
-                () => {
-                    queuedActionHandle = null;
-                    runQueuedActionWhenReady();
-                }
-            );
+            if (queuedHandle) window.clearServerAction(queuedHandle);
+            queuedHandle = originalSchedule.call(window, Math.max(0, delay), () => {
+                queuedHandle = null;
+                runQueuedAction();
+            });
         }
 
-        function runQueuedActionWhenReady() {
+        function runQueuedAction() {
             if (!queuedAction) return;
-            const remaining = remainingCooldownMs();
-            if (remaining > 0 || activeActionRequests.size > 0) {
-                renderPreservedTimer();
-                scheduleQueuedActionCheck(remaining > 0 ? remaining : 100);
+            const remaining = remainingCooldown();
+            if (remaining > 0 || activeRequests > 0) {
+                renderQueue();
+                scheduleQueueCheck(remaining || 100);
                 return;
             }
 
@@ -1021,92 +1185,74 @@
             try {
                 if (typeof finishActionTimer === 'function') finishActionTimer();
             } catch (_error) {
-                // The queued action can still initialize its own timer.
+                // The queued action can initialize its own timer.
             }
-            prepareAction(action.actionType);
+            prepareAction(action.type);
             action.original.apply(action.context, action.args);
         }
 
-        function executeOrQueue(actionType, original, context, args) {
-            if (remainingCooldownMs() <= 0 && activeActionRequests.size === 0) {
-                prepareAction(actionType);
+        function executeOrQueue(type, original, context, args) {
+            if (remainingCooldown() <= 0 && activeRequests === 0) {
+                prepareAction(type);
                 return original.apply(context, args);
             }
-
-            queuedAction = { actionType, original, context, args };
-            renderPreservedTimer();
-            scheduleQueuedActionCheck();
+            queuedAction = { type, original, context, args };
+            renderQueue();
+            scheduleQueueCheck();
             return undefined;
         }
 
-        function wrapAction(functionName, actionType = 'regular') {
+        function wrap(functionName, handler) {
             const original = window[functionName];
-            const wrapped = function (...args) {
-                return executeOrQueue(actionType, original, this, args);
+            window[functionName] = function (...args) {
+                return handler(original, this, args);
             };
-            window[functionName] = wrapped;
         }
 
-        const originalPerformNav = window.performnav;
-        window.performnav = function () {
-            beginMenuNavigation(true);
-            return originalPerformNav.apply(this, arguments);
-        };
-
-        function wrapMenuLoader(functionName) {
-            const original = window[functionName];
-            const wrapped = function (...args) {
-                beginMenuNavigation();
-                return original.apply(this, args);
-            };
-            window[functionName] = wrapped;
-        }
-
-        wrapMenuLoader('moblist');
-        wrapMenuLoader('improvedmoblist');
-        wrapMenuLoader('map');
-        wrapMenuLoader('gmap');
-
-        const originalGuildPage = window.guildpage;
-        window.guildpage = function (...args) {
-            if (Number(args[0]) === 11) beginMenuNavigation();
-            return originalGuildPage.apply(this, args);
-        };
-
-        wrapAction('auto');
-        wrapAction('improvedauto');
-        wrapAction('battle');
-        wrapAction('improvedbattle');
-        wrapAction('dungeonbattle');
-        wrapAction('improveddungeonbattle');
-
-        const originalBoss = window.boss;
-        window.boss = function (...args) {
-            if (Number(args[0]) !== 1) {
-                beginMenuNavigation();
-                return originalBoss.apply(this, args);
+        window.jQuery(document).on(
+            'ajaxSend.lyraniaActionTimerFix',
+            (_event, request, settings) => {
+                const url = String(settings?.url || '').split('?')[0].toLowerCase();
+                if (!/(?:^|\/)(?:auto|improvedauto|battle|improvedbattle|dungeonbattle|improveddungeonbattle|bosses|gboss)\.php$/.test(url)) return;
+                activeRequests += 1;
+                request.always(() => window.setTimeout(() => {
+                    activeRequests -= 1;
+                    runQueuedAction();
+                }, 0));
             }
-            return executeOrQueue('boss', originalBoss, this, args);
-        };
+        );
 
-        const originalGuildBoss = window.gboss;
-        window.gboss = function (...args) {
-            if (Number(args[0]) !== 1) {
-                beginMenuNavigation();
-                return originalGuildBoss.apply(this, args);
+        wrap('performnav', (original, context, args) => {
+            beginNavigation(true);
+            return original.apply(context, args);
+        });
+        menuFunctions.forEach((name) => wrap(name, (original, context, args) => {
+            beginNavigation();
+            return original.apply(context, args);
+        }));
+        wrap('guildpage', (original, context, args) => {
+            if (Number(args[0]) === 11) beginNavigation();
+            return original.apply(context, args);
+        });
+        actionFunctions.forEach((name) => wrap(name, (original, context, args) => (
+            executeOrQueue('regular', original, context, args)
+        )));
+        ['boss', 'gboss'].forEach((name) => wrap(name, (original, context, args) => {
+            if (Number(args[0]) === 1) {
+                return executeOrQueue('boss', original, context, args);
             }
-            return executeOrQueue('boss', originalGuildBoss, this, args);
-        };
+            beginNavigation();
+            return original.apply(context, args);
+        }));
 
         const content = document.getElementById('content');
         if (content) {
             new MutationObserver(() => {
-                if (menuNavigationActive || queuedAction) renderPreservedTimer();
+                if (navigating || queuedAction) renderQueue();
             }).observe(content, { childList: true, subtree: true });
         }
         return true;
     }
-
     function projectedBufferLevel(level, bufferXp) {
         if (level < 1) return 1;
         const discriminant = ((2 * level) - 1) ** 2 + (8 * bufferXp) / 25;
@@ -1128,29 +1274,11 @@
             : 0;
     }
 
-    function parseRewardActionXpText(value) {
-        const source = String(value || '');
-        const plainText = source.includes('<')
-            ? new DOMParser().parseFromString(source, 'text/html').body.textContent
-            : source;
-        const match = plainText.match(
-            /Money\s*:[\s\S]{0,200}?Exp\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i
-        );
+    function parseActionXpText(value, rewardOnly = false) {
+        const text = plainText(value);
+        const match = text.match(/Money\s*:[\s\S]{0,200}?Exp\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i)
+            || (!rewardOnly && text.match(/(?:Exp|Experience)\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i));
         return match ? parseCompactExperience(match[1], match[2]) : 0;
-    }
-
-    function parseActionXpText(value) {
-        const rewardXp = parseRewardActionXpText(value);
-        if (rewardXp > 0) return rewardXp;
-
-        const source = String(value || '');
-        const plainText = source.includes('<')
-            ? new DOMParser().parseFromString(source, 'text/html').body.textContent
-            : source;
-        const genericMatch = plainText.match(
-            /(?:Exp|Experience)\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i
-        );
-        return genericMatch ? parseCompactExperience(genericMatch[1], genericMatch[2]) : 0;
     }
 
     function findLatestActionXp() {
@@ -1198,6 +1326,12 @@
         return Number.isFinite(gainedXp) && gainedXp > 0 ? Math.round(gainedXp) : 0;
     }
 
+    function formatActionRate(actionXp, bufferLevel) {
+        const change = actionXp / (25 * bufferLevel) - 1;
+        const rounded = Math.abs(change) < 0.005 ? 0 : change;
+        return `${rounded > 0 ? '+' : ''}${rounded.toFixed(2)} per action`;
+    }
+
     let lastBufferState = null;
 
     function renderBufferXp(updateArguments) {
@@ -1212,22 +1346,12 @@
         const derivedActionXp = calculateBufferXpGain(lastBufferState, level, bufferXp);
         const actionXp = displayedActionXp || derivedActionXp;
         lastBufferState = { level, bufferXp };
-        const requiredXp = 25 * level;
-        const bufferLevelXpCost = 25 * endingLevel;
-        const levelsPerAction = actionXp > 0
-            ? actionXp / bufferLevelXpCost - 1
-            : 0;
-        const roundedChange = Math.abs(levelsPerAction) < 0.005 ? 0 : levelsPerAction;
-        const changePrefix = roundedChange > 0 ? '+' : '';
-        const actionText = actionXp > 0
-            ? ` (${changePrefix}${roundedChange.toFixed(2)} per action)`
-            : '';
+        const actionText = actionXp > 0 ? ` (${formatActionRate(actionXp, endingLevel)})` : '';
 
-        output.innerHTML = '';
         const value = document.createElement('span');
-        value.dataset.tippyContent = `${bufferXp.toLocaleString()}/${requiredXp.toLocaleString()} XP`;
+        value.dataset.tippyContent = `${bufferXp.toLocaleString()}/${(25 * level).toLocaleString()} XP`;
         value.textContent = `${endingLevel.toLocaleString()}${actionText}`;
-        output.appendChild(value);
+        output.replaceChildren(value);
     }
 
     function enforceRenderedBufferActionRate() {
@@ -1236,7 +1360,7 @@
 
         const content = document.getElementById('content');
         const actionXp = findExactRenderedActionXp(content)
-            || parseRewardActionXpText(content?.textContent || content?.innerText);
+            || parseActionXpText(content?.textContent || content?.innerText, true);
         if (actionXp <= 0) return;
 
         const value = output.firstElementChild || output;
@@ -1246,10 +1370,7 @@
             : 0;
         if (bufferLevel <= 0) return;
 
-        const change = actionXp / (25 * bufferLevel) - 1;
-        const roundedChange = Math.abs(change) < 0.005 ? 0 : change;
-        const prefix = roundedChange > 0 ? '+' : '';
-        const expectedSuffix = `(${prefix}${roundedChange.toFixed(2)} per action)`;
+        const expectedSuffix = `(${formatActionRate(actionXp, bufferLevel)})`;
         if (value.textContent.includes(expectedSuffix)) return;
 
         const baseText = value.textContent
@@ -1270,7 +1391,6 @@
             renderBufferXp(args);
             return result;
         };
-        wrappedUpdateGems.lyraniaBufferXpWrapper = true;
         wrappedUpdateGems.lyraniaBufferXpWrapperVersion = SCRIPT_VERSION;
         window.updategems = wrappedUpdateGems;
 
@@ -1393,14 +1513,8 @@
         return null;
     }
 
-    function plainTextFromHtml(html) {
-        const container = document.createElement('div');
-        container.innerHTML = String(html ?? '');
-        return container.textContent.replace(/\s+/g, ' ').trim();
-    }
-
     function parseLootLine(rawLine, state) {
-        const text = plainTextFromHtml(rawLine);
+        const text = plainText(rawLine).replace(/\s+/g, ' ').trim();
         if (!text || /^welcome to lyrania!?$/i.test(text)) return false;
 
         const statMatch = text.match(/\bgained\s+([\d,]+)\s+(Health|Attack|Defence|Accuracy|Evasion)\b/i);
@@ -1422,7 +1536,7 @@
             }
         }
 
-        const containsCurrency = /\b(?:platinum|gold|silver|copper)\b/i.test(text);
+        const containsCurrency = /\b(?:platinum|gold|silver|copper)\b|[\d,]+(?:\.\d+)?\s*[pgsc]\b/i.test(text);
         if (containsCurrency) {
             const details = text.match(/\(([^)]*)\)/)?.[1] || text;
             const [basePart, ...bonusParts] = details.split('+');
@@ -1493,121 +1607,6 @@
         });
     }
 
-    function addLootLogStyles() {
-        if (document.getElementById(`${SCRIPT_ID}-loot-styles`)) return;
-        const style = document.createElement('style');
-        style.id = `${SCRIPT_ID}-loot-styles`;
-        style.textContent = `
-            #chattabs.${SCRIPT_ID}-chat-loot-split > #chatpanes {
-                display: grid;
-                grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-                gap: 8px;
-                align-items: stretch;
-                min-height: 0;
-                height: 100%;
-                overflow: hidden;
-            }
-            #${SCRIPT_ID}-chat-column {
-                display: grid;
-                grid-template-rows: auto minmax(0, 1fr);
-                min-width: 0;
-                min-height: 0;
-                height: 100%;
-                overflow: hidden;
-            }
-            #${SCRIPT_ID}-chat-composer {
-                display: flex;
-                align-items: stretch;
-                gap: 4px;
-                min-width: 0;
-                padding-right: 8px;
-                border-right: 1px solid rgba(255, 255, 255, 0.4);
-            }
-            #${SCRIPT_ID}-chat-composer > #inputchat {
-                box-sizing: border-box;
-                flex: 1 1 auto;
-                min-width: 0;
-                width: auto !important;
-            }
-            #${SCRIPT_ID}-chat-composer > #chatbutton {
-                box-sizing: border-box;
-                flex: 0 0 auto;
-            }
-            #chattabs.${SCRIPT_ID}-chat-loot-split > nav {
-                display: none !important;
-            }
-            #chattabs.${SCRIPT_ID}-chat-loot-split #chatwindow {
-                display: block !important;
-                box-sizing: border-box;
-                width: auto !important;
-                min-width: 0;
-                min-height: 0;
-                height: 100% !important;
-                padding-right: 8px;
-                border-right: 1px solid rgba(255, 255, 255, 0.4);
-                overflow-x: hidden !important;
-                overflow-y: auto !important;
-                overscroll-behavior: contain;
-                scrollbar-gutter: stable;
-            }
-            #chattabs.${SCRIPT_ID}-chat-loot-split #lootlog.${SCRIPT_ID}-loot-layout {
-                display: grid !important;
-                grid-template-columns: 1fr;
-                grid-template-rows: auto minmax(70px, 1fr);
-                gap: 8px;
-                width: auto !important;
-                min-width: 0;
-                height: 100% !important;
-                align-self: stretch;
-                overflow: hidden;
-            }
-            #${SCRIPT_ID}-loot-summary,
-            #${SCRIPT_ID}-loot-messages {
-                box-sizing: border-box;
-                min-width: 0;
-                height: 100%;
-                overflow: auto;
-            }
-            #${SCRIPT_ID}-loot-summary {
-                height: auto;
-                overflow: visible;
-                padding-bottom: 6px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.4);
-            }
-            #${SCRIPT_ID}-loot-summary .lyrania-loot-heading {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 8px;
-                margin-bottom: 4px;
-            }
-            #${SCRIPT_ID}-loot-summary button {
-                padding: 2px 8px;
-                border: 1px solid rgba(255, 255, 255, 0.5);
-                border-radius: 4px;
-                color: #fff;
-                background: #222;
-                cursor: pointer;
-            }
-            #${SCRIPT_ID}-loot-summary button:hover { background: #444; }
-            #${SCRIPT_ID}-loot-summary .lyrania-loot-total { margin-bottom: 6px; }
-            #${SCRIPT_ID}-loot-summary table {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 11px;
-            }
-            #${SCRIPT_ID}-loot-summary th,
-            #${SCRIPT_ID}-loot-summary td {
-                padding: 2px 4px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-                text-align: right;
-                white-space: nowrap;
-            }
-            #${SCRIPT_ID}-loot-summary th:first-child { text-align: left; }
-        `;
-        document.head.appendChild(style);
-    }
-
     function initializePersistentLootLog() {
         if (!MODS.persistentLootLog) return true;
         const lootLog = document.getElementById('lootlog');
@@ -1620,7 +1619,6 @@
             || typeof window.lootlog !== 'function') return false;
         if (window.lootlog.lyraniaPersistentLootWrapper) return true;
 
-        addLootLogStyles();
         lootLog.classList.add(`${SCRIPT_ID}-loot-layout`);
         chatTabs.classList.add(`${SCRIPT_ID}-chat-loot-split`);
 
@@ -1646,9 +1644,8 @@
         const originalLootLog = window.lootlog;
         const wrappedLootLog = function (line) {
             const result = originalLootLog.apply(this, arguments);
-            Array.from(lootLog.children)
-                .filter((child) => child.classList.contains('lootlogitem'))
-                .forEach((child) => messages.prepend(child));
+            const newMessage = lootLog.querySelector(':scope > .lootlogitem');
+            if (newMessage) messages.prepend(newMessage);
 
             if (parseLootLine(line, state)) {
                 saveLootState(state);
@@ -1661,49 +1658,286 @@
         return true;
     }
 
+    const INVENTORY_TABS = Object.freeze([
+        'jewellery',
+        'enchants',
+        'maps',
+        'consumables',
+        'resources',
+        'misc'
+    ]);
+    let pendingInventoryScroll = null;
+    let pendingInventoryPopupClose = false;
+    let inventoryLoadWatchdog = 0;
+
+    function normalizeInventoryTab(tab, fallback = 'jewellery') {
+        const normalized = String(tab || '').toLowerCase();
+        return INVENTORY_TABS.includes(normalized) ? normalized : fallback;
+    }
+
+    function getPersistentInventoryElements() {
+        return {
+            dock: document.getElementById(`${SCRIPT_ID}-inventory-dock`),
+            status: document.getElementById(`${SCRIPT_ID}-inventory-status`),
+            refresh: document.getElementById(`${SCRIPT_ID}-inventory-refresh`),
+            scroll: document.getElementById(`${SCRIPT_ID}-inventory-scroll`),
+            content: document.getElementById(`${SCRIPT_ID}-inventory-content`)
+        };
+    }
+
+    function getPersistentInventoryTab() {
+        const shell = document.querySelector(
+            `#${SCRIPT_ID}-inventory-content > #inventory_shell`
+        );
+        return normalizeInventoryTab(shell?.dataset.currentTab);
+    }
+
+    function setPersistentInventoryStatus(message, busy = false) {
+        const { dock, status, refresh } = getPersistentInventoryElements();
+        if (dock) dock.setAttribute('aria-busy', String(busy));
+        if (status) status.textContent = message;
+        if (refresh) refresh.disabled = busy;
+
+        window.clearTimeout(inventoryLoadWatchdog);
+        if (!busy) return;
+        inventoryLoadWatchdog = window.setTimeout(() => {
+            pendingInventoryPopupClose = false;
+            pendingInventoryScroll = null;
+            const current = getPersistentInventoryElements();
+            current.dock?.setAttribute('aria-busy', 'false');
+            if (current.refresh) current.refresh.disabled = false;
+            if (current.status) {
+                current.status.textContent = 'Inventory did not respond. Use Refresh to try again.';
+            }
+        }, 15000);
+    }
+
+    function createPersistentInventoryDock() {
+        const holder = document.getElementById('holder');
+        if (!holder) return null;
+
+        let dock = document.getElementById(`${SCRIPT_ID}-inventory-dock`);
+        if (dock) return dock;
+
+        dock = document.createElement('aside');
+        dock.id = `${SCRIPT_ID}-inventory-dock`;
+        dock.setAttribute('aria-labelledby', `${SCRIPT_ID}-inventory-title`);
+        dock.setAttribute('aria-busy', 'true');
+        dock.innerHTML = `
+            <header id="${SCRIPT_ID}-inventory-bar">
+                <span id="${SCRIPT_ID}-inventory-heading">
+                    <small>Always available</small>
+                    <strong id="${SCRIPT_ID}-inventory-title">Inventory</strong>
+                </span>
+                <button type="button" id="${SCRIPT_ID}-inventory-refresh">Refresh</button>
+            </header>
+            <div id="${SCRIPT_ID}-inventory-status" role="status" aria-live="polite">
+                Loading inventory…
+            </div>
+            <div id="${SCRIPT_ID}-inventory-scroll">
+                <div id="${SCRIPT_ID}-inventory-content"></div>
+            </div>`;
+
+        const chatRow = document.getElementById('chat_row');
+        holder.insertBefore(dock, chatRow || null);
+        holder.classList.add(`${SCRIPT_ID}-has-inventory-dock`);
+        document.documentElement.classList.add(`${SCRIPT_ID}-persistent-inventory`);
+
+        dock.querySelector(`#${SCRIPT_ID}-inventory-refresh`)?.addEventListener('click', () => {
+            if (typeof window.inventorySimple !== 'function') return;
+            window.inventorySimple(getPersistentInventoryTab());
+        });
+        return dock;
+    }
+
+    function hideInventoryPopupShell(force = false) {
+        if (!force) return;
+        const popupHolder = document.getElementById('popupholder');
+        const popup = document.getElementById('popup');
+        const response = document.getElementById('popupresponse');
+        if (popupHolder) popupHolder.style.visibility = 'hidden';
+        if (popup) popup.replaceChildren();
+        if (response) response.replaceChildren();
+    }
+
+    function restorePersistentInventoryScroll(scroll, content, tab, scrollTop) {
+        scroll.scrollTop = scrollTop;
+        if (tab !== 'consumables') return;
+
+        const result = content.querySelector('#inventory-consumable-inline-result');
+        if (!result?.textContent.trim()) return;
+        const scrollBounds = scroll.getBoundingClientRect();
+        const resultBounds = result.getBoundingClientRect();
+        scroll.scrollTop = Math.max(
+            0,
+            scroll.scrollTop + resultBounds.top - scrollBounds.top - 8
+        );
+    }
+
+    function mountPersistentInventoryShell(shell) {
+        const { dock, status, refresh, scroll, content } = getPersistentInventoryElements();
+        if (!dock || !scroll || !content || !shell) return false;
+
+        const shellWasInPopup = Boolean(document.getElementById('popup')?.contains(shell));
+        const nextTab = normalizeInventoryTab(shell.dataset.currentTab);
+        const restoreScroll = pendingInventoryScroll?.tab === nextTab
+            ? pendingInventoryScroll.top
+            : 0;
+        pendingInventoryScroll = null;
+
+        content.replaceChildren(shell);
+        dock.dataset.currentTab = nextTab;
+        dock.setAttribute('aria-busy', 'false');
+        if (status) status.textContent = '';
+        if (refresh) refresh.disabled = false;
+        window.clearTimeout(inventoryLoadWatchdog);
+
+        const mainNav = document.getElementById('mainnav');
+        if (mainNav) mainNav.value = '1';
+        hideInventoryPopupShell(shellWasInPopup || pendingInventoryPopupClose);
+        pendingInventoryPopupClose = false;
+
+        requestAnimationFrame(() => {
+            restorePersistentInventoryScroll(scroll, content, nextTab, restoreScroll);
+        });
+        document.dispatchEvent(new CustomEvent('lyraniaPersistentInventoryMounted', {
+            detail: { tab: nextTab }
+        }));
+        return true;
+    }
+
+    function routePersistentInventoryMarkup(markup) {
+        if (typeof markup !== 'string' || !markup.includes('inventory_shell')) return false;
+
+        const template = document.createElement('template');
+        template.innerHTML = markup.trim();
+        return mountPersistentInventoryShell(
+            template.content.querySelector('#inventory_shell')
+        );
+    }
+
+    function moveExistingInventoryShell() {
+        const shell = document.querySelector(
+            `#popup #inventory_shell, #content #inventory_shell`
+        );
+        return shell ? mountPersistentInventoryShell(shell) : false;
+    }
+
+    function wrapInventoryPopupRouter() {
+        const originalOpenPopupPane = window.openpopuppane;
+        if (originalOpenPopupPane?.lyraniaPersistentInventoryRouterVersion === SCRIPT_VERSION) {
+            return true;
+        }
+        if (typeof originalOpenPopupPane !== 'function') return false;
+
+        const wrappedOpenPopupPane = function (markup) {
+            if (routePersistentInventoryMarkup(markup)) return undefined;
+            return originalOpenPopupPane.apply(this, arguments);
+        };
+        wrappedOpenPopupPane.lyraniaPersistentInventoryRouterVersion = SCRIPT_VERSION;
+        wrappedOpenPopupPane.lyraniaOriginalOpenPopupPane = originalOpenPopupPane;
+        window.openpopuppane = wrappedOpenPopupPane;
+        return true;
+    }
+
+    function wrapPersistentInventoryRequests() {
+        const originalInventorySimple = window.inventorySimple;
+        if (originalInventorySimple?.lyraniaPersistentInventoryVersion === SCRIPT_VERSION) {
+            return true;
+        }
+        if (typeof originalInventorySimple !== 'function') return false;
+
+        const wrappedInventorySimple = function (...args) {
+            const { scroll } = getPersistentInventoryElements();
+            const currentTab = getPersistentInventoryTab();
+            const requestedTab = normalizeInventoryTab(args[0], currentTab);
+            pendingInventoryPopupClose = ['mainnav', 'popupnav']
+                .includes(document.activeElement?.id);
+            pendingInventoryScroll = {
+                tab: requestedTab === currentTab ? currentTab : null,
+                top: scroll?.scrollTop || 0
+            };
+            setPersistentInventoryStatus(
+                document.querySelector(`#${SCRIPT_ID}-inventory-content > #inventory_shell`)
+                    ? 'Refreshing inventory…'
+                    : 'Loading inventory…',
+                true
+            );
+
+            try {
+                return originalInventorySimple.apply(this, args);
+            } catch (error) {
+                pendingInventoryPopupClose = false;
+                pendingInventoryScroll = null;
+                setPersistentInventoryStatus('Inventory could not be loaded. Use Refresh to try again.');
+                throw error;
+            }
+        };
+        wrappedInventorySimple.lyraniaPersistentInventoryVersion = SCRIPT_VERSION;
+        wrappedInventorySimple.lyraniaOriginalInventorySimple = originalInventorySimple;
+        window.inventorySimple = wrappedInventorySimple;
+        return true;
+    }
+
+    function requestInitialPersistentInventory() {
+        if (document.querySelector(`#${SCRIPT_ID}-inventory-content > #inventory_shell`)) return;
+        if (typeof window.inventorySimple !== 'function') {
+            setPersistentInventoryStatus('Inventory is unavailable. Use Refresh to try again.');
+            return;
+        }
+        window.inventorySimple('jewellery');
+    }
+
+    function initializePersistentInventory() {
+        if (!MODS.persistentInventory) return true;
+        if (!createPersistentInventoryDock()) return false;
+        if (!wrapInventoryPopupRouter() || !wrapPersistentInventoryRequests()) return false;
+        if (moveExistingInventoryShell()) return true;
+
+        let requested = false;
+        const requestOnce = () => {
+            if (requested) return;
+            requested = true;
+            requestInitialPersistentInventory();
+        };
+        document.addEventListener('battleContentLoaded', () => {
+            window.setTimeout(requestOnce, 100);
+        }, { once: true });
+        window.setTimeout(requestOnce, 2500);
+        return true;
+    }
+
     function enhanceDungeonMap() {
         const container = document.getElementById('dungeonmapcontainer');
-        const labels = document.querySelectorAll('.dungeonmapRoomType');
+        const labels = container?.parentElement?.querySelectorAll('.dungeonmapRoomType') || [];
         if (!container || labels.length < 4) return false;
 
-        let mobsLeft = 0;
-        let regularRooms = 0;
-        let challengeRooms = 0;
-        let emptyRooms = 0;
+        const rooms = container.querySelectorAll('.map_room_moblist_grid');
+        if (!rooms.length) return false;
+        container.classList.add('lyrania-dungeon-summary');
+        const totals = { mobs: 0, regular: 0, challenge: 0, empty: 0 };
 
-        const roomElements = Array.from(container.querySelectorAll('div div'))
-            .filter((element) => !element.querySelector('img'));
-
-        roomElements.forEach((room) => {
-            room.style.color = 'white';
-            const mobCount = Number.parseInt(room.textContent.trim(), 10);
-
-            if (!Number.isFinite(mobCount) || mobCount <= 0) {
-                emptyRooms += 1;
-                return;
-            }
-
-            mobsLeft += mobCount;
-            const strokeColor = getComputedStyle(room).webkitTextStrokeColor;
-            if (strokeColor === 'rgb(255, 215, 0)') regularRooms += 1;
-            if (strokeColor === 'rgb(139, 0, 0)') challengeRooms += 1;
+        rooms.forEach((room) => {
+            const mobs = Number.parseInt(room.textContent, 10) || 0;
+            totals.mobs += mobs;
+            if (mobs <= 0) totals.empty += 1;
+            else if (room.classList.contains('maproom_challenge_room')) totals.challenge += 1;
+            else if (room.classList.contains('maproom_regular_room')) totals.regular += 1;
         });
 
-        labels[0].textContent = `Mobs Left (${mobsLeft}) | `;
-        labels[1].textContent = `Regular Rooms (${regularRooms}) | `;
-        labels[2].textContent = `Challenge Rooms (${challengeRooms}) | `;
-        labels[3].textContent = `Empty Rooms (${emptyRooms})`;
+        const summaries = [
+            ['Mobs Left', totals.mobs],
+            ['Regular Rooms', totals.regular],
+            ['Challenge Rooms', totals.challenge],
+            ['Empty Rooms', totals.empty]
+        ];
+        summaries.forEach(([name, total], index) => {
+            labels[index].textContent = `${name} (${total})${index < 3 ? ' | ' : ''}`;
+        });
 
         container.querySelectorAll('img').forEach((image) => {
-            let pathname = '';
-            try {
-                pathname = new URL(image.src, window.location.href).pathname;
-            } catch (_error) {
-                pathname = image.getAttribute('src') || '';
-            }
-
-            const isChest = pathname.endsWith('/images/dungeons/open-chest.svg')
-                || pathname.endsWith('/images/dungeons/chest.svg');
+            const pathname = new URL(image.src, window.location.href).pathname;
+            const isChest = /\/(?:open-)?chest\.svg$/.test(pathname);
             if (!isChest) image.style.opacity = '0';
         });
 
@@ -1723,7 +1957,10 @@
             });
         });
 
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.getElementById('popup') || document.body, {
+            childList: true,
+            subtree: true
+        });
         window.setTimeout(() => observer.disconnect(), 15000);
     }
 
@@ -1790,42 +2027,12 @@
         const banner = document.createElement('aside');
         banner.id = `${SCRIPT_ID}-update-banner`;
         banner.setAttribute('role', 'status');
-        banner.style.cssText = [
-            'position:fixed',
-            'right:16px',
-            'bottom:16px',
-            'z-index:1000000',
-            'box-sizing:border-box',
-            'width:min(390px,calc(100vw - 32px))',
-            'padding:14px',
-            'border:1px solid #ffcc33',
-            'border-radius:6px',
-            'background:#161616',
-            'color:#fff',
-            'font:14px/1.4 Arial,sans-serif',
-            'text-align:left',
-            'box-shadow:0 6px 22px rgba(0,0,0,.55)'
-        ].join(';');
-
-        const heading = document.createElement('strong');
-        heading.textContent = `${SCRIPT_NAME} update available`;
-        heading.style.cssText = 'display:block;margin-bottom:6px;color:#ffcc33;font-size:15px';
-
-        const message = document.createElement('div');
-        message.textContent = `Version ${latestVersion} is available. You have ${SCRIPT_VERSION}.`;
-        message.style.marginBottom = '10px';
-
-        const installLink = document.createElement('a');
-        installLink.href = SCRIPT_DOWNLOAD_URL;
-        installLink.target = '_blank';
-        installLink.rel = 'noopener noreferrer';
-        installLink.textContent = 'Install update';
-        installLink.style.cssText = 'display:inline-block;margin-right:10px;padding:6px 10px;border-radius:4px;background:#ffcc33;color:#111;text-decoration:none;font-weight:bold';
-
-        const dismissButton = document.createElement('button');
-        dismissButton.type = 'button';
-        dismissButton.textContent = 'Later';
-        dismissButton.style.cssText = 'padding:5px 10px;border:1px solid #777;border-radius:4px;background:#333;color:#fff;cursor:pointer';
+        banner.innerHTML = `
+            <strong>${SCRIPT_NAME} update available</strong>
+            <div>Version ${latestVersion} is available. You have ${SCRIPT_VERSION}.</div>
+            <a href="${SCRIPT_DOWNLOAD_URL}" target="_blank" rel="noopener noreferrer">Install update</a>
+        `;
+        const dismissButton = createButton('Later');
         dismissButton.addEventListener('click', () => {
             try {
                 localStorage.setItem(UPDATE_DISMISSED_STORAGE_KEY, latestVersion);
@@ -1835,7 +2042,7 @@
             banner.remove();
         });
 
-        banner.append(heading, message, installLink, dismissButton);
+        banner.appendChild(dismissButton);
         document.body.appendChild(banner);
 
         if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
@@ -1886,35 +2093,22 @@
         initializeInactiveDpTimerHider,
         initializeBufferXp,
         initializePersistentLootLog,
+        initializePersistentInventory,
         initializeDungeonMapSummary,
         initializeActionTimerFix
     ];
-    const pendingInitializers = new Set(initializers);
 
-    function initializeEnabledMods() {
-        pendingInitializers.forEach((initializeMod) => {
-            try {
-                if (initializeMod()) pendingInitializers.delete(initializeMod);
-            } catch (error) {
-                pendingInitializers.delete(initializeMod);
-                console.error(`[${SCRIPT_ID}] ${initializeMod.name} failed to initialize.`, error);
+    addStyles();
+    loadRemoteTheme();
+    initializers.forEach((initializeMod) => {
+        try {
+            if (!initializeMod()) {
+                console.warn(`[${SCRIPT_ID}] ${initializeMod.name} could not initialize.`);
             }
-        });
-        return pendingInitializers.size === 0;
-    }
-
-    if (!initializeEnabledMods()) {
-        let initializationScheduled = false;
-        const startupObserver = new MutationObserver(() => {
-            if (initializationScheduled) return;
-            initializationScheduled = true;
-            requestAnimationFrame(() => {
-                initializationScheduled = false;
-                if (initializeEnabledMods()) startupObserver.disconnect();
-            });
-        });
-        startupObserver.observe(document.documentElement, { childList: true, subtree: true });
-    }
+        } catch (error) {
+            console.error(`[${SCRIPT_ID}] ${initializeMod.name} failed to initialize.`, error);
+        }
+    });
 
     checkForModUpdate();
     window.setInterval(checkForModUpdate, UPDATE_CHECK_INTERVAL_MS);
