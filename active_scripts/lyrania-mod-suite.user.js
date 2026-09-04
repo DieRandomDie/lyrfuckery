@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.17.5
+// @version      2.19.2
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -42,9 +42,6 @@
         // Preserves action cooldowns across menus and queues the next action.
         actionTimerFix: true,
 
-        // Cancels held Enter for alerts until the key is released and pressed again.
-        heldEnterAlertGuard: true,
-
         // Replaces Buffer XP percentage with projected level information.
         bufferXp: true,
 
@@ -66,7 +63,7 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.17.5';
+    const SCRIPT_VERSION = '2.19.2';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -430,67 +427,6 @@
                 color: #fff;
                 background: #333;
                 cursor: pointer;
-            }
-            #${SCRIPT_ID}-alert-overlay {
-                position: fixed;
-                inset: 0;
-                z-index: 2147483647;
-                box-sizing: border-box;
-                display: grid;
-                place-items: center;
-                padding: 16px;
-                background: rgba(2, 7, 13, 0.78);
-                backdrop-filter: blur(4px);
-            }
-            #${SCRIPT_ID}-alert-overlay[hidden] { display: none !important; }
-            #${SCRIPT_ID}-alert-dialog {
-                box-sizing: border-box;
-                width: min(460px, calc(100vw - 32px));
-                max-height: calc(100vh - 32px);
-                max-height: calc(100dvh - 32px);
-                padding: 18px;
-                overflow: hidden auto;
-                border: 1px solid rgba(126, 174, 226, 0.62);
-                border-radius: 12px;
-                color: #edf6ff;
-                background: #101925;
-                box-shadow: 0 18px 60px rgba(0, 0, 0, 0.72);
-                outline: none;
-                font: 14px/1.5 Arial, sans-serif;
-            }
-            #${SCRIPT_ID}-alert-title {
-                margin: 0 0 10px;
-                color: #fff;
-                font-size: 16px;
-            }
-            #${SCRIPT_ID}-alert-message {
-                margin: 0;
-                white-space: pre-wrap;
-                overflow-wrap: anywhere;
-            }
-            #${SCRIPT_ID}-alert-actions {
-                display: flex;
-                justify-content: flex-end;
-                margin-top: 16px;
-            }
-            #${SCRIPT_ID}-alert-ok {
-                box-sizing: border-box;
-                min-width: 88px;
-                padding: 7px 14px;
-                border: 1px solid #5489bf;
-                border-radius: 6px;
-                color: #fff;
-                background: #1c4771;
-                font: inherit;
-                font-weight: 700;
-                cursor: pointer;
-            }
-            #${SCRIPT_ID}-alert-ok:hover,
-            #${SCRIPT_ID}-alert-ok:focus-visible {
-                border-color: #89bdec;
-                background: #285f92;
-                outline: 2px solid rgba(137, 189, 236, 0.35);
-                outline-offset: 2px;
             }
             :where(#${SCRIPT_ID}-inventory-dock) {
                 box-sizing: border-box;
@@ -1109,189 +1045,6 @@
             subtree: true
         });
         update();
-        return true;
-    }
-
-    function initializeHeldEnterAlertGuard() {
-        if (!MODS.heldEnterAlertGuard) return true;
-        if (window.alert?.lyraniaHeldEnterAlertGuardVersion === SCRIPT_VERSION) return true;
-        if (typeof window.alert !== 'function') return false;
-
-        // Unwrap this suite's older guards if a new version is installed without
-        // first reloading the page.
-        let nativeAlert = window.alert;
-        for (let index = 0; index < 5; index += 1) {
-            const priorNativeAlert = nativeAlert?.lyraniaNativeAlert;
-            if (typeof priorNativeAlert !== 'function' || priorNativeAlert === nativeAlert) break;
-            nativeAlert = priorNativeAlert;
-        }
-
-        const ENTER_RELEASE_QUIET_MS = 300;
-        const pendingAlerts = [];
-        let enterIsDown = false;
-        let enterBlockedUntilRelease = false;
-        let keyboardArmed = false;
-        let releaseTimer = 0;
-        let activeAlert = null;
-        let okPointerArmed = false;
-
-        const isEnter = (event) => event.key === 'Enter'
-            || event.code === 'Enter'
-            || event.code === 'NumpadEnter';
-
-        function clearReleaseTimer() {
-            if (!releaseTimer) return;
-            window.clearTimeout(releaseTimer);
-            releaseTimer = 0;
-        }
-
-        function scheduleKeyboardArm() {
-            clearReleaseTimer();
-            if (enterIsDown) return;
-            releaseTimer = window.setTimeout(() => {
-                releaseTimer = 0;
-                if (enterIsDown) return;
-                enterBlockedUntilRelease = false;
-                if (activeAlert) keyboardArmed = true;
-            }, ENTER_RELEASE_QUIET_MS);
-        }
-
-        function createAlertElements() {
-            let overlay = document.getElementById(`${SCRIPT_ID}-alert-overlay`);
-            if (overlay) return {
-                overlay,
-                dialog: overlay.querySelector(`#${SCRIPT_ID}-alert-dialog`),
-                message: overlay.querySelector(`#${SCRIPT_ID}-alert-message`),
-                okButton: overlay.querySelector(`#${SCRIPT_ID}-alert-ok`)
-            };
-
-            overlay = document.createElement('div');
-            overlay.id = `${SCRIPT_ID}-alert-overlay`;
-            overlay.hidden = true;
-
-            const dialog = document.createElement('section');
-            dialog.id = `${SCRIPT_ID}-alert-dialog`;
-            dialog.tabIndex = -1;
-            dialog.setAttribute('role', 'alertdialog');
-            dialog.setAttribute('aria-modal', 'true');
-            dialog.setAttribute('aria-labelledby', `${SCRIPT_ID}-alert-title`);
-            dialog.setAttribute('aria-describedby', `${SCRIPT_ID}-alert-message`);
-
-            const title = document.createElement('h2');
-            title.id = `${SCRIPT_ID}-alert-title`;
-            title.textContent = 'Lyrania notice';
-
-            const message = document.createElement('p');
-            message.id = `${SCRIPT_ID}-alert-message`;
-
-            const actions = document.createElement('div');
-            actions.id = `${SCRIPT_ID}-alert-actions`;
-
-            const okButton = createButton('OK');
-            okButton.id = `${SCRIPT_ID}-alert-ok`;
-            actions.appendChild(okButton);
-            dialog.append(title, message, actions);
-            overlay.appendChild(dialog);
-            document.body.appendChild(overlay);
-            return { overlay, dialog, message, okButton };
-        }
-
-        function showNextAlert() {
-            if (activeAlert || !pendingAlerts.length || !document.body) return;
-            const elements = createAlertElements();
-            activeAlert = { messageText: pendingAlerts.shift(), ...elements };
-            enterBlockedUntilRelease = true;
-            keyboardArmed = false;
-            okPointerArmed = false;
-            clearReleaseTimer();
-            if (!enterIsDown) scheduleKeyboardArm();
-
-            activeAlert.message.textContent = String(activeAlert.messageText ?? '');
-            activeAlert.overlay.hidden = false;
-            try {
-                activeAlert.dialog.focus({ preventScroll: true });
-            } catch (_error) {
-                activeAlert.dialog.focus();
-            }
-        }
-
-        function closeActiveAlert(fromKeyboard = false) {
-            if (!activeAlert) return;
-            activeAlert.overlay.hidden = true;
-            activeAlert = null;
-            keyboardArmed = false;
-            okPointerArmed = false;
-
-            // The Enter press that closes the alert is also consumed through its
-            // release, so it cannot fall through to the game underneath.
-            if (fromKeyboard) {
-                enterBlockedUntilRelease = true;
-                clearReleaseTimer();
-            }
-            window.setTimeout(showNextAlert, 0);
-        }
-
-        window.addEventListener('keydown', (event) => {
-            if (!isEnter(event)) return;
-            enterIsDown = true;
-            clearReleaseTimer();
-            if (!activeAlert && !enterBlockedUntilRelease) return;
-
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            if (activeAlert && keyboardArmed && !event.repeat) {
-                closeActiveAlert(true);
-            }
-        }, true);
-
-        window.addEventListener('keyup', (event) => {
-            if (!isEnter(event)) return;
-            enterIsDown = false;
-            if (!activeAlert && !enterBlockedUntilRelease) return;
-
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            scheduleKeyboardArm();
-        }, true);
-
-        document.addEventListener('pointerdown', (event) => {
-            if (!activeAlert) return;
-            okPointerArmed = event.isTrusted
-                && event.button === 0
-                && event.target === activeAlert.okButton;
-            if (!activeAlert.dialog.contains(event.target)) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-            }
-        }, true);
-        document.addEventListener('pointercancel', () => {
-            okPointerArmed = false;
-        }, true);
-        document.addEventListener('click', (event) => {
-            if (!activeAlert) return;
-            if (event.target === activeAlert.okButton) {
-                const allowClose = okPointerArmed;
-                okPointerArmed = false;
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                if (allowClose) closeActiveAlert(false);
-                return;
-            }
-            okPointerArmed = false;
-            if (!activeAlert.dialog.contains(event.target)) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-            }
-        }, true);
-
-        const guardedAlert = function (message) {
-            pendingAlerts.push(message);
-            showNextAlert();
-            return undefined;
-        };
-        guardedAlert.lyraniaHeldEnterAlertGuardVersion = SCRIPT_VERSION;
-        guardedAlert.lyraniaNativeAlert = nativeAlert;
-        window.alert = guardedAlert;
         return true;
     }
 
@@ -2861,7 +2614,6 @@
         initializeTripleDpHour,
         initializeKillsPerHour,
         initializeInactiveDpTimerHider,
-        initializeHeldEnterAlertGuard,
         initializeBufferXp,
         initializePersistentLootLog,
         wrapIsolatedInventoryRequests,
