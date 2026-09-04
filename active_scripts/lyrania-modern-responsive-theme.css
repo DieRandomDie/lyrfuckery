@@ -1,10 +1,10 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.3.0
+ * Version: 1.4.0
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision adds a no-page-scroll desktop layout and faster paged inventory support.
- * Lyrania Mod Suite 2.15.0+ adds the permanent inventory and foldable loot used below.
+ * This revision unifies action/map sizing and enlarges the playable dungeon map.
+ * Lyrania Mod Suite 2.16.0+ adds the permanent inventory and compact loot used below.
  *
  * Layouts
  *   Full width : 1440px and wider — game workspace + sticky inventory rail
@@ -40,6 +40,7 @@
     --lyr-shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.18);
     --lyr-gap: clamp(5px, 0.45vw, 8px);
     --lyr-control-height: 36px;
+    --lyr-workspace-height: clamp(330px, 55dvh, 540px);
     --lyr-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
         "Segoe UI", sans-serif;
     --theme-table-border-strong: rgba(120, 190, 255, 0.25);
@@ -202,11 +203,7 @@ hr {
     gap: var(--lyr-gap);
     width: 100%;
     min-width: 0;
-    height: clamp(300px, 34vh, 390px);
-}
-
-#middlesection:has(#dungeonmapcontainer, .mapLayout) {
-    height: clamp(540px, 72vh, 840px);
+    height: var(--lyr-workspace-height);
 }
 
 #chat_row {
@@ -238,7 +235,7 @@ hr {
     position: relative;
     display: flex;
     flex-direction: column;
-    overflow: hidden auto;
+    overflow: hidden;
     font-size: 14px;
     isolation: isolate;
 }
@@ -516,6 +513,11 @@ hr {
     padding: 7px 8px 10px;
     overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+#content hr {
+    margin-block: 5px;
 }
 
 #content:empty {
@@ -813,20 +815,20 @@ input[type="radio"] {
 
 .mapLayout {
     display: grid;
-    grid-template-columns: minmax(155px, 1fr) 230px minmax(155px, 1fr);
-    align-items: stretch;
-    justify-content: stretch;
+    grid-template-columns: minmax(110px, 125px) 300px minmax(110px, 125px);
+    align-items: start;
+    justify-content: center;
     gap: 8px;
     width: 100%;
     margin: 8px auto 0;
 }
 
 .mapInfoPanel {
-    width: 100% !important;
+    width: 125px !important;
     min-width: 0;
-    max-width: none;
+    max-width: 125px;
     height: auto;
-    min-height: 230px;
+    min-height: 300px;
     padding: 10px;
     overflow: hidden;
     overflow-wrap: anywhere;
@@ -837,8 +839,8 @@ input[type="radio"] {
 
 #rightinfo.mapInfoPanel {
     height: auto;
-    min-height: 230px;
-    padding-bottom: 110px;
+    min-height: 300px;
+    padding-bottom: 10px;
 }
 
 #rightinfo.mapInfoPanel input[type="button"],
@@ -872,12 +874,15 @@ input[type="radio"] {
 
 .mapContainer {
     justify-self: center;
+    width: 230px !important;
+    height: 230px !important;
     max-width: 100%;
     border: 1px solid rgba(97, 214, 155, 0.28);
     border-radius: var(--lyr-radius);
     background: #082318;
     box-shadow: 0 0 22px rgba(35, 133, 89, 0.12) inset;
     overflow: hidden;
+    zoom: 1.3;
 }
 
 #dungeonmapcontainer {
@@ -1183,59 +1188,14 @@ div.chatline:hover {
     line-height: 1.38;
 }
 
-#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry {
-    padding: 0;
-}
-
-#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry > summary {
-    position: relative;
+#lyrania-chat-enhancements-loot-messages .lootlogitem.lyrania-loot-entry {
     display: block;
     min-width: 0;
-    padding: 4px 5px 4px 17px;
+    padding: 3px 5px;
     overflow: hidden;
     color: var(--lyr-text-soft);
-    list-style: none;
     text-overflow: ellipsis;
     white-space: nowrap;
-    cursor: pointer;
-}
-
-#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry > summary::-webkit-details-marker {
-    display: none;
-}
-
-#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry > summary::before {
-    position: absolute;
-    top: 4px;
-    left: 5px;
-    color: var(--lyr-text-faint);
-    content: "›";
-    transition: transform 120ms ease;
-}
-
-#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry[open] > summary {
-    overflow: visible;
-    color: var(--lyr-text);
-    background: rgba(98, 183, 255, 0.045);
-    text-overflow: clip;
-    white-space: normal;
-}
-
-#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry[open] > summary::before {
-    transform: rotate(90deg);
-}
-
-#lyrania-chat-enhancements-loot-messages .lyrania-loot-entry-detail {
-    padding: 3px 6px 6px 17px;
-    overflow-wrap: anywhere;
-    color: var(--lyr-text-faint);
-    font-size: 9px;
-    line-height: 1.35;
-}
-
-#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry > summary:hover {
-    color: var(--lyr-text);
-    background: rgba(255, 255, 255, 0.03);
 }
 
 #lyrania-chat-enhancements-loot-messages .lootlogitem:nth-child(even) {
@@ -2401,7 +2361,7 @@ a.text-fail {
 
     #holder.lyrania-chat-enhancements-has-inventory-dock {
         grid-template-columns: minmax(780px, 2.1fr) minmax(500px, 1fr);
-        grid-template-rows: auto clamp(220px, 34vh, 390px) minmax(130px, 1fr);
+        grid-template-rows: auto var(--lyr-workspace-height) minmax(0, 1fr);
         grid-template-areas:
             "header inventory"
             "game inventory"
@@ -2412,11 +2372,6 @@ a.text-fail {
         min-height: 0;
         margin: 4px auto;
         overflow: hidden;
-    }
-
-    #holder.lyrania-chat-enhancements-has-inventory-dock:has(#dungeonmapcontainer, .mapLayout) {
-        grid-template-columns: minmax(900px, 3fr) minmax(380px, 1fr);
-        grid-template-rows: auto minmax(0, 1fr) minmax(170px, 25vh);
     }
 
     #holder.lyrania-chat-enhancements-has-inventory-dock
@@ -2491,6 +2446,10 @@ a.text-fail {
 /* ------------------------------------------------------------------------- */
 
 @media (min-width: 800px) and (max-width: 1439px) {
+    :root {
+        --lyr-workspace-height: clamp(420px, 55dvh, 540px);
+    }
+
     #holder {
         width: calc(100% - 8px);
         margin-top: 4px;
@@ -2522,17 +2481,11 @@ a.text-fail {
         height: auto;
     }
 
-    #middlesection:has(#dungeonmapcontainer, .mapLayout) {
-        height: auto;
-    }
-
     #main {
         grid-area: main;
-        min-height: clamp(300px, 38vh, 390px);
-    }
-
-    #middlesection:has(#dungeonmapcontainer, .mapLayout) #main {
-        min-height: clamp(520px, 70vh, 760px);
+        height: var(--lyr-workspace-height) !important;
+        min-height: var(--lyr-workspace-height);
+        max-height: var(--lyr-workspace-height);
     }
 
     #side1 {
@@ -2560,6 +2513,7 @@ a.text-fail {
     :root {
         --lyr-gap: 5px;
         --lyr-control-height: 40px;
+        --lyr-workspace-height: clamp(420px, 62dvh, 520px);
     }
 
     body {
@@ -2589,17 +2543,11 @@ a.text-fail {
         height: auto;
     }
 
-    #middlesection:has(#dungeonmapcontainer, .mapLayout) {
-        height: auto;
-    }
-
     #main {
         order: 1;
-        min-height: min(340px, 46vh);
-    }
-
-    #middlesection:has(#dungeonmapcontainer, .mapLayout) #main {
-        min-height: min(680px, 78vh);
+        height: var(--lyr-workspace-height) !important;
+        min-height: var(--lyr-workspace-height);
+        max-height: var(--lyr-workspace-height);
     }
 
     #side1 {
@@ -2731,12 +2679,23 @@ a.text-fail {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
+        justify-content: center;
     }
 
     .mapInfoPanel {
-        flex: 1 1 145px;
-        width: auto;
-        min-width: min(145px, 100%);
+        flex: 0 1 140px;
+        width: 140px !important;
+        min-width: 0;
+        max-width: 140px;
+        min-height: 265px;
+    }
+
+    #rightinfo.mapInfoPanel {
+        min-height: 265px;
+    }
+
+    .mapContainer {
+        zoom: 1.15;
     }
 
     #popupholder {
@@ -2758,14 +2717,6 @@ a.text-fail {
 
     #header .headerbox {
         line-height: 1.6;
-    }
-
-    #main {
-        min-height: 310px;
-    }
-
-    #middlesection:has(#dungeonmapcontainer, .mapLayout) #main {
-        min-height: min(620px, 76vh);
     }
 
     #loadoutpotions {
@@ -2851,7 +2802,13 @@ a.text-fail {
     }
 
     .mapInfoPanel {
-        width: min(100%, 280px);
+        flex-basis: auto;
+        width: min(100%, 260px) !important;
+        max-width: 260px;
+        min-height: 0;
+    }
+
+    #rightinfo.mapInfoPanel {
         min-height: 0;
     }
 
