@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.17.1
+// @version      2.17.2
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -42,6 +42,9 @@
         // Preserves action cooldowns across menus and queues the next action.
         actionTimerFix: true,
 
+        // Prevents a held Enter key from immediately dismissing browser alerts.
+        heldEnterAlertGuard: true,
+
         // Replaces Buffer XP percentage with projected level information.
         bufferXp: true,
 
@@ -63,7 +66,7 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.17.1';
+    const SCRIPT_VERSION = '2.17.2';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -1047,6 +1050,77 @@
         return true;
     }
 
+    function initializeHeldEnterAlertGuard() {
+        if (!MODS.heldEnterAlertGuard) return true;
+        if (window.alert?.lyraniaHeldEnterAlertGuardVersion === SCRIPT_VERSION) return true;
+        if (typeof window.alert !== 'function') return false;
+
+        const nativeAlert = window.alert;
+        const pendingAlerts = [];
+        let enterHeld = false;
+        let flushTimer = 0;
+
+        const isEnter = (event) => event.key === 'Enter'
+            || event.code === 'Enter'
+            || event.code === 'NumpadEnter';
+
+        const scheduleAlertFlush = () => {
+            if (enterHeld || !pendingAlerts.length) return;
+            if (flushTimer) window.clearTimeout(flushTimer);
+            flushTimer = window.setTimeout(() => {
+                flushTimer = 0;
+                if (enterHeld || !pendingAlerts.length) return;
+                const messages = pendingAlerts.splice(0);
+                messages.forEach((message) => nativeAlert.call(window, message));
+            }, 175);
+        };
+
+        document.addEventListener('keydown', (event) => {
+            if (!isEnter(event)) return;
+            enterHeld = true;
+            if (!pendingAlerts.length) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }, true);
+
+        document.addEventListener('keyup', (event) => {
+            if (!isEnter(event)) return;
+            enterHeld = false;
+            scheduleAlertFlush();
+        }, true);
+
+        // Keyboard-generated clicks have detail 0. Once an alert is waiting,
+        // suppress further held-Enter activations until that key is released.
+        document.addEventListener('click', (event) => {
+            if (!pendingAlerts.length || !enterHeld || event.detail !== 0) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }, true);
+
+        window.addEventListener('blur', () => {
+            enterHeld = false;
+            if (flushTimer) window.clearTimeout(flushTimer);
+            flushTimer = 0;
+        });
+        window.addEventListener('focus', scheduleAlertFlush);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') scheduleAlertFlush();
+        });
+
+        const guardedAlert = function (message) {
+            if (!enterHeld && !pendingAlerts.length) {
+                return nativeAlert.apply(this, arguments);
+            }
+            pendingAlerts.push(message);
+            scheduleAlertFlush();
+            return undefined;
+        };
+        guardedAlert.lyraniaHeldEnterAlertGuardVersion = SCRIPT_VERSION;
+        guardedAlert.lyraniaNativeAlert = nativeAlert;
+        window.alert = guardedAlert;
+        return true;
+    }
+
     function initializeActionTimerFix() {
         if (!MODS.actionTimerFix || window.__lyraniaActionTimerFixInstalled) return true;
 
@@ -1137,13 +1211,20 @@
         function visiblePrimaryAction() {
             return [...document.querySelectorAll(primaryActionSelector)].find((control) => (
                 !control.disabled
+                && !control.closest('#capt, #captchadiv')
                 && control.getClientRects().length > 0
                 && getComputedStyle(control).visibility !== 'hidden'
             ));
         }
 
+        function botCheckIsVisible() {
+            const botCheck = document.querySelector('#capt, #captchadiv');
+            return Boolean(botCheck && botCheck.getClientRects().length > 0);
+        }
+
         function restorePrimaryActionFocus() {
             if (remainingCooldown() > 0 || activeRequests > 0 || queuedAction) return;
+            if (botCheckIsVisible()) return;
 
             const popupHolder = document.getElementById('popupholder');
             if (popupHolder && getComputedStyle(popupHolder).visibility === 'visible') return;
@@ -1300,7 +1381,11 @@
         }
 
         function executeOrQueue(type, original, context, args) {
-            if (remainingCooldown() <= 0 && activeRequests === 0) {
+            // Repeated Enter presses can reach the old action button before its
+            // request returns. Native fighting/actionprogress guards treat those as
+            // no-ops, so never turn an in-flight repeat into a second queued attack.
+            if (activeRequests > 0) return undefined;
+            if (remainingCooldown() <= 0) {
                 prepareAction(type);
                 return original.apply(context, args);
             }
@@ -1334,6 +1419,9 @@
 
         window.finishActionTimer = function (...args) {
             const result = originalFinishTimer.apply(this, args);
+            if (botCheckIsVisible() && document.activeElement?.closest?.('#capt, #captchadiv')) {
+                document.activeElement.blur();
+            }
             runQueuedAction();
             window.setTimeout(restorePrimaryActionFocus, 0);
             return result;
@@ -2599,6 +2687,7 @@
         initializeTripleDpHour,
         initializeKillsPerHour,
         initializeInactiveDpTimerHider,
+        initializeHeldEnterAlertGuard,
         initializeBufferXp,
         initializePersistentLootLog,
         wrapIsolatedInventoryRequests,
