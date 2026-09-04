@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.17.2
+// @version      2.17.3
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -42,7 +42,7 @@
         // Preserves action cooldowns across menus and queues the next action.
         actionTimerFix: true,
 
-        // Prevents a held Enter key from immediately dismissing browser alerts.
+        // Replaces browser alerts so a held Enter cannot dismiss them.
         heldEnterAlertGuard: true,
 
         // Replaces Buffer XP percentage with projected level information.
@@ -66,7 +66,7 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.17.2';
+    const SCRIPT_VERSION = '2.17.3';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -161,8 +161,8 @@
             #${SCRIPT_ID}-channels .lyrania-chat-filter {
                 display: block;
                 width: 100%;
-                margin: 0 0 4px;
-                padding: 4px 6px;
+                margin: 0 0 2px;
+                padding: 3px 5px;
                 border: 0;
                 border-radius: 4px;
                 color: #fff;
@@ -174,10 +174,10 @@
             }
             #${SCRIPT_ID}-channels .lyrania-channel-row {
                 display: grid;
-                grid-template-columns: minmax(0, 1fr) 34px;
+                grid-template-columns: minmax(0, 1fr) 27px;
                 gap: 3px;
                 align-items: center;
-                margin-bottom: 4px;
+                margin-bottom: 2px;
             }
             #${SCRIPT_ID}-channels .lyrania-no-toggle { grid-template-columns: minmax(0, 1fr); }
             #${SCRIPT_ID}-channels .lyrania-channel-row .lyrania-chat-filter {
@@ -185,14 +185,15 @@
             }
             #${SCRIPT_ID}-channels .lyrania-channel-toggle {
                 box-sizing: border-box;
-                min-width: 34px;
-                padding: 4px 2px;
+                min-width: 27px;
+                min-height: 19px;
+                padding: 2px 1px;
                 border: 1px solid rgba(255, 255, 255, 0.35);
                 border-radius: 4px;
                 color: #aaa;
                 background: #111;
                 font: inherit;
-                font-size: 10px;
+                font-size: 8px;
                 line-height: 1;
                 cursor: pointer;
             }
@@ -207,9 +208,9 @@
             }
             #${SCRIPT_ID}-channels .lyrania-chat-filter.is-selected { background: #555; }
             #${SCRIPT_ID}-channels .lyrania-special-row {
-                margin-top: 7px;
+                margin-top: 4px;
                 border-top: 1px solid rgba(255, 255, 255, 0.25);
-                padding-top: 8px;
+                padding-top: 5px;
             }
             #chat_row.${SCRIPT_ID}-layout #chat > .chatToggleButton { display: none !important; }
             #chat_row.${SCRIPT_ID}-layout > #chat {
@@ -429,6 +430,66 @@
                 color: #fff;
                 background: #333;
                 cursor: pointer;
+            }
+            #${SCRIPT_ID}-alert-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 2147483647;
+                box-sizing: border-box;
+                display: grid;
+                place-items: center;
+                padding: 16px;
+                background: rgba(2, 7, 13, 0.78);
+                backdrop-filter: blur(4px);
+            }
+            #${SCRIPT_ID}-alert-overlay[hidden] { display: none !important; }
+            #${SCRIPT_ID}-alert-dialog {
+                box-sizing: border-box;
+                width: min(460px, calc(100vw - 32px));
+                max-height: calc(100dvh - 32px);
+                padding: 18px;
+                overflow: hidden auto;
+                border: 1px solid rgba(126, 174, 226, 0.62);
+                border-radius: 12px;
+                color: #edf6ff;
+                background: #101925;
+                box-shadow: 0 18px 60px rgba(0, 0, 0, 0.72);
+                outline: none;
+                font: 14px/1.5 Arial, sans-serif;
+            }
+            #${SCRIPT_ID}-alert-title {
+                margin: 0 0 10px;
+                color: #fff;
+                font-size: 16px;
+            }
+            #${SCRIPT_ID}-alert-message {
+                margin: 0;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+            }
+            #${SCRIPT_ID}-alert-actions {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 16px;
+            }
+            #${SCRIPT_ID}-alert-ok {
+                box-sizing: border-box;
+                min-width: 88px;
+                padding: 7px 14px;
+                border: 1px solid #5489bf;
+                border-radius: 6px;
+                color: #fff;
+                background: #1c4771;
+                font: inherit;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            #${SCRIPT_ID}-alert-ok:hover,
+            #${SCRIPT_ID}-alert-ok:focus-visible {
+                border-color: #89bdec;
+                background: #285f92;
+                outline: 2px solid rgba(137, 189, 236, 0.35);
+                outline-offset: 2px;
             }
             :where(#${SCRIPT_ID}-inventory-dock) {
                 box-sizing: border-box;
@@ -1058,65 +1119,159 @@
         const nativeAlert = window.alert;
         const pendingAlerts = [];
         let enterHeld = false;
-        let flushTimer = 0;
+        let activeAlert = null;
+        let keyboardArmed = false;
+        let armTimer = 0;
 
         const isEnter = (event) => event.key === 'Enter'
             || event.code === 'Enter'
             || event.code === 'NumpadEnter';
 
-        const scheduleAlertFlush = () => {
-            if (enterHeld || !pendingAlerts.length) return;
-            if (flushTimer) window.clearTimeout(flushTimer);
-            flushTimer = window.setTimeout(() => {
-                flushTimer = 0;
-                if (enterHeld || !pendingAlerts.length) return;
-                const messages = pendingAlerts.splice(0);
-                messages.forEach((message) => nativeAlert.call(window, message));
-            }, 175);
+        const clearArmTimer = () => {
+            if (!armTimer) return;
+            window.clearTimeout(armTimer);
+            armTimer = 0;
         };
 
+        function createAlertElements() {
+            let overlay = document.getElementById(`${SCRIPT_ID}-alert-overlay`);
+            if (overlay) return {
+                overlay,
+                dialog: overlay.querySelector(`#${SCRIPT_ID}-alert-dialog`),
+                message: overlay.querySelector(`#${SCRIPT_ID}-alert-message`),
+                okButton: overlay.querySelector(`#${SCRIPT_ID}-alert-ok`)
+            };
+
+            overlay = document.createElement('div');
+            overlay.id = `${SCRIPT_ID}-alert-overlay`;
+            overlay.hidden = true;
+
+            const dialog = document.createElement('section');
+            dialog.id = `${SCRIPT_ID}-alert-dialog`;
+            dialog.tabIndex = -1;
+            dialog.setAttribute('role', 'alertdialog');
+            dialog.setAttribute('aria-modal', 'true');
+            dialog.setAttribute('aria-labelledby', `${SCRIPT_ID}-alert-title`);
+            dialog.setAttribute('aria-describedby', `${SCRIPT_ID}-alert-message`);
+
+            const title = document.createElement('h2');
+            title.id = `${SCRIPT_ID}-alert-title`;
+            title.textContent = 'Lyrania notice';
+
+            const message = document.createElement('p');
+            message.id = `${SCRIPT_ID}-alert-message`;
+
+            const actions = document.createElement('div');
+            actions.id = `${SCRIPT_ID}-alert-actions`;
+
+            const okButton = createButton('OK');
+            okButton.id = `${SCRIPT_ID}-alert-ok`;
+            actions.appendChild(okButton);
+            dialog.append(title, message, actions);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            return { overlay, dialog, message, okButton };
+        }
+
+        function armAfterRelease() {
+            clearArmTimer();
+            armTimer = window.setTimeout(() => {
+                armTimer = 0;
+                if (activeAlert && !enterHeld) keyboardArmed = true;
+            }, 175);
+        }
+
+        function showNextAlert() {
+            if (activeAlert || !pendingAlerts.length || !document.body) return;
+            const elements = createAlertElements();
+            activeAlert = { ...pendingAlerts.shift(), ...elements };
+            keyboardArmed = !enterHeld;
+            window.__lyraniaAlertOpen = true;
+            activeAlert.message.textContent = activeAlert.text;
+            activeAlert.overlay.hidden = false;
+
+            // The dialog itself receives focus. The OK button never inherits the
+            // keypress that caused the alert to appear.
+            try {
+                activeAlert.dialog.focus({ preventScroll: true });
+            } catch (_error) {
+                activeAlert.dialog.focus();
+            }
+        }
+
+        function closeActiveAlert() {
+            if (!activeAlert) return;
+            clearArmTimer();
+            activeAlert.overlay.hidden = true;
+            activeAlert = null;
+            keyboardArmed = false;
+            window.__lyraniaAlertOpen = false;
+            document.dispatchEvent(new Event('lyrania-alert-closed'));
+            window.setTimeout(showNextAlert, 0);
+        }
+
         document.addEventListener('keydown', (event) => {
-            if (!isEnter(event)) return;
-            enterHeld = true;
-            if (!pendingAlerts.length) return;
-            event.preventDefault();
-            event.stopImmediatePropagation();
+            if (isEnter(event)) enterHeld = true;
+            if (!activeAlert) return;
+
+            if (isEnter(event)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (!event.repeat && keyboardArmed) closeActiveAlert();
+                return;
+            }
+
+            // Keep keyboard focus inside the notice while it is open.
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                activeAlert.okButton.focus({ preventScroll: true });
+            }
         }, true);
 
         document.addEventListener('keyup', (event) => {
             if (!isEnter(event)) return;
             enterHeld = false;
-            scheduleAlertFlush();
-        }, true);
-
-        // Keyboard-generated clicks have detail 0. Once an alert is waiting,
-        // suppress further held-Enter activations until that key is released.
-        document.addEventListener('click', (event) => {
-            if (!pendingAlerts.length || !enterHeld || event.detail !== 0) return;
+            if (!activeAlert) return;
             event.preventDefault();
             event.stopImmediatePropagation();
+            armAfterRelease();
+        }, true);
+
+        // Block clicks through the overlay. A real pointer click on OK is the
+        // only click that can close the notice.
+        document.addEventListener('click', (event) => {
+            if (!activeAlert) return;
+            if (event.target === activeAlert.okButton && event.detail > 0) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                closeActiveAlert();
+                return;
+            }
+            if (!activeAlert.dialog.contains(event.target)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
         }, true);
 
         window.addEventListener('blur', () => {
             enterHeld = false;
-            if (flushTimer) window.clearTimeout(flushTimer);
-            flushTimer = 0;
+            if (!activeAlert) return;
+            keyboardArmed = false;
+            clearArmTimer();
         });
-        window.addEventListener('focus', scheduleAlertFlush);
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') scheduleAlertFlush();
+        window.addEventListener('focus', () => {
+            if (activeAlert) armAfterRelease();
         });
 
         const guardedAlert = function (message) {
-            if (!enterHeld && !pendingAlerts.length) {
-                return nativeAlert.apply(this, arguments);
-            }
-            pendingAlerts.push(message);
-            scheduleAlertFlush();
+            pendingAlerts.push({ text: String(message ?? '') });
+            showNextAlert();
             return undefined;
         };
         guardedAlert.lyraniaHeldEnterAlertGuardVersion = SCRIPT_VERSION;
         guardedAlert.lyraniaNativeAlert = nativeAlert;
+        window.__lyraniaAlertOpen = false;
         window.alert = guardedAlert;
         return true;
     }
@@ -1224,6 +1379,7 @@
 
         function restorePrimaryActionFocus() {
             if (remainingCooldown() > 0 || activeRequests > 0 || queuedAction) return;
+            if (window.__lyraniaAlertOpen) return;
             if (botCheckIsVisible()) return;
 
             const popupHolder = document.getElementById('popupholder');
@@ -1362,6 +1518,11 @@
 
         function runQueuedAction() {
             if (!queuedAction) return;
+            if (window.__lyraniaAlertOpen) {
+                renderQueue();
+                scheduleQueueCheck(250);
+                return;
+            }
             const remaining = remainingCooldown();
             if (remaining > 0 || activeRequests > 0) {
                 renderQueue();
