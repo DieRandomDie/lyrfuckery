@@ -1,10 +1,10 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.2.0
+ * Version: 1.3.0
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision adds foldable loot, compact actions, and map-aware sizing.
- * Lyrania Mod Suite 2.14.0+ adds the permanent inventory and foldable loot used below.
+ * This revision adds a no-page-scroll desktop layout and faster paged inventory support.
+ * Lyrania Mod Suite 2.15.0+ adds the permanent inventory and foldable loot used below.
  *
  * Layouts
  *   Full width : 1440px and wider — game workspace + sticky inventory rail
@@ -659,7 +659,8 @@ input[type="radio"] {
 .purchase-section-shell,
 .inventory-header-shell,
 .inventory-section-shell {
-    width: min(100%, 1160px);
+    width: 100%;
+    max-width: none;
 }
 
 .purchase-card,
@@ -811,19 +812,24 @@ input[type="radio"] {
 /* ------------------------------------------------------------------------- */
 
 .mapLayout {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(155px, 1fr) 230px minmax(155px, 1fr);
     align-items: stretch;
-    justify-content: center;
-    gap: 10px;
+    justify-content: stretch;
+    gap: 8px;
     width: 100%;
     margin: 8px auto 0;
 }
 
 .mapInfoPanel {
+    width: 100% !important;
+    min-width: 0;
+    max-width: none;
     height: auto;
     min-height: 230px;
-    padding: 12px;
+    padding: 10px;
+    overflow: hidden;
+    overflow-wrap: anywhere;
     border: 1px solid var(--lyr-border);
     border-radius: var(--lyr-radius);
     background: rgba(6, 13, 20, 0.6);
@@ -832,10 +838,40 @@ input[type="radio"] {
 #rightinfo.mapInfoPanel {
     height: auto;
     min-height: 230px;
-    padding-bottom: 58px;
+    padding-bottom: 110px;
+}
+
+#rightinfo.mapInfoPanel input[type="button"],
+#rightinfo.mapInfoPanel input[type="submit"],
+#rightinfo.mapInfoPanel button,
+#rightinfo.mapInfoPanel select {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+    margin: 2px 0;
+}
+
+#rightinfo.mapInfoPanel input[type="button"],
+#rightinfo.mapInfoPanel input[type="submit"],
+#rightinfo.mapInfoPanel button {
+    min-height: 30px;
+    padding: 5px 4px;
+    font-size: 11px;
+}
+
+#rightinfo.mapInfoPanel #kung_fu_controls {
+    display: grid;
+    gap: 3px;
+    width: 100%;
+}
+
+#rightinfo.mapInfoPanel #inkcolour {
+    position: static !important;
 }
 
 .mapContainer {
+    justify-self: center;
     max-width: 100%;
     border: 1px solid rgba(97, 214, 155, 0.28);
     border-radius: var(--lyr-radius);
@@ -1189,6 +1225,14 @@ div.chatline:hover {
     transform: rotate(90deg);
 }
 
+#lyrania-chat-enhancements-loot-messages .lyrania-loot-entry-detail {
+    padding: 3px 6px 6px 17px;
+    overflow-wrap: anywhere;
+    color: var(--lyr-text-faint);
+    font-size: 9px;
+    line-height: 1.35;
+}
+
 #lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry > summary:hover {
     color: var(--lyr-text);
     background: rgba(255, 255, 255, 0.03);
@@ -1342,29 +1386,33 @@ div.chatline:hover {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    min-height: 55px;
-    padding: 9px 12px 9px 15px;
+    min-height: 44px;
+    padding: 6px 12px 6px 15px;
     border-bottom: 1px solid var(--lyr-border);
     background: rgba(255, 255, 255, 0.025);
 }
 
 #lyrania-chat-enhancements-inventory-heading {
-    display: grid;
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
     gap: 0;
-}
-
-#lyrania-chat-enhancements-inventory-heading small {
-    color: var(--lyr-accent);
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
+    min-width: 0;
 }
 
 #lyrania-chat-enhancements-inventory-heading strong {
+    flex: 0 0 auto;
     color: #f5f9fe;
     font-size: 16px;
     letter-spacing: -0.01em;
+}
+
+#lyrania-chat-enhancements-inventory-title-line {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    min-width: 0;
 }
 
 #lyrania-chat-enhancements-inventory-refresh {
@@ -1374,16 +1422,22 @@ div.chatline:hover {
 }
 
 #lyrania-chat-enhancements-inventory-status {
-    flex: 0 0 auto;
-    padding: 9px 14px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
     color: var(--lyr-text-soft);
-    border-bottom: 1px solid var(--lyr-border);
-    background: rgba(98, 183, 255, 0.045);
-    font-size: 11px;
+    border: 0;
+    background: none;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #lyrania-chat-enhancements-inventory-status:empty {
-    display: none;
+    display: block;
 }
 
 #lyrania-chat-enhancements-inventory-scroll {
@@ -1417,9 +1471,11 @@ div.chatline:hover {
 }
 
 #lyrania-chat-enhancements-inventory-dock[aria-busy="true"] #lyrania-chat-enhancements-inventory-heading::after {
+    position: absolute;
+    bottom: -5px;
+    left: 0;
     width: 34px;
     height: 2px;
-    margin-top: 4px;
     border-radius: 999px;
     background: linear-gradient(90deg, transparent, var(--lyr-accent), transparent);
     content: "";
@@ -2092,6 +2148,150 @@ a.text-fail {
     display: none;
 }
 
+/* Final inventory presentation: one compact list row per item. */
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable,
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable.dataTable {
+    display: block !important;
+    width: 100% !important;
+    table-layout: fixed;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable thead,
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    width: 100%;
+    margin: 0;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable thead tr,
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody tr {
+    display: grid !important;
+    gap: 0 !important;
+    width: 100%;
+    min-width: 0;
+    padding: 0 !important;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 34px;
+    border: 0;
+    border-bottom: 1px solid var(--theme-table-border-faint);
+    border-radius: 0;
+    background: transparent !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.018) !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable thead th,
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody td {
+    display: block !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+    width: auto !important;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 30px;
+    padding: 5px 3px !important;
+    overflow: hidden;
+    border: 0 !important;
+    border-right: 1px solid var(--theme-table-border-faint) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    font-size: 9px;
+    line-height: 20px;
+    text-align: center !important;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable thead th:last-child,
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody td:last-child {
+    border-right: 0 !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody td::before {
+    display: none !important;
+    content: none !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+    :is(#inventory_jewel_table, #inventory_enchant_table) tbody td:nth-child(2),
+#lyrania-chat-enhancements-inventory-dock
+    :is(#inventory_jewel_table, #inventory_enchant_table) tbody td:first-child {
+    align-self: stretch;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+    :is(#inventory_jewel_table, #inventory_enchant_table) tbody td:first-child {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+    :is(#inventory_jewel_table, #inventory_enchant_table) tbody td:nth-child(2),
+#lyrania-chat-enhancements-inventory-dock
+    :is(#inventory_maps_table, #inventory_consumables_table, #inventory_misc_table) tbody td:first-child {
+    color: #f4f8fc;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: left !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable .inventory-actions-column {
+    overflow: hidden;
+    text-align: right !important;
+    white-space: normal !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table :is(thead, tbody) tr {
+    grid-template-columns:
+        26px minmax(72px, 2fr)
+        repeat(6, minmax(0, 0.62fr))
+        minmax(66px, 1.15fr) !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock #inventory_enchant_table :is(thead, tbody) tr {
+    grid-template-columns:
+        26px minmax(120px, 2fr) minmax(56px, 0.8fr)
+        minmax(48px, 0.55fr) minmax(72px, 0.9fr) !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock #inventory_maps_table :is(thead, tbody) tr {
+    grid-template-columns:
+        minmax(110px, 1.4fr) minmax(36px, 0.35fr) minmax(52px, 0.5fr)
+        minmax(52px, 0.65fr) minmax(110px, 1.2fr) !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+    :is(#inventory_consumables_table, #inventory_misc_table) :is(thead, tbody) tr {
+    grid-template-columns: minmax(110px, 1fr) minmax(52px, 0.2fr) minmax(130px, 1.4fr) !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable .inventory-actions-column a {
+    min-width: 18px;
+    min-height: 20px;
+    margin: 0 1px;
+    padding: 1px 3px;
+    font-size: 9px;
+    line-height: 18px;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable .inventory-consumable-actions {
+    justify-content: flex-end;
+    gap: 3px;
+}
+
+#lyrania-chat-enhancements-inventory-dock .inventory-datatable .inventory-consumable-actions > * {
+    flex: 0 1 auto;
+    min-width: 48px;
+    min-height: 26px;
+    padding: 3px 5px;
+    font-size: 9px;
+}
+
 #lyrania-chat-enhancements-inventory-dock .inventory-consumable-actions,
 #lyrania-chat-enhancements-inventory-dock .inventory-consumable-form,
 #lyrania-chat-enhancements-inventory-dock .inventory-action-buttons {
@@ -2168,19 +2368,22 @@ a.text-fail {
 }
 
 @container lyr-inventory (min-width: 620px) {
-    #lyrania-chat-enhancements-inventory-dock .inventory-jewellery-grid,
-    #lyrania-chat-enhancements-inventory-dock .purchase-layout-two-column {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr) !important;
         align-items: start;
     }
+}
+
+@container lyr-inventory (min-width: 950px) {
+    #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid,
+    #lyrania-chat-enhancements-inventory-dock .inventory-resource-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2188,26 +2391,91 @@ a.text-fail {
 /* ------------------------------------------------------------------------- */
 
 @media (min-width: 1440px) {
+    html,
+    body {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden !important;
+        overscroll-behavior: none;
+    }
+
     #holder.lyrania-chat-enhancements-has-inventory-dock {
-        grid-template-columns: minmax(780px, 1280px) minmax(500px, 1fr);
+        grid-template-columns: minmax(780px, 2.1fr) minmax(500px, 1fr);
+        grid-template-rows: auto clamp(220px, 34vh, 390px) minmax(130px, 1fr);
         grid-template-areas:
             "header inventory"
             "game inventory"
             "chat inventory";
-        align-items: start;
+        align-items: stretch;
+        width: calc(100% - 8px);
+        height: calc(100dvh - 8px);
+        min-height: 0;
+        margin: 4px auto;
+        overflow: hidden;
     }
 
     #holder.lyrania-chat-enhancements-has-inventory-dock:has(#dungeonmapcontainer, .mapLayout) {
-        grid-template-columns: minmax(900px, 1680px) minmax(380px, 1fr);
+        grid-template-columns: minmax(900px, 3fr) minmax(380px, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) minmax(170px, 25vh);
     }
 
     #holder.lyrania-chat-enhancements-has-inventory-dock
         > #lyrania-chat-enhancements-inventory-dock {
         position: sticky;
         top: 4px;
-        height: calc(100dvh - 8px);
-        min-height: 560px;
-        max-height: calc(100dvh - 8px);
+        height: 100%;
+        min-height: 0;
+        max-height: 100%;
+    }
+
+    #holder.lyrania-chat-enhancements-has-inventory-dock > .lrow:first-child,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #header,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #middlesection,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #chat {
+        min-height: 0;
+    }
+
+    #holder.lyrania-chat-enhancements-has-inventory-dock #middlesection,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row {
+        height: 100% !important;
+    }
+
+    #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row {
+        padding-bottom: 0;
+        overflow: hidden;
+    }
+
+    #holder.lyrania-chat-enhancements-has-inventory-dock #chat {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    #holder.lyrania-chat-enhancements-has-inventory-dock #chattabs {
+        flex: 1 1 auto;
+        height: auto !important;
+        min-height: 0;
+    }
+
+    #holder.lyrania-chat-enhancements-has-inventory-dock #chatpanes {
+        flex: 1 1 auto;
+        height: auto !important;
+        min-height: 0;
+    }
+
+    #holder.lyrania-chat-enhancements-has-inventory-dock #chatresizehandle {
+        display: none;
+    }
+
+    #holder.lyrania-chat-enhancements-has-inventory-dock
+        > #lyrania-chat-enhancements-inventory-dock,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #main,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #side1,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #side2,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #chatwindow,
+    #holder.lyrania-chat-enhancements-has-inventory-dock #lyrania-chat-enhancements-loot-messages {
+        overscroll-behavior: contain;
     }
 
     #middlesection {
@@ -2460,6 +2728,8 @@ a.text-fail {
     }
 
     .mapLayout {
+        display: flex;
+        flex-wrap: wrap;
         align-items: center;
     }
 
@@ -2525,6 +2795,29 @@ a.text-fail {
         padding-inline: 5px;
     }
 
+    #lyrania-chat-enhancements-inventory-dock #inventory_jewel_table :is(thead, tbody) tr {
+        grid-template-columns:
+            24px minmax(0, 2fr) repeat(6, minmax(0, 0.58fr))
+            minmax(0, 1.15fr) !important;
+    }
+
+    #lyrania-chat-enhancements-inventory-dock #inventory_enchant_table :is(thead, tbody) tr {
+        grid-template-columns:
+            24px minmax(0, 2fr) minmax(0, 0.9fr)
+            minmax(0, 0.7fr) minmax(0, 1fr) !important;
+    }
+
+    #lyrania-chat-enhancements-inventory-dock #inventory_maps_table :is(thead, tbody) tr {
+        grid-template-columns:
+            minmax(0, 1.45fr) minmax(0, 0.42fr) minmax(0, 0.58fr)
+            minmax(0, 0.72fr) minmax(0, 1.25fr) !important;
+    }
+
+    #lyrania-chat-enhancements-inventory-dock
+        :is(#inventory_consumables_table, #inventory_misc_table) :is(thead, tbody) tr {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 0.35fr) minmax(0, 1.25fr) !important;
+    }
+
     .inventory-resource-grid,
     #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
         grid-template-columns: 1fr;
@@ -2553,6 +2846,7 @@ a.text-fail {
     }
 
     .mapLayout {
+        display: flex;
         flex-direction: column;
     }
 
