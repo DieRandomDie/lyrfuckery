@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.14.0
+// @version      2.15.0
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -51,13 +51,22 @@
         // Keeps all six simplified-inventory tabs in a permanent responsive panel.
         persistentInventory: true,
 
+        // Replaces inventory "All" with fast 500-item server pages.
+        inventoryPerformanceGuard: true,
+
+        // Gives inventory its own request so it cannot interrupt battle actions.
+        isolatedInventoryRequests: true,
+
+        // Closes genuine game popups when a click starts and ends outside them.
+        popupOutsideClose: true,
+
         // Summarizes dungeon rooms and hides non-chest map icons.
         dungeonMapSummary: true
     });
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.14.0';
+    const SCRIPT_VERSION = '2.15.0';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -1567,15 +1576,22 @@
         return null;
     }
 
-    function parseLootLine(rawLine, state) {
+    function parseLootDrop(rawLine) {
         const text = plainText(rawLine).replace(/\s+/g, ' ').trim();
-        if (!text || /^welcome to lyrania!?$/i.test(text)) return false;
+        if (!text || /^welcome to lyrania!?$/i.test(text)) return null;
+        const bonusMatch = text.match(
+            /\(\s*([\d,]+)\s*\+\s*([\d,]+)\s+(?:level\s+)?bonus\s*\)/i
+        );
 
         const statMatch = text.match(/\bgained\s+([\d,]+)\s+(Health|Attack|Defence|Accuracy|Evasion)\b/i);
         if (statMatch) {
             const amount = parseFormattedNumber(statMatch[1]);
-            const type = statMatch[2].toLowerCase();
-            return addLoot(state, type, Math.min(1, amount), Math.max(0, amount - 1));
+            return {
+                type: statMatch[2].toLowerCase(),
+                base: bonusMatch ? parseFormattedNumber(bonusMatch[1]) : Math.min(1, amount),
+                bonus: bonusMatch ? parseFormattedNumber(bonusMatch[2]) : Math.max(0, amount - 1),
+                hasBonus: Boolean(bonusMatch)
+            };
         }
 
         if (/\btoken(?:s| source)?\b/i.test(text)) {
@@ -1586,7 +1602,14 @@
             ];
             for (const pattern of tokenPatterns) {
                 const match = text.match(pattern);
-                if (match) return addLoot(state, 'tokens', parseFormattedNumber(match[1]));
+                if (match) {
+                    return {
+                        type: 'tokens',
+                        base: parseFormattedNumber(match[1]),
+                        bonus: 0,
+                        hasBonus: false
+                    };
+                }
             }
         }
 
@@ -1596,21 +1619,60 @@
             const [basePart, ...bonusParts] = details.split('+');
             const base = parseCurrency(basePart);
             const bonus = parseCurrency(bonusParts.join(' '));
-            if (base || bonus) return addLoot(state, 'gold', base, bonus);
+            if (base || bonus) {
+                return {
+                    type: 'gold',
+                    base,
+                    bonus,
+                    hasBonus: bonusParts.length > 0
+                };
+            }
         }
 
         const lootType = detectLootType(text);
-        const amountMatch = text.match(/\(\s*([\d,]+)\s*\+\s*([\d,]+)\s+(?:level\s+)?bonus\s*\)/i);
-        if (lootType && amountMatch) {
-            return addLoot(
-                state,
-                lootType,
-                parseFormattedNumber(amountMatch[1]),
-                parseFormattedNumber(amountMatch[2])
-            );
+        if (lootType && bonusMatch) {
+            return {
+                type: lootType,
+                base: parseFormattedNumber(bonusMatch[1]),
+                bonus: parseFormattedNumber(bonusMatch[2]),
+                hasBonus: true
+            };
         }
 
-        return false;
+        if (lootType) {
+            const itemNames = {
+                jade: 'jades?',
+                fragments: '(?:jewel(?:lery)?\\s+)?fragments?',
+                diamonds: 'diamonds?',
+                sapphires: 'sapphires?',
+                rubies: 'rub(?:y|ies)',
+                emeralds: 'emeralds?',
+                opals: 'opals?'
+            };
+            const quantityMatch = text.match(new RegExp(
+                `\\bfound\\s+(?:an?\\s+)?([\\d,]+)\\s+${itemNames[lootType]}\\b`,
+                'i'
+            ));
+            const singleMatch = text.match(new RegExp(
+                `\\bfound\\s+an?\\s+${itemNames[lootType]}\\b`,
+                'i'
+            ));
+            if (quantityMatch || singleMatch) {
+                return {
+                    type: lootType,
+                    base: quantityMatch ? parseFormattedNumber(quantityMatch[1]) : 1,
+                    bonus: 0,
+                    hasBonus: false
+                };
+            }
+        }
+
+        return null;
+    }
+
+    function parseLootLine(rawLine, state) {
+        const drop = parseLootDrop(rawLine);
+        return drop ? addLoot(state, drop.type, drop.base, drop.bonus) : false;
     }
 
     function formatCurrency(value) {
@@ -1622,6 +1684,28 @@
         const silver = Math.floor(remaining / 100);
         const copper = remaining % 100;
         return `${platinum.toLocaleString()}p ${gold}g ${silver}s ${copper}c`;
+    }
+
+    function formatCompactLootLine(rawLine) {
+        const drop = parseLootDrop(rawLine);
+        if (drop) {
+            const formatter = drop.type === 'gold'
+                ? formatCurrency
+                : (value) => Number(value || 0).toLocaleString();
+            const total = drop.base + drop.bonus;
+            const breakdown = drop.hasBonus
+                ? ` (${formatter(drop.base)}+${formatter(drop.bonus)})`
+                : '';
+            return `${LOOT_TYPES[drop.type]} - ${formatter(total)}${breakdown}`;
+        }
+
+        const fallback = plainText(rawLine)
+            .replace(/\s+/g, ' ')
+            .replace(/^\s*\[\d{1,2}:\d{2}:\d{2}\]\s*/, '')
+            .replace(/^you\s+(?:found|gained)\s+/i, '')
+            .replace(/[!.]+\s*$/, '')
+            .trim();
+        return fallback || 'Loot drop';
     }
 
     function renderLootStatistics(state) {
@@ -1680,8 +1764,12 @@
 
         const label = document.createElement('summary');
         label.className = 'lyrania-loot-entry-summary';
-        label.append(...message.childNodes);
-        folded.appendChild(label);
+        label.textContent = formatCompactLootLine(message.textContent);
+
+        const detail = document.createElement('div');
+        detail.className = 'lyrania-loot-entry-detail';
+        detail.append(...message.childNodes);
+        folded.append(label, detail);
         message.replaceWith(folded);
         return folded;
     }
@@ -1757,9 +1845,20 @@
         'resources',
         'misc'
     ]);
+    const INITIAL_INVENTORY_DELAY_MS = 5000;
+    const INITIAL_INVENTORY_FALLBACK_DELAY_MS = 8000;
+    const INITIAL_INVENTORY_RETRY_DELAY_MS = 2500;
+    const INVENTORY_SAFE_PAGE_SIZE = 500;
     let pendingInventoryScroll = null;
     let pendingInventoryPopupClose = false;
     let inventoryLoadWatchdog = 0;
+    let initialInventoryRequestPending = false;
+    let initialInventoryRetryUsed = false;
+    let initialInventoryRetryTimer = 0;
+    let inventoryPerformanceNotice = '';
+    let inventoryPerformanceNoticeTimer = 0;
+    let activeInventoryRequest = null;
+    let inventoryRequestSequence = 0;
 
     function normalizeInventoryTab(tab, fallback = 'jewellery') {
         const normalized = String(tab || '').toLowerCase();
@@ -1783,6 +1882,184 @@
         return normalizeInventoryTab(shell?.dataset.currentTab);
     }
 
+    function relabelInventoryAllOptions(shell) {
+        if (!MODS.inventoryPerformanceGuard || !shell) return;
+        shell.querySelectorAll(
+            '#inventory_jewel_limit option[value="1000000"], '
+            + '#inventory_enchant_limit option[value="1000000"]'
+        ).forEach((option) => {
+            option.textContent = `All (${INVENTORY_SAFE_PAGE_SIZE}/page)`;
+            option.title = 'Paged to prevent the inventory from freezing.';
+        });
+    }
+
+    function wrapIsolatedInventoryRequests() {
+        if (!MODS.isolatedInventoryRequests) return true;
+        const originalInventorySimple = window.inventorySimple;
+        if (originalInventorySimple?.lyraniaIsolatedInventoryVersion === SCRIPT_VERSION) {
+            return true;
+        }
+        if (typeof originalInventorySimple !== 'function') return false;
+
+        const antiRaceActions = new Set([
+            'purchase_lockbox',
+            'use_lockbox',
+            'conjure_enchant',
+            'add_jewel_mod',
+            'add_jewel_mod_confirm',
+            'map_trade'
+        ]);
+
+        const readValue = (id) => document.getElementById(id)?.value || '';
+        const readChecked = (id) => Boolean(document.getElementById(id)?.checked);
+
+        const wrappedInventorySimple = function (...args) {
+            const action = String(args[1] || '');
+            const actionCode = Number.parseInt(args[2], 10);
+            const popupScroll = document.getElementById('popupresdisplay');
+            const preservePopupScroll = args[0] === 'enchants'
+                && action === 'enchant_table_state';
+            const preservedPopupScrollTop = preservePopupScroll
+                ? popupScroll?.scrollTop ?? null
+                : null;
+
+            if (action === 'loadout' && actionCode === 1) {
+                const loadoutName = window.prompt('What would you like to call this loadout?');
+                if (!loadoutName) {
+                    window.setTimeout(() => window.inventorySimple('jewellery'), 0);
+                    return undefined;
+                }
+                args[3] = loadoutName;
+                args[4] = readValue('pet');
+            } else if (action === 'loadout' && (actionCode === 2 || actionCode === 3)) {
+                args[3] = readValue('loadout');
+                args[4] = readValue('pet');
+            }
+
+            if (action === 'use_lockbox') args[2] = readValue('lockboxquant');
+            if (action === 'purchase_lockbox') args[2] = readValue('buy_lockboxquant');
+            if (action === 'remove_enchant_confirm') args[3] = readChecked('enchantsavable');
+            if (
+                antiRaceActions.has(action)
+                && typeof window.lockInventoryActionButton === 'function'
+                && !window.lockInventoryActionButton(action)
+            ) {
+                return undefined;
+            }
+
+            const body = new URLSearchParams({ tab: String(args[0] || 'jewellery') });
+            if (args[1] !== undefined) body.set('action', String(args[1]));
+            for (let index = 2; index < args.length; index += 1) {
+                if (args[index] !== undefined) {
+                    body.set(`extrainfo${index - 1}`, String(args[index]));
+                }
+            }
+
+            inventoryRequestSequence += 1;
+            const requestSequence = inventoryRequestSequence;
+            if (activeInventoryRequest && activeInventoryRequest.readyState !== XMLHttpRequest.DONE) {
+                activeInventoryRequest.abort();
+            }
+
+            const request = new XMLHttpRequest();
+            activeInventoryRequest = request;
+            request.open('POST', 'inventory_simplified.php', true);
+            request.timeout = 20000;
+            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+            request.onload = () => {
+                if (requestSequence !== inventoryRequestSequence) return;
+                activeInventoryRequest = null;
+                if (request.status < 200 || request.status >= 300) {
+                    setPersistentInventoryStatus('Inventory request failed. Use Refresh to try again.');
+                    return;
+                }
+
+                const responseParts = request.responseText.split('[BREAK]');
+                if (window.popupui === 1 && typeof window.openpopuppane === 'function') {
+                    window.openpopuppane(responseParts[0]);
+                } else {
+                    const content = document.getElementById('content');
+                    if (content) content.innerHTML = responseParts[0];
+                }
+
+                responseParts.slice(1).forEach((script) => {
+                    if (!script.trim()) return;
+                    try {
+                        window.eval(script);
+                    } catch (error) {
+                        console.error(`[${SCRIPT_ID}] Inventory response script failed.`, error);
+                    }
+                });
+
+                if (typeof window.InventoryPageInit === 'function') window.InventoryPageInit();
+                if (
+                    args[0] === 'consumables'
+                    && typeof window.renderInventoryConsumableInlineResult === 'function'
+                ) {
+                    window.renderInventoryConsumableInlineResult();
+                }
+
+                const inventoryIsDocked = Boolean(
+                    document.querySelector(`#${SCRIPT_ID}-inventory-content > #inventory_shell`)
+                );
+                if (!inventoryIsDocked && preservedPopupScrollTop !== null && popupScroll) {
+                    popupScroll.scrollTop = preservedPopupScrollTop;
+                } else if (
+                    !inventoryIsDocked
+                    && args[0] === 'enchants'
+                    && args[1] !== undefined
+                    && popupScroll
+                ) {
+                    popupScroll.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            };
+
+            const showRequestError = () => {
+                if (requestSequence !== inventoryRequestSequence) return;
+                activeInventoryRequest = null;
+                setPersistentInventoryStatus('Inventory request failed. Use Refresh to try again.');
+            };
+            request.onerror = showRequestError;
+            request.ontimeout = showRequestError;
+            request.send(body.toString());
+            return request;
+        };
+
+        wrappedInventorySimple.lyraniaIsolatedInventoryVersion = SCRIPT_VERSION;
+        wrappedInventorySimple.lyraniaOriginalInventorySimple = originalInventorySimple;
+        window.inventorySimple = wrappedInventorySimple;
+        return true;
+    }
+
+    function wrapInventoryPerformanceRequests() {
+        if (!MODS.inventoryPerformanceGuard) return true;
+        const originalInventorySimple = window.inventorySimple;
+        if (originalInventorySimple?.lyraniaInventoryPerformanceVersion === SCRIPT_VERSION) {
+            return true;
+        }
+        if (typeof originalInventorySimple !== 'function') return false;
+
+        const wrappedInventorySimple = function (...args) {
+            const tab = normalizeInventoryTab(args[0]);
+            const stateAction = String(args[1] || '');
+            const requestedLimit = Number(args[2]);
+            const isPagedInventory = (tab === 'jewellery' && stateAction === 'jewel_table_state')
+                || (tab === 'enchants' && stateAction === 'enchant_table_state');
+
+            if (isPagedInventory && requestedLimit > INVENTORY_SAFE_PAGE_SIZE) {
+                args[2] = INVENTORY_SAFE_PAGE_SIZE;
+                args[3] = 0;
+                inventoryPerformanceNotice = `All is split into ${INVENTORY_SAFE_PAGE_SIZE}-item pages to keep inventory responsive.`;
+            }
+            return originalInventorySimple.apply(this, args);
+        };
+        wrappedInventorySimple.lyraniaInventoryPerformanceVersion = SCRIPT_VERSION;
+        wrappedInventorySimple.lyraniaOriginalInventorySimple = originalInventorySimple;
+        window.inventorySimple = wrappedInventorySimple;
+        return true;
+    }
+
     function setPersistentInventoryStatus(message, busy = false) {
         const { dock, status, refresh } = getPersistentInventoryElements();
         if (dock) dock.setAttribute('aria-busy', String(busy));
@@ -1795,6 +2072,22 @@
             pendingInventoryPopupClose = false;
             pendingInventoryScroll = null;
             const current = getPersistentInventoryElements();
+
+            if (initialInventoryRequestPending && !initialInventoryRetryUsed) {
+                initialInventoryRetryUsed = true;
+                current.dock?.setAttribute('aria-busy', 'true');
+                if (current.refresh) current.refresh.disabled = true;
+                if (current.status) {
+                    current.status.textContent = 'Inventory is still initializing. Retrying…';
+                }
+                window.clearTimeout(initialInventoryRetryTimer);
+                initialInventoryRetryTimer = window.setTimeout(() => {
+                    requestInitialPersistentInventory(true);
+                }, INITIAL_INVENTORY_RETRY_DELAY_MS);
+                return;
+            }
+
+            initialInventoryRequestPending = false;
             current.dock?.setAttribute('aria-busy', 'false');
             if (current.refresh) current.refresh.disabled = false;
             if (current.status) {
@@ -1817,14 +2110,15 @@
         dock.innerHTML = `
             <header id="${SCRIPT_ID}-inventory-bar">
                 <span id="${SCRIPT_ID}-inventory-heading">
-                    <small>Always available</small>
-                    <strong id="${SCRIPT_ID}-inventory-title">Inventory</strong>
+                    <span id="${SCRIPT_ID}-inventory-title-line">
+                        <strong id="${SCRIPT_ID}-inventory-title">Inventory</strong>
+                        <span id="${SCRIPT_ID}-inventory-status" role="status" aria-live="polite">
+                            Waiting for the game to finish loading…
+                        </span>
+                    </span>
                 </span>
                 <button type="button" id="${SCRIPT_ID}-inventory-refresh">Refresh</button>
             </header>
-            <div id="${SCRIPT_ID}-inventory-status" role="status" aria-live="polite">
-                Loading inventory…
-            </div>
             <div id="${SCRIPT_ID}-inventory-scroll">
                 <div id="${SCRIPT_ID}-inventory-content"></div>
             </div>`;
@@ -1877,11 +2171,23 @@
         pendingInventoryScroll = null;
 
         content.replaceChildren(shell);
+        relabelInventoryAllOptions(shell);
         dock.dataset.currentTab = nextTab;
         dock.setAttribute('aria-busy', 'false');
-        if (status) status.textContent = '';
+        const performanceNotice = inventoryPerformanceNotice;
+        inventoryPerformanceNotice = '';
+        if (status) status.textContent = performanceNotice;
         if (refresh) refresh.disabled = false;
         window.clearTimeout(inventoryLoadWatchdog);
+        window.clearTimeout(initialInventoryRetryTimer);
+        window.clearTimeout(inventoryPerformanceNoticeTimer);
+        initialInventoryRequestPending = false;
+
+        if (status && performanceNotice) {
+            inventoryPerformanceNoticeTimer = window.setTimeout(() => {
+                if (status.textContent === performanceNotice) status.textContent = '';
+            }, 6500);
+        }
 
         const mainNav = document.getElementById('mainnav');
         if (mainNav) mainNav.value = '1';
@@ -1970,12 +2276,18 @@
         return true;
     }
 
-    function requestInitialPersistentInventory() {
-        if (document.querySelector(`#${SCRIPT_ID}-inventory-content > #inventory_shell`)) return;
+    function requestInitialPersistentInventory(isRetry = false) {
+        if (document.querySelector(`#${SCRIPT_ID}-inventory-content > #inventory_shell`)) {
+            initialInventoryRequestPending = false;
+            return;
+        }
         if (typeof window.inventorySimple !== 'function') {
+            initialInventoryRequestPending = false;
             setPersistentInventoryStatus('Inventory is unavailable. Use Refresh to try again.');
             return;
         }
+        if (!isRetry) initialInventoryRetryUsed = false;
+        initialInventoryRequestPending = true;
         window.inventorySimple('jewellery');
     }
 
@@ -1992,9 +2304,79 @@
             requestInitialPersistentInventory();
         };
         document.addEventListener('battleContentLoaded', () => {
-            window.setTimeout(requestOnce, 100);
+            window.setTimeout(requestOnce, INITIAL_INVENTORY_DELAY_MS);
         }, { once: true });
-        window.setTimeout(requestOnce, 2500);
+        window.setTimeout(requestOnce, INITIAL_INVENTORY_FALLBACK_DELAY_MS);
+        return true;
+    }
+
+    function initializePopupOutsideClose() {
+        if (!MODS.popupOutsideClose) return true;
+        const handlerAttribute = 'data-lyrania-popup-outside-close-version';
+        if (document.documentElement.getAttribute(handlerAttribute) === SCRIPT_VERSION) return true;
+
+        let pointerStartedOutside = false;
+
+        const getVisiblePopup = () => {
+            const holder = document.getElementById('popupholder');
+            if (!holder || getComputedStyle(holder).visibility !== 'visible') return null;
+
+            const hasPopupContent = ['popup', 'popupresponse'].some((id) => {
+                const node = document.getElementById(id);
+                return node && (node.childElementCount > 0 || node.textContent.trim());
+            });
+            return hasPopupContent ? holder : null;
+        };
+
+        const isInventoryDockTarget = (target) => target instanceof Element
+            && Boolean(target.closest(`#${SCRIPT_ID}-inventory-dock`));
+
+        const closeVisiblePopup = () => {
+            const holder = getVisiblePopup();
+            if (!holder) return false;
+            if (typeof window.closepage === 'function') {
+                window.closepage();
+            } else {
+                holder.style.visibility = 'hidden';
+            }
+            return true;
+        };
+
+        document.addEventListener('pointerdown', (event) => {
+            const holder = getVisiblePopup();
+            pointerStartedOutside = Boolean(
+                holder
+                && event.button === 0
+                && !holder.contains(event.target)
+                && !isInventoryDockTarget(event.target)
+            );
+        }, true);
+
+        document.addEventListener('pointercancel', () => {
+            pointerStartedOutside = false;
+        }, true);
+
+        document.addEventListener('click', (event) => {
+            const holder = getVisiblePopup();
+            const shouldClose = pointerStartedOutside
+                && holder
+                && !holder.contains(event.target)
+                && !isInventoryDockTarget(event.target);
+            pointerStartedOutside = false;
+            if (!shouldClose) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            closeVisiblePopup();
+        }, true);
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || !getVisiblePopup()) return;
+            event.preventDefault();
+            closeVisiblePopup();
+        }, true);
+
+        document.documentElement.setAttribute(handlerAttribute, SCRIPT_VERSION);
         return true;
     }
 
@@ -2184,7 +2566,10 @@
         initializeInactiveDpTimerHider,
         initializeBufferXp,
         initializePersistentLootLog,
+        wrapIsolatedInventoryRequests,
+        wrapInventoryPerformanceRequests,
         initializePersistentInventory,
+        initializePopupOutsideClose,
         initializeDungeonMapSummary,
         initializeActionTimerFix
     ];
