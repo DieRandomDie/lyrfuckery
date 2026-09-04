@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.15.0
+// @version      2.16.0
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -51,9 +51,6 @@
         // Keeps all six simplified-inventory tabs in a permanent responsive panel.
         persistentInventory: true,
 
-        // Replaces inventory "All" with fast 500-item server pages.
-        inventoryPerformanceGuard: true,
-
         // Gives inventory its own request so it cannot interrupt battle actions.
         isolatedInventoryRequests: true,
 
@@ -66,7 +63,7 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.15.0';
+    const SCRIPT_VERSION = '2.16.0';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -382,30 +379,12 @@
                 display: block;
                 opacity: 0.7;
             }
-            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry > summary {
+            #${SCRIPT_ID}-loot-messages .lyrania-loot-entry {
                 display: block;
-                position: relative;
-                padding-left: 16px;
+                padding: 3px 5px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                list-style: none;
-                cursor: pointer;
-            }
-            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry > summary::-webkit-details-marker {
-                display: none;
-            }
-            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry > summary::before {
-                position: absolute;
-                left: 3px;
-                content: "›";
-            }
-            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry[open] > summary {
-                overflow: visible;
-                white-space: normal;
-            }
-            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry[open] > summary::before {
-                transform: rotate(90deg);
             }
             #${SCRIPT_ID}-update-banner {
                 position: fixed;
@@ -1750,31 +1729,23 @@
         });
     }
 
-    function foldLootMessage(message) {
+    function compactLootMessage(message) {
         if (!(message instanceof Element) || !message.classList.contains('lootlogitem')) {
             return message;
         }
-        if (message.matches('details.lyrania-loot-entry')) return message;
+        if (message.classList.contains('lyrania-loot-entry')) return message;
 
-        const folded = document.createElement('details');
+        const compact = document.createElement('div');
         Array.from(message.attributes).forEach(({ name, value }) => {
-            folded.setAttribute(name, value);
+            compact.setAttribute(name, value);
         });
-        folded.classList.add('lyrania-loot-entry');
-
-        const label = document.createElement('summary');
-        label.className = 'lyrania-loot-entry-summary';
-        label.textContent = formatCompactLootLine(message.textContent);
-
-        const detail = document.createElement('div');
-        detail.className = 'lyrania-loot-entry-detail';
-        detail.append(...message.childNodes);
-        folded.append(label, detail);
-        message.replaceWith(folded);
-        return folded;
+        compact.classList.add('lyrania-loot-entry');
+        compact.textContent = formatCompactLootLine(message.textContent);
+        message.replaceWith(compact);
+        return compact;
     }
 
-    function trimFoldedLootMessages(messages, maximum = 100) {
+    function trimCompactLootMessages(messages, maximum = 100) {
         Array.from(messages.querySelectorAll(':scope > .lootlogitem'))
             .slice(maximum)
             .forEach((message) => message.remove());
@@ -1809,9 +1780,9 @@
         messages.id = `${SCRIPT_ID}-loot-messages`;
 
         Array.from(lootLog.children).forEach((child) => {
-            messages.appendChild(foldLootMessage(child));
+            messages.appendChild(compactLootMessage(child));
         });
-        trimFoldedLootMessages(messages);
+        trimCompactLootMessages(messages);
         lootLog.append(summary, messages);
 
         const state = loadLootState();
@@ -1822,8 +1793,8 @@
             const result = originalLootLog.apply(this, arguments);
             const newMessage = lootLog.querySelector(':scope > .lootlogitem');
             if (newMessage) {
-                messages.prepend(foldLootMessage(newMessage));
-                trimFoldedLootMessages(messages);
+                messages.prepend(compactLootMessage(newMessage));
+                trimCompactLootMessages(messages);
             }
 
             if (parseLootLine(line, state)) {
@@ -1848,15 +1819,12 @@
     const INITIAL_INVENTORY_DELAY_MS = 5000;
     const INITIAL_INVENTORY_FALLBACK_DELAY_MS = 8000;
     const INITIAL_INVENTORY_RETRY_DELAY_MS = 2500;
-    const INVENTORY_SAFE_PAGE_SIZE = 500;
     let pendingInventoryScroll = null;
     let pendingInventoryPopupClose = false;
     let inventoryLoadWatchdog = 0;
     let initialInventoryRequestPending = false;
     let initialInventoryRetryUsed = false;
     let initialInventoryRetryTimer = 0;
-    let inventoryPerformanceNotice = '';
-    let inventoryPerformanceNoticeTimer = 0;
     let activeInventoryRequest = null;
     let inventoryRequestSequence = 0;
 
@@ -1880,17 +1848,6 @@
             `#${SCRIPT_ID}-inventory-content > #inventory_shell`
         );
         return normalizeInventoryTab(shell?.dataset.currentTab);
-    }
-
-    function relabelInventoryAllOptions(shell) {
-        if (!MODS.inventoryPerformanceGuard || !shell) return;
-        shell.querySelectorAll(
-            '#inventory_jewel_limit option[value="1000000"], '
-            + '#inventory_enchant_limit option[value="1000000"]'
-        ).forEach((option) => {
-            option.textContent = `All (${INVENTORY_SAFE_PAGE_SIZE}/page)`;
-            option.title = 'Paged to prevent the inventory from freezing.';
-        });
     }
 
     function wrapIsolatedInventoryRequests() {
@@ -2032,34 +1989,6 @@
         return true;
     }
 
-    function wrapInventoryPerformanceRequests() {
-        if (!MODS.inventoryPerformanceGuard) return true;
-        const originalInventorySimple = window.inventorySimple;
-        if (originalInventorySimple?.lyraniaInventoryPerformanceVersion === SCRIPT_VERSION) {
-            return true;
-        }
-        if (typeof originalInventorySimple !== 'function') return false;
-
-        const wrappedInventorySimple = function (...args) {
-            const tab = normalizeInventoryTab(args[0]);
-            const stateAction = String(args[1] || '');
-            const requestedLimit = Number(args[2]);
-            const isPagedInventory = (tab === 'jewellery' && stateAction === 'jewel_table_state')
-                || (tab === 'enchants' && stateAction === 'enchant_table_state');
-
-            if (isPagedInventory && requestedLimit > INVENTORY_SAFE_PAGE_SIZE) {
-                args[2] = INVENTORY_SAFE_PAGE_SIZE;
-                args[3] = 0;
-                inventoryPerformanceNotice = `All is split into ${INVENTORY_SAFE_PAGE_SIZE}-item pages to keep inventory responsive.`;
-            }
-            return originalInventorySimple.apply(this, args);
-        };
-        wrappedInventorySimple.lyraniaInventoryPerformanceVersion = SCRIPT_VERSION;
-        wrappedInventorySimple.lyraniaOriginalInventorySimple = originalInventorySimple;
-        window.inventorySimple = wrappedInventorySimple;
-        return true;
-    }
-
     function setPersistentInventoryStatus(message, busy = false) {
         const { dock, status, refresh } = getPersistentInventoryElements();
         if (dock) dock.setAttribute('aria-busy', String(busy));
@@ -2171,23 +2100,13 @@
         pendingInventoryScroll = null;
 
         content.replaceChildren(shell);
-        relabelInventoryAllOptions(shell);
         dock.dataset.currentTab = nextTab;
         dock.setAttribute('aria-busy', 'false');
-        const performanceNotice = inventoryPerformanceNotice;
-        inventoryPerformanceNotice = '';
-        if (status) status.textContent = performanceNotice;
+        if (status) status.textContent = '';
         if (refresh) refresh.disabled = false;
         window.clearTimeout(inventoryLoadWatchdog);
         window.clearTimeout(initialInventoryRetryTimer);
-        window.clearTimeout(inventoryPerformanceNoticeTimer);
         initialInventoryRequestPending = false;
-
-        if (status && performanceNotice) {
-            inventoryPerformanceNoticeTimer = window.setTimeout(() => {
-                if (status.textContent === performanceNotice) status.textContent = '';
-            }, 6500);
-        }
 
         const mainNav = document.getElementById('mainnav');
         if (mainNav) mainNav.value = '1';
@@ -2567,7 +2486,6 @@
         initializeBufferXp,
         initializePersistentLootLog,
         wrapIsolatedInventoryRequests,
-        wrapInventoryPerformanceRequests,
         initializePersistentInventory,
         initializePopupOutsideClose,
         initializeDungeonMapSummary,
