@@ -1,10 +1,10 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.1.0
+ * Version: 1.2.0
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision removes horizontal scrolling and compacts dense game panels.
- * Lyrania Mod Suite 2.13.0+ adds the permanent inventory dock used below.
+ * This revision adds foldable loot, compact actions, and map-aware sizing.
+ * Lyrania Mod Suite 2.14.0+ adds the permanent inventory and foldable loot used below.
  *
  * Layouts
  *   Full width : 1440px and wider — game workspace + sticky inventory rail
@@ -202,7 +202,11 @@ hr {
     gap: var(--lyr-gap);
     width: 100%;
     min-width: 0;
-    height: clamp(440px, 55vh, 720px);
+    height: clamp(300px, 34vh, 390px);
+}
+
+#middlesection:has(#dungeonmapcontainer, .mapLayout) {
+    height: clamp(540px, 72vh, 840px);
 }
 
 #chat_row {
@@ -878,7 +882,7 @@ input[type="radio"] {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    min-height: clamp(300px, 38vh, 520px);
+    min-height: clamp(260px, 32vh, 410px);
     padding: 7px 8px 8px;
 }
 
@@ -970,7 +974,7 @@ div.chatline:hover {
 }
 
 #chattabs.lyrania-chat-enhancements-chat-loot-split > #chatpanes {
-    grid-template-columns: minmax(0, 1.65fr) minmax(250px, 1fr) !important;
+    grid-template-columns: minmax(0, 2.5fr) minmax(230px, 1fr) !important;
     gap: 7px !important;
     max-width: 100%;
     overflow-x: hidden !important;
@@ -986,12 +990,12 @@ div.chatline:hover {
     min-height: 0;
     padding: 6px 6px 8px !important;
     overflow-x: hidden !important;
-    overflow-y: auto !important;
+    overflow-y: visible !important;
     border-bottom-color: var(--lyr-border) !important;
 }
 
 #lootlog.lyrania-chat-enhancements-loot-layout {
-    grid-template-rows: minmax(155px, 0.95fr) minmax(100px, 1.05fr) !important;
+    grid-template-rows: auto minmax(90px, 1fr) !important;
     gap: 6px !important;
     overflow-x: hidden !important;
 }
@@ -1023,90 +1027,107 @@ div.chatline:hover {
     font-size: 10px;
 }
 
-#lyrania-chat-enhancements-loot-summary table,
-#lyrania-chat-enhancements-loot-summary tbody {
-    display: block;
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(108px, 100%), 1fr));
+    gap: 4px;
     width: 100%;
     max-width: 100%;
 }
 
-#lyrania-chat-enhancements-loot-summary thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
-}
-
-#lyrania-chat-enhancements-loot-summary tbody {
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
-    gap: 5px;
-}
-
-#lyrania-chat-enhancements-loot-summary tbody tr {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 2px 4px;
     min-width: 0;
-    padding: 5px;
     border: 1px solid var(--theme-table-border-faint);
-    border-radius: 7px;
+    border-radius: 6px;
     background: rgba(255, 255, 255, 0.025);
 }
 
-#lyrania-chat-enhancements-loot-summary tbody th[scope="row"] {
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat[open] {
     grid-column: 1 / -1;
-    padding: 0 1px 3px !important;
-    overflow-wrap: anywhere;
-    border: 0 !important;
-    color: #edf6ff;
-    font-size: 10px;
-    line-height: 1.2;
-    text-align: left;
+    border-color: rgba(98, 183, 255, 0.28);
+    background: rgba(98, 183, 255, 0.055);
 }
 
-#lyrania-chat-enhancements-loot-summary tbody td {
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px;
+    align-items: center;
     min-width: 0;
-    padding: 2px 1px 0 !important;
+    padding: 4px 5px 4px 15px;
+    overflow: hidden;
+    list-style: none;
+    color: #edf6ff;
+    font-size: 9px;
+    line-height: 1.2;
+    cursor: pointer;
+    position: relative;
+}
+
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary::-webkit-details-marker {
+    display: none;
+}
+
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary::before {
+    position: absolute;
+    left: 5px;
+    color: var(--lyr-accent);
+    content: "›";
+    transition: transform 120ms ease;
+}
+
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary strong {
+    min-width: 0;
     overflow-wrap: anywhere;
-    border: 0 !important;
+    color: #f5f9fe;
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+    padding: 0 5px 5px;
+}
+
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values span {
+    min-width: 0;
+    padding: 3px;
+    overflow-wrap: anywhere;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.14);
     color: #f4f8fc;
     font-size: 9px;
     font-variant-numeric: tabular-nums;
-    line-height: 1.25;
+    line-height: 1.2;
     text-align: right;
-    white-space: normal !important;
 }
 
-#lyrania-chat-enhancements-loot-summary tbody td::before {
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values small {
     display: block;
-    margin-bottom: 1px;
     color: var(--lyr-text-faint);
-    font-size: 8px;
-    font-weight: 750;
-    letter-spacing: 0.045em;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 
-#lyrania-chat-enhancements-loot-summary tbody td:nth-of-type(1)::before {
-    content: "Total";
-}
-
-#lyrania-chat-enhancements-loot-summary tbody td:nth-of-type(2)::before {
-    content: "Base";
-}
-
-#lyrania-chat-enhancements-loot-summary tbody td:nth-of-type(3)::before {
-    content: "Bonus";
-}
-
-#lyrania-chat-enhancements-loot-summary tbody td:nth-of-type(4)::before {
-    content: "Drops";
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values b {
+    font-weight: 700;
 }
 
 #lyrania-chat-enhancements-loot-messages {
@@ -1120,10 +1141,57 @@ div.chatline:hover {
 #lyrania-chat-enhancements-loot-messages .lootlogitem {
     min-width: 0;
     margin: 0;
-    padding: 5px 5px;
+    padding: 4px 5px;
     overflow-wrap: anywhere;
     border-bottom: 1px solid var(--theme-table-border-faint);
     line-height: 1.38;
+}
+
+#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry {
+    padding: 0;
+}
+
+#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry > summary {
+    position: relative;
+    display: block;
+    min-width: 0;
+    padding: 4px 5px 4px 17px;
+    overflow: hidden;
+    color: var(--lyr-text-soft);
+    list-style: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry > summary::-webkit-details-marker {
+    display: none;
+}
+
+#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry > summary::before {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+    color: var(--lyr-text-faint);
+    content: "›";
+    transition: transform 120ms ease;
+}
+
+#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry[open] > summary {
+    overflow: visible;
+    color: var(--lyr-text);
+    background: rgba(98, 183, 255, 0.045);
+    text-overflow: clip;
+    white-space: normal;
+}
+
+#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+#lyrania-chat-enhancements-loot-messages details.lyrania-loot-entry > summary:hover {
+    color: var(--lyr-text);
+    background: rgba(255, 255, 255, 0.03);
 }
 
 #lyrania-chat-enhancements-loot-messages .lootlogitem:nth-child(even) {
@@ -1171,6 +1239,14 @@ div.chatline:hover {
     background: rgba(11, 18, 27, 0.985);
     box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
     backdrop-filter: blur(16px);
+}
+
+/* The dungeon map is a popup, so give it most of the viewport without
+   increasing the normal battle action area's compact height. */
+#popupholder:has(#dungeonmapcontainer) {
+    width: min(1180px, calc(100vw - 8px));
+    height: calc(100dvh - 8px) !important;
+    margin-top: 4px;
 }
 
 #popuptopbar {
@@ -1241,6 +1317,8 @@ div.chatline:hover {
 /* ------------------------------------------------------------------------- */
 
 #lyrania-chat-enhancements-inventory-dock {
+    container-name: lyr-inventory;
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -2089,18 +2167,38 @@ a.text-fail {
     width: 100%;
 }
 
+@container lyr-inventory (min-width: 620px) {
+    #lyrania-chat-enhancements-inventory-dock .inventory-jewellery-grid,
+    #lyrania-chat-enhancements-inventory-dock .purchase-layout-two-column {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
 /* ------------------------------------------------------------------------- */
 /* Full-width desktop: game and persistent inventory side by side            */
 /* ------------------------------------------------------------------------- */
 
 @media (min-width: 1440px) {
     #holder.lyrania-chat-enhancements-has-inventory-dock {
-        grid-template-columns: minmax(0, 1fr) clamp(340px, 24vw, 480px);
+        grid-template-columns: minmax(780px, 1280px) minmax(500px, 1fr);
         grid-template-areas:
             "header inventory"
             "game inventory"
             "chat inventory";
         align-items: start;
+    }
+
+    #holder.lyrania-chat-enhancements-has-inventory-dock:has(#dungeonmapcontainer, .mapLayout) {
+        grid-template-columns: minmax(900px, 1680px) minmax(380px, 1fr);
     }
 
     #holder.lyrania-chat-enhancements-has-inventory-dock
@@ -2156,9 +2254,17 @@ a.text-fail {
         height: auto;
     }
 
+    #middlesection:has(#dungeonmapcontainer, .mapLayout) {
+        height: auto;
+    }
+
     #main {
         grid-area: main;
-        min-height: clamp(430px, 58vh, 640px);
+        min-height: clamp(300px, 38vh, 390px);
+    }
+
+    #middlesection:has(#dungeonmapcontainer, .mapLayout) #main {
+        min-height: clamp(520px, 70vh, 760px);
     }
 
     #side1 {
@@ -2215,9 +2321,17 @@ a.text-fail {
         height: auto;
     }
 
+    #middlesection:has(#dungeonmapcontainer, .mapLayout) {
+        height: auto;
+    }
+
     #main {
         order: 1;
-        min-height: min(620px, 72vh);
+        min-height: min(340px, 46vh);
+    }
+
+    #middlesection:has(#dungeonmapcontainer, .mapLayout) #main {
+        min-height: min(680px, 78vh);
     }
 
     #side1 {
@@ -2377,7 +2491,11 @@ a.text-fail {
     }
 
     #main {
-        min-height: 540px;
+        min-height: 310px;
+    }
+
+    #middlesection:has(#dungeonmapcontainer, .mapLayout) #main {
+        min-height: min(620px, 76vh);
     }
 
     #loadoutpotions {
