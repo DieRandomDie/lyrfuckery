@@ -1,1797 +1,2888 @@
 // ==UserScript==
-// @name Lyrania Mod Suite
-// @namespace https://lyrania.co.uk/
-// @version 2.18.0
-// @match https://lyrania.co.uk/game.php*
-// @match https://dev.lyrania.co.uk/game.php*
-// @updateURL https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js
-// @downloadURL https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js
-// @grant none
-// @run-at document-idle
+// @name         Lyrania Mod Suite
+// @namespace    https://lyrania.co.uk/
+// @namespace    https://dev.lyrania.co.uk/
+// @version      2.17.5
+// @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
+// @author       Eric Salazar
+// @match        https://lyrania.co.uk/game.php*
+// @match        https://dev.lyrania.co.uk/game.php*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=lyrania.co.uk
+// @homepageURL  https://github.com/DieRandomDie/lyrfuckery
+// @supportURL   https://github.com/DieRandomDie/lyrfuckery/issues
+// @updateURL    https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js
+// @downloadURL  https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js
+// @grant        none
+// @run-at       document-idle
 // ==/UserScript==
+
 (() => {
-  "use strict";
-  const t = window,
-    e = document,
-    n = Object,
-    o = String,
-    r = Number,
-    i = Math,
-    a = Boolean,
-    s = Date,
-    c = MutationObserver,
-    l = getComputedStyle,
-    u = e.getElementById.bind(e),
-    d = e.createElement.bind(e),
-    p = e.addEventListener.bind(e),
-    f = e.querySelector.bind(e),
-    m = t.addEventListener.bind(t),
-    y = t.setTimeout.bind(t),
-    h = t.clearTimeout.bind(t),
-    b = i.max,
-    g = i.floor,
-    v = n.freeze({
-      chatChannelSidebar: 1,
-      chatQuickMenu: 1,
-      tripleDpHour: 1,
-      killsPerHour: 1,
-      hideInactiveDpTimers: 1,
-      actionTimerFix: 1,
-      heldEnterAlertGuard: 1,
-      bufferXp: 1,
-      persistentLootLog: 1,
-      persistentInventory: 1,
-      isolatedInventoryRequests: 1,
-      popupOutsideClose: 1,
-      dungeonMapSummary: 1,
-    }),
-    $ = "lyrania-chat-enhancements",
-    C = "2.18.0",
-    w =
-      "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css",
-    S = "lyrania-mod-suite:remote-theme-cache",
-    k = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/London",
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "2-digit",
-      hourCycle: "h23",
-    }),
-    x = n.freeze({
-      0: "mainchatcolor",
-      l: "gameschatcolor",
-      g: "guildchatcolor",
-      o: "officerchatcolor",
-      t: "tradechatcolor",
-      au: "auctionchatcolor",
-      p: "pubchatcolor",
-      a: "areachatcolor",
-      w: "whisperchatcolor",
-    }),
-    E = n.entries(x),
-    A = n.freeze({
-      0: { buttonId: "mainchatbutton", command: "killchat" },
-      l: { buttonId: "Litechatbutton", command: "gamesroom" },
-      g: { buttonId: "guildchatbutton", command: "guildchat" },
-      t: { buttonId: "tradechatbutton", command: "trade" },
-      au: { buttonId: "auctionchatbutton", command: "auction" },
-      p: { buttonId: "pubchatbutton", command: "pub" },
-      a: { buttonId: "areachatbutton", command: "area" },
-      global: { buttonId: "globalschatbutton", command: "killglobals" },
-    }),
-    L = n.freeze({
-      GamesRoom: "Games Room",
-      gboss: "Guild Boss",
-      NewPlayers: "New Players",
-      Icedraffle: "Iced Raffle",
-      CatsCafe: "Cats Cafe",
+    'use strict';
+
+    // ========================================================================
+    // MOD TOGGLES
+    // Change a setting to false to disable that mod, or true to enable it.
+    // ========================================================================
+    const MODS = Object.freeze({
+        // Adds the channel-selection sidebar and All-view visibility controls.
+        chatChannelSidebar: true,
+
+        // Opens profile, whisper, mail, and transfer actions from player names.
+        chatQuickMenu: true,
+
+        // Shows the scheduled Triple DP hour using Lyrania's London time.
+        tripleDpHour: true,
+
+        // Calculates today's average kills per elapsed server hour.
+        killsPerHour: true,
+
+        // Hides Double, Triple, and Quad DP timers while they are inactive.
+        hideInactiveDpTimers: true,
+
+        // Preserves action cooldowns across menus and queues the next action.
+        actionTimerFix: true,
+
+        // Cancels held Enter for alerts until the key is released and pressed again.
+        heldEnterAlertGuard: true,
+
+        // Replaces Buffer XP percentage with projected level information.
+        bufferXp: true,
+
+        // Tracks loot totals locally and displays chat beside the Loot Log.
+        persistentLootLog: true,
+
+        // Keeps all six simplified-inventory tabs in a permanent responsive panel.
+        persistentInventory: true,
+
+        // Gives inventory its own request so it cannot interrupt battle actions.
+        isolatedInventoryRequests: true,
+
+        // Closes genuine game popups when a click starts and ends outside them.
+        popupOutsideClose: true,
+
+        // Summarizes dungeon rooms and hides non-chest map icons.
+        dungeonMapSummary: true
     });
-  let I = "all",
-    T = 1;
-  const q = new Set(),
-    R = new Set();
-  let _ = [],
-    D = null,
-    B = null;
-  function P(t, e = "") {
-    const o = d("button");
-    return (n.assign(o, { type: "button", className: e, textContent: t }), o);
-  }
-  function H(t) {
-    const e = o(t ?? "");
-    return e.includes("<")
-      ? new DOMParser().parseFromString(e, "text/html").body.textContent
-      : e;
-  }
-  function j(t) {
-    const n = o(t || "").trim();
-    if (n.length < 100 || !n.includes("{") || n.startsWith("```")) return 0;
-    let r = u(`${$}-remote-theme`);
-    return (
-      r ||
-        ((r = d("style")), (r.id = `${$}-remote-theme`), e.head.appendChild(r)),
-      (r.textContent = n),
-      1
-    );
-  }
-  function M(t) {
-    const e = t.trim();
-    return L[e] || e;
-  }
-  function F(t) {
-    t.querySelectorAll(".lyrania-channel-select[data-channel]").forEach((t) => {
-      const e = t.dataset.channel === I;
-      (t.classList.toggle("is-selected", e),
-        t.setAttribute("aria-pressed", o(e)));
+
+    const SCRIPT_ID = 'lyrania-chat-enhancements';
+    const SCRIPT_NAME = 'Lyrania Mod Suite';
+    const SCRIPT_VERSION = '2.17.5';
+    const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
+    const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
+    const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
+    const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+    const UPDATE_CHECK_STORAGE_KEY = 'lyrania-mod-suite:update-check';
+    const UPDATE_DISMISSED_STORAGE_KEY = 'lyrania-mod-suite:update-dismissed';
+    const LONDON_TIME_FORMATTER = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        hourCycle: 'h23'
     });
-  }
-  function O(t) {
-    const e = A[t],
-      n = e && u(e.buttonId);
-    if (!n) return 1;
-    const o = l(n).backgroundColor.replace(/\s+/g, "").toLowerCase();
-    return "rgb(0,0,0)" !== o && "rgba(0,0,0,0)" !== o && "transparent" !== o;
-  }
-  function N(t) {
-    const e = A[t];
-    e && !O(t) && U("commands", e.command);
-  }
-  function W(t, e) {
-    (t.classList.toggle("is-enabled", e),
-      t.setAttribute("aria-pressed", o(e)),
-      (t.textContent = e ? "On" : "Off"),
-      (t.title = e ? "Shown in All" : "Hidden from All"));
-  }
-  function V(t) {
-    if (
-      t.querySelector(
-        '\n            .globalchatcolor,\n            [class*="boss" i],\n            [class*="motd" i],\n            [class*="bonus" i]\n        ',
-      )
-    )
-      return 1;
-    const e = t.textContent.replace(/\s+/g, " ").trim();
-    if (
-      /\bmessage\s+of\s+the\s+day\s*:/i.test(e) ||
-      /(?:^|\s)g?motd\s*:/i.test(e) ||
-      /\bauto\s+reconciliation\b/i.test(e) ||
-      /\brecovered\s+[\d,]+\s+auto\s+battles?\s+while\s+(?:your\s+game\s+tab\s+was\s+inactive|you\s+were\s+offline)\b/i.test(
-        e,
-      ) ||
-      /\bbonus\s+(?:effect|event|modifier|active|activated)\b/i.test(e)
-    )
-      return 1;
-    if (!t.querySelector(".chatname") && /\bbonus(?:es)?\b/i.test(e)) return 1;
-    for (const e of t.querySelectorAll("a[href]")) {
-      const t = (e.getAttribute("href") || "")
-        .replace(/\s+/g, "")
-        .toLowerCase();
-      if (
-        t.includes("performnav(9)") ||
-        t.includes("contract()") ||
-        t.includes("boss")
-      )
-        return 1;
-    }
-    return 0;
-  }
-  function G(t) {
-    t.hidden = !(function (t) {
-      if ("all" === I) {
-        if (V(t)) return T;
-        if (t.querySelector(".whisperchatcolor")) return 1;
-        for (const [e, n] of E)
-          if ("w" !== e && t.querySelector(`.${n}`)) return q.has(e);
-        for (const e of _)
-          if (t.textContent.includes(e.marker)) return q.has(e.value);
-        return 1;
-      }
-      if (t.querySelector(".whisperchatcolor")) return 1;
-      if ("global" === I) return V(t);
-      const e = x[I];
-      if (e) return a(t.querySelector(`.${e}`));
-      const n = _.find((t) => t.value === I);
-      return a(n && t.textContent.includes(n.marker));
-    })(t);
-  }
-  function Q() {
-    const t = u("chatwindow");
-    t &&
-      t.querySelectorAll(".chatline").forEach((t) => {
-        G(t);
-      });
-  }
-  function X(t) {
-    t.forEach((t) => {
-      t.addedNodes.forEach((t) => {
-        (1 === t.nodeType && t.matches(".chatline") && G(t),
-          t.querySelectorAll?.(".chatline").forEach((t) => {
-            G(t);
-          }));
-      });
+    const TRIPLE_DP_INTERVAL_HOURS = 20;
+    const CHANNEL_CLASS_NAMES = Object.freeze({
+        '0': 'mainchatcolor',
+        l: 'gameschatcolor',
+        g: 'guildchatcolor',
+        o: 'officerchatcolor',
+        t: 'tradechatcolor',
+        au: 'auctionchatcolor',
+        p: 'pubchatcolor',
+        a: 'areachatcolor',
+        w: 'whisperchatcolor'
     });
-  }
-  function z(t, e) {
-    const n = u("inputchat");
-    n && ((n.value = `/${t} ${e} `), (n.style.color = "#DD77DD"), n.focus());
-  }
-  function U(e, ...n) {
-    const o = t[e];
-    "function" == typeof o && o(...n);
-  }
-  function J() {
-    (D?.remove(), (D = null));
-  }
-  function K(t, e, n) {
-    const o = P(e);
-    (o.addEventListener("click", (t) => {
-      (t.stopPropagation(), J(), n());
-    }),
-      t.appendChild(o));
-  }
-  function Z() {
-    try {
-      const e = r(t.estimatedServerNow?.());
-      if (r.isFinite(e) && e > 0) return e;
-    } catch (t) {}
-    return s.now();
-  }
-  function Y() {
-    const t = u("serverTime")?.textContent.match(/(\d{1,2}):(\d{2}):(\d{2})/);
-    if (!t) return null;
-    const [, e, n, o] = t.map(r);
-    return e > 23 || n > 59 || o > 59
-      ? null
-      : { hour: e, minute: n, second: o };
-  }
-  function tt(t) {
-    const e = u("serverTime");
-    return e
-      ? (R.add(t),
-        B ||
-          ((B = new c(() => {
-            R.forEach((t) => t());
-          })),
-          B.observe(e, { childList: 1, characterData: 1, subtree: 1 })),
-        t(),
-        1)
-      : 0;
-  }
-  function et(t) {
-    const e = r(o(t ?? "").replace(/[^\d.-]/g, ""));
-    return r.isFinite(e) ? e : 0;
-  }
-  function nt(t, e = 0) {
-    const n = H(t),
-      a =
-        n.match(/Money\s*:[\s\S]{0,200}?Exp\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i) ||
-        (!e && n.match(/(?:Exp|Experience)\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i));
-    return a
-      ? (function (t, e = "") {
-          const n = r(o(t).replace(/,/g, "")),
-            a = { "": 1, k: 1e3, m: 1e6, b: 1e9, t: 1e12 }[
-              o(e).trim().toLowerCase()
-            ];
-          return r.isFinite(n) && a ? i.round(n * a) : 0;
-        })(a[1], a[2])
-      : 0;
-  }
-  function ot(t) {
-    if (!t) return 0;
-    const e = t.querySelectorAll(".text-center span[title]");
-    for (const t of e) {
-      const e = t.querySelector("strong")?.textContent.trim().toLowerCase();
-      if ("exp:" !== e) continue;
-      const n = et(t.getAttribute("title"));
-      if (n > 0) return n;
+    const CHANNEL_CLASS_ENTRIES = Object.entries(CHANNEL_CLASS_NAMES);
+    const NATIVE_CHAT_CONTROLS = Object.freeze({
+        '0': { buttonId: 'mainchatbutton', command: 'killchat' },
+        l: { buttonId: 'Litechatbutton', command: 'gamesroom' },
+        g: { buttonId: 'guildchatbutton', command: 'guildchat' },
+        t: { buttonId: 'tradechatbutton', command: 'trade' },
+        au: { buttonId: 'auctionchatbutton', command: 'auction' },
+        p: { buttonId: 'pubchatbutton', command: 'pub' },
+        a: { buttonId: 'areachatbutton', command: 'area' },
+        global: { buttonId: 'globalschatbutton', command: 'killglobals' }
+    });
+    const CHANNEL_LABELS = Object.freeze({
+        GamesRoom: 'Games Room',
+        gboss: 'Guild Boss',
+        NewPlayers: 'New Players',
+        Icedraffle: 'Iced Raffle',
+        CatsCafe: 'Cats Cafe'
+    });
+
+    let selectedChannel = 'all';
+    let showGlobalChat = true;
+    const enabledAllChannels = new Set();
+    const serverClockSubscribers = new Set();
+    let chatChannelMarkers = [];
+    let quickMenu = null;
+    let serverClockObserver = null;
+
+    function createButton(label, className = '') {
+        const button = document.createElement('button');
+        Object.assign(button, { type: 'button', className, textContent: label });
+        return button;
     }
-    return 0;
-  }
-  function rt(t, e) {
-    const n = t / (25 * e) - 1,
-      o = i.abs(n) < 0.005 ? 0 : n;
-    return `${o > 0 ? "+" : ""}${o.toFixed(2)} per action`;
-  }
-  let it = null;
-  function at() {
-    const t = u("expli");
-    if (!t) return;
-    const e = u("content"),
-      n = ot(e) || nt(e?.textContent || e?.innerText, 1);
-    if (n <= 0) return;
-    const o = t.firstElementChild || t,
-      r = o.textContent.match(/^\s*([\d,]+)/),
-      i = r ? et(r[1]) : 0;
-    if (i <= 0) return;
-    const a = `(${rt(n, i)})`;
-    if (o.textContent.includes(a)) return;
-    const s = o.textContent.replace(/\s*\([^)]*\sper action\)\s*$/i, "").trim();
-    o.textContent = `${s} ${a}`;
-  }
-  const st = n.freeze({
-    jade: "Jade",
-    fragments: "Fragments",
-    gold: "Currency",
-    tokens: "Tokens",
-    diamonds: "Diamonds",
-    sapphires: "Sapphires",
-    rubies: "Rubies",
-    emeralds: "Emeralds",
-    opals: "Opals",
-    health: "Health",
-    attack: "Attack",
-    defence: "Defence",
-    accuracy: "Accuracy",
-    evasion: "Evasion",
-  });
-  function ct() {
-    return `lyrania-mod-suite:loot-statistics:${t.userId || t.username || "unknown-account"}`;
-  }
-  function lt() {
-    return {
-      version: 1,
-      totalDrops: 0,
-      loot: n.fromEntries(
-        n.keys(st).map((t) => [t, { total: 0, base: 0, bonus: 0, drops: 0 }]),
-      ),
-    };
-  }
-  function ut(t) {
-    try {
-      localStorage.setItem(ct(), JSON.stringify(t));
-    } catch (t) {}
-  }
-  function dt(t) {
-    const e = { p: 1e6, g: 1e4, s: 100, c: 1 };
-    let n = 0;
-    const o = /([\d,]+(?:\.\d+)?)\s*([pgsc])\b/gi;
-    let r;
-    for (; null !== (r = o.exec(t));) n += et(r[1]) * e[r[2].toLowerCase()];
-    return n;
-  }
-  function pt(t) {
-    const e = H(t).replace(/\s+/g, " ").trim();
-    if (!e || /^welcome to lyrania!?$/i.test(e)) return null;
-    const n = e.match(
-        /\(\s*([\d,]+)\s*\+\s*([\d,]+)\s+(?:level\s+)?bonus\s*\)/i,
-      ),
-      o = e.match(
-        /\bgained\s+([\d,]+)\s+(Health|Attack|Defence|Accuracy|Evasion)\b/i,
-      );
-    if (o) {
-      const t = et(o[1]);
-      return {
-        type: o[2].toLowerCase(),
-        base: n ? et(n[1]) : i.min(1, t),
-        bonus: n ? et(n[2]) : b(0, t - 1),
-        hasBonus: a(n),
-      };
+
+    function plainText(value) {
+        const source = String(value ?? '');
+        return source.includes('<')
+            ? new DOMParser().parseFromString(source, 'text/html').body.textContent
+            : source;
     }
-    if (/\btoken(?:s| source)?\b/i.test(e)) {
-      const t = [
-        /\(([\d,]+)\s+token source\b/i,
-        /\bfound\s+(?:an?\s+)?([\d,]+)\s+tokens?\b/i,
-        /\b([\d,]+)\s+tokens?\b/i,
-      ];
-      for (const n of t) {
-        const t = e.match(n);
-        if (t) return { type: "tokens", base: et(t[1]), bonus: 0, hasBonus: 0 };
-      }
+
+    function addStyles() {
+        if (document.getElementById(`${SCRIPT_ID}-styles`)) return;
+        const style = document.createElement('style');
+        style.id = `${SCRIPT_ID}-styles`;
+        style.textContent = `
+            #chat_row.${SCRIPT_ID}-layout {
+                display: flex !important;
+                align-items: stretch;
+                gap: 8px;
+                overflow: visible;
+            }
+            #${SCRIPT_ID}-channels {
+                box-sizing: border-box;
+                flex: 0 0 auto;
+                align-self: stretch;
+                width: max-content;
+                min-width: 145px;
+                margin-top: 10px;
+                padding: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.65);
+                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.78);
+                overflow: hidden auto;
+                scrollbar-gutter: stable;
+            }
+            #${SCRIPT_ID}-channels .lyrania-chat-filter {
+                display: block;
+                width: 100%;
+                margin: 0 0 2px;
+                padding: 3px 5px;
+                border: 0;
+                border-radius: 4px;
+                color: #fff;
+                background: transparent;
+                font: inherit;
+                text-align: left;
+                white-space: nowrap;
+                cursor: pointer;
+            }
+            #${SCRIPT_ID}-channels .lyrania-channel-row {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 27px;
+                gap: 3px;
+                align-items: center;
+                margin-bottom: 2px;
+            }
+            #${SCRIPT_ID}-channels .lyrania-no-toggle { grid-template-columns: minmax(0, 1fr); }
+            #${SCRIPT_ID}-channels .lyrania-channel-row .lyrania-chat-filter {
+                margin: 0;
+            }
+            #${SCRIPT_ID}-channels .lyrania-channel-toggle {
+                box-sizing: border-box;
+                min-width: 27px;
+                min-height: 19px;
+                padding: 2px 1px;
+                border: 1px solid rgba(255, 255, 255, 0.35);
+                border-radius: 4px;
+                color: #aaa;
+                background: #111;
+                font: inherit;
+                font-size: 8px;
+                line-height: 1;
+                cursor: pointer;
+            }
+            #${SCRIPT_ID}-channels .lyrania-channel-toggle.is-enabled {
+                color: #fff;
+                background: #286b35;
+            }
+            #${SCRIPT_ID}-channels .lyrania-chat-filter:hover,
+            #${SCRIPT_ID}-channels .lyrania-chat-filter:focus-visible {
+                background: #222;
+                outline: 1px solid rgba(255, 255, 255, 0.35);
+            }
+            #${SCRIPT_ID}-channels .lyrania-chat-filter.is-selected { background: #555; }
+            #${SCRIPT_ID}-channels .lyrania-special-row {
+                margin-top: 4px;
+                border-top: 1px solid rgba(255, 255, 255, 0.25);
+                padding-top: 5px;
+            }
+            #chat_row.${SCRIPT_ID}-layout #chat > .chatToggleButton { display: none !important; }
+            #chat_row.${SCRIPT_ID}-layout > #chat {
+                box-sizing: border-box;
+                flex: 1 1 auto;
+                min-width: 0;
+                width: auto !important;
+            }
+            #${SCRIPT_ID}-quick-menu {
+                position: fixed;
+                z-index: 2147483647;
+                min-width: 135px;
+                padding: 5px;
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 6px;
+                color: #fff;
+                background: #050505;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+            }
+            #${SCRIPT_ID}-quick-menu button {
+                display: block;
+                width: 100%;
+                padding: 5px 7px;
+                border: 0;
+                border-radius: 3px;
+                color: #fff;
+                background: transparent;
+                font: inherit;
+                text-align: left;
+                white-space: nowrap;
+                cursor: pointer;
+            }
+            #${SCRIPT_ID}-quick-menu button:hover,
+            #${SCRIPT_ID}-quick-menu button:focus-visible {
+                background: #333;
+                outline: none;
+            }
+            #timer[data-lyrania-action-queued="true"]::after {
+                content: " — Action queued";
+                color: #ffcc33;
+                font-weight: bold;
+            }
+            #chattabs.${SCRIPT_ID}-chat-loot-split > #chatpanes {
+                display: grid;
+                grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+                gap: 8px;
+                align-items: stretch;
+                min-height: 0;
+                height: 100%;
+                overflow: hidden;
+            }
+            #${SCRIPT_ID}-chat-column {
+                display: grid;
+                grid-template-rows: auto minmax(0, 1fr);
+                min-width: 0;
+                min-height: 0;
+                height: 100%;
+                overflow: hidden;
+            }
+            #${SCRIPT_ID}-chat-composer {
+                display: flex;
+                align-items: stretch;
+                gap: 4px;
+                min-width: 0;
+                padding-right: 8px;
+                border-right: 1px solid rgba(255, 255, 255, 0.4);
+            }
+            #${SCRIPT_ID}-chat-composer > #inputchat {
+                box-sizing: border-box;
+                flex: 1 1 auto;
+                min-width: 0;
+                width: auto !important;
+            }
+            #${SCRIPT_ID}-chat-composer > #chatbutton {
+                box-sizing: border-box;
+                flex: 0 0 auto;
+            }
+            #chattabs.${SCRIPT_ID}-chat-loot-split > nav { display: none !important; }
+            #chattabs.${SCRIPT_ID}-chat-loot-split #chatwindow {
+                display: block !important;
+                box-sizing: border-box;
+                width: auto !important;
+                min-width: 0;
+                min-height: 0;
+                height: 100% !important;
+                padding-right: 8px;
+                border-right: 1px solid rgba(255, 255, 255, 0.4);
+                overflow: hidden auto !important;
+                overscroll-behavior: contain;
+                scrollbar-gutter: stable;
+            }
+            #chattabs.${SCRIPT_ID}-chat-loot-split #lootlog.${SCRIPT_ID}-loot-layout {
+                display: grid !important;
+                grid-template-rows: auto minmax(70px, 1fr);
+                gap: 8px;
+                width: auto !important;
+                min-width: 0;
+                height: 100% !important;
+                overflow: hidden;
+            }
+            #${SCRIPT_ID}-loot-summary,
+            #${SCRIPT_ID}-loot-messages {
+                box-sizing: border-box;
+                min-width: 0;
+                height: 100%;
+                overflow: hidden auto;
+            }
+            #${SCRIPT_ID}-loot-summary {
+                height: auto;
+                overflow: visible;
+                padding-bottom: 6px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-heading {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+            #${SCRIPT_ID}-loot-summary button {
+                padding: 2px 8px;
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                border-radius: 4px;
+                color: #fff;
+                background: #222;
+                cursor: pointer;
+            }
+            #${SCRIPT_ID}-loot-summary button:hover { background: #444; }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-total { margin-bottom: 6px; }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+                gap: 4px;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat {
+                min-width: 0;
+                border: 1px solid rgba(255, 255, 255, 0.14);
+                border-radius: 5px;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat[open] {
+                grid-column: 1 / -1;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat > summary {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 6px;
+                padding: 4px 6px;
+                list-style: none;
+                cursor: pointer;
+                font-size: 11px;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat > summary::-webkit-details-marker {
+                display: none;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat > summary span {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat-values {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 4px;
+                padding: 0 6px 5px;
+                text-align: right;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat-values small {
+                display: block;
+                opacity: 0.7;
+            }
+            #${SCRIPT_ID}-loot-messages .lyrania-loot-entry {
+                display: block;
+                padding: 3px 5px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            #${SCRIPT_ID}-update-banner {
+                position: fixed;
+                right: 16px;
+                bottom: 16px;
+                z-index: 1000000;
+                box-sizing: border-box;
+                width: min(390px, calc(100vw - 32px));
+                padding: 14px;
+                border: 1px solid #ffcc33;
+                border-radius: 6px;
+                color: #fff;
+                background: #161616;
+                box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+                font: 14px/1.4 Arial, sans-serif;
+                text-align: left;
+            }
+            #${SCRIPT_ID}-update-banner strong {
+                display: block;
+                margin-bottom: 6px;
+                color: #ffcc33;
+                font-size: 15px;
+            }
+            #${SCRIPT_ID}-update-banner div { margin-bottom: 10px; }
+            #${SCRIPT_ID}-update-banner a {
+                display: inline-block;
+                margin-right: 10px;
+                padding: 6px 10px;
+                border-radius: 4px;
+                color: #111;
+                background: #ffcc33;
+                font-weight: bold;
+                text-decoration: none;
+            }
+            #${SCRIPT_ID}-update-banner button {
+                padding: 5px 10px;
+                border: 1px solid #777;
+                border-radius: 4px;
+                color: #fff;
+                background: #333;
+                cursor: pointer;
+            }
+            #${SCRIPT_ID}-alert-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 2147483647;
+                box-sizing: border-box;
+                display: grid;
+                place-items: center;
+                padding: 16px;
+                background: rgba(2, 7, 13, 0.78);
+                backdrop-filter: blur(4px);
+            }
+            #${SCRIPT_ID}-alert-overlay[hidden] { display: none !important; }
+            #${SCRIPT_ID}-alert-dialog {
+                box-sizing: border-box;
+                width: min(460px, calc(100vw - 32px));
+                max-height: calc(100vh - 32px);
+                max-height: calc(100dvh - 32px);
+                padding: 18px;
+                overflow: hidden auto;
+                border: 1px solid rgba(126, 174, 226, 0.62);
+                border-radius: 12px;
+                color: #edf6ff;
+                background: #101925;
+                box-shadow: 0 18px 60px rgba(0, 0, 0, 0.72);
+                outline: none;
+                font: 14px/1.5 Arial, sans-serif;
+            }
+            #${SCRIPT_ID}-alert-title {
+                margin: 0 0 10px;
+                color: #fff;
+                font-size: 16px;
+            }
+            #${SCRIPT_ID}-alert-message {
+                margin: 0;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+            }
+            #${SCRIPT_ID}-alert-actions {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 16px;
+            }
+            #${SCRIPT_ID}-alert-ok {
+                box-sizing: border-box;
+                min-width: 88px;
+                padding: 7px 14px;
+                border: 1px solid #5489bf;
+                border-radius: 6px;
+                color: #fff;
+                background: #1c4771;
+                font: inherit;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            #${SCRIPT_ID}-alert-ok:hover,
+            #${SCRIPT_ID}-alert-ok:focus-visible {
+                border-color: #89bdec;
+                background: #285f92;
+                outline: 2px solid rgba(137, 189, 236, 0.35);
+                outline-offset: 2px;
+            }
+            :where(#${SCRIPT_ID}-inventory-dock) {
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+                max-height: min(760px, 75vh);
+                margin: 10px 0;
+                border: 1px solid rgba(255, 255, 255, 0.35);
+                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.72);
+                overflow: hidden;
+            }
+            :where(#${SCRIPT_ID}-inventory-bar) {
+                box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 9px 12px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            :where(#${SCRIPT_ID}-inventory-heading) {
+                display: grid;
+                gap: 1px;
+                min-width: 0;
+            }
+            :where(#${SCRIPT_ID}-inventory-heading) small {
+                color: #aaa;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+            :where(#${SCRIPT_ID}-inventory-heading) strong { font-size: 15px; }
+            :where(#${SCRIPT_ID}-inventory-refresh) {
+                flex: 0 0 auto;
+                min-width: 72px;
+                padding: 5px 9px;
+                border: 1px solid rgba(255, 255, 255, 0.45);
+                border-radius: 5px;
+                color: #fff;
+                background: #222;
+                font: inherit;
+                cursor: pointer;
+            }
+            :where(#${SCRIPT_ID}-inventory-refresh):disabled {
+                cursor: wait;
+                opacity: 0.65;
+            }
+            :where(#${SCRIPT_ID}-inventory-status) {
+                padding: 10px 12px;
+                color: #ccc;
+                font-size: 12px;
+            }
+            :where(#${SCRIPT_ID}-inventory-status):empty { display: none; }
+            :where(#${SCRIPT_ID}-inventory-scroll) {
+                box-sizing: border-box;
+                min-width: 0;
+                min-height: 0;
+                padding: 10px;
+                overflow: auto;
+                overscroll-behavior: contain;
+            }
+            :where(#${SCRIPT_ID}-inventory-content) { min-width: 0; }
+            :where(#${SCRIPT_ID}-inventory-content > #inventory_shell) {
+                box-sizing: border-box;
+                width: 100%;
+                min-width: 0;
+                margin-left: 0 !important;
+            }
+            :where(#holder.${SCRIPT_ID}-has-inventory-dock > #${SCRIPT_ID}-inventory-dock) {
+                grid-area: inventory;
+            }
+            #dungeonmapcontainer.lyrania-dungeon-summary .map_room_moblist_grid {
+                color: #fff !important;
+            }
+            @media (max-width: 760px) { #${SCRIPT_ID}-channels { padding: 6px; } }
+        `;
+        document.head.appendChild(style);
     }
-    if (
-      /\b(?:platinum|gold|silver|copper)\b|[\d,]+(?:\.\d+)?\s*[pgsc]\b/i.test(e)
-    ) {
-      const t = e.match(/\(([^)]*)\)/)?.[1] || e,
-        [n, ...o] = t.split("+"),
-        r = dt(n),
-        i = dt(o.join(" "));
-      if (r || i)
-        return { type: "gold", base: r, bonus: i, hasBonus: o.length > 0 };
-    }
-    const r = (function (t) {
-      const e = t.toLowerCase();
-      return e.includes("jade")
-        ? "jade"
-        : e.includes("fragment")
-          ? "fragments"
-          : e.includes("diamond")
-            ? "diamonds"
-            : e.includes("sapphire")
-              ? "sapphires"
-              : e.includes("ruby") || e.includes("rubies")
-                ? "rubies"
-                : e.includes("emerald")
-                  ? "emeralds"
-                  : e.includes("opal")
-                    ? "opals"
-                    : null;
-    })(e);
-    if (r && n)
-      return { type: r, base: et(n[1]), bonus: et(n[2]), hasBonus: 1 };
-    if (r) {
-      const t = {
-          jade: "jades?",
-          fragments: "(?:jewel(?:lery)?\\s+)?fragments?",
-          diamonds: "diamonds?",
-          sapphires: "sapphires?",
-          rubies: "rub(?:y|ies)",
-          emeralds: "emeralds?",
-          opals: "opals?",
-        },
-        n = e.match(
-          new RegExp(`\\bfound\\s+(?:an?\\s+)?([\\d,]+)\\s+${t[r]}\\b`, "i"),
-        ),
-        o = e.match(new RegExp(`\\bfound\\s+an?\\s+${t[r]}\\b`, "i"));
-      if (n || o)
-        return { type: r, base: n ? et(n[1]) : 1, bonus: 0, hasBonus: 0 };
-    }
-    return null;
-  }
-  function ft(t) {
-    let e = g(r(t) || 0);
-    const n = g(e / 1e6);
-    e %= 1e6;
-    const o = g(e / 1e4);
-    e %= 1e4;
-    const i = g(e / 100),
-      a = e % 100;
-    return `${n.toLocaleString()}p ${o}g ${i}s ${a}c`;
-  }
-  function mt(e) {
-    const o = u(`${$}-loot-summary`);
-    if (!o) return;
-    const r = new Set(
-        Array.from(o.querySelectorAll(".lyrania-loot-stat[open]")).map(
-          (t) => t.dataset.lootType,
-        ),
-      ),
-      i = n
-        .entries(st)
-        .map(([t, n]) => {
-          const o = e.loot[t],
-            i = "gold" === t ? ft : (t) => t.toLocaleString();
-          return `<details class="lyrania-loot-stat" data-loot-type="${t}"${r.has(t) ? " open" : ""}><summary><span>${n}</span><strong>${i(o.total)}</strong></summary><div class="lyrania-loot-stat-values"><span><small>Base</small><b>${i(o.base)}</b></span><span><small>Bonus</small><b>${i(o.bonus)}</b></span><span><small>Drops</small><b>${o.drops.toLocaleString()}</b></span></div></details>`;
-        })
-        .join("");
-    ((o.innerHTML = `<div class="lyrania-loot-heading"><strong>Loot Statistics</strong><button type="button" id="${$}-loot-reset">Reset</button></div><div class="lyrania-loot-total">Total tracked drops: ${e.totalDrops.toLocaleString()}</div><div class="lyrania-loot-stat-grid">${i}</div>`),
-      u(`${$}-loot-reset`)?.addEventListener("click", () => {
-        if (!t.confirm("Reset all saved loot statistics for this account?"))
-          return;
-        const o = lt();
-        (n.assign(e, o), ut(e), mt(e));
-      }));
-  }
-  function yt(t) {
-    if (!(t instanceof Element && t.classList.contains("lootlogitem")))
-      return t;
-    if (t.classList.contains("lyrania-loot-entry")) return t;
-    const e = d("div");
-    return (
-      Array.from(t.attributes).forEach(({ name: t, value: n }) => {
-        e.setAttribute(t, n);
-      }),
-      e.classList.add("lyrania-loot-entry"),
-      (e.textContent = (function (t) {
-        const e = pt(t);
-        if (e) {
-          const t = "gold" === e.type ? ft : (t) => r(t || 0).toLocaleString(),
-            n = e.base + e.bonus,
-            o = e.hasBonus ? ` (${t(e.base)}+${t(e.bonus)})` : "";
-          return `${st[e.type]} - ${t(n)}${o}`;
+
+    function installRemoteTheme(cssText) {
+        const css = String(cssText || '').trim();
+        if (css.length < 100 || !css.includes('{') || css.startsWith('```')) return false;
+
+        let style = document.getElementById(`${SCRIPT_ID}-remote-theme`);
+        if (!style) {
+            style = document.createElement('style');
+            style.id = `${SCRIPT_ID}-remote-theme`;
+            document.head.appendChild(style);
         }
-        return (
-          H(t)
-            .replace(/\s+/g, " ")
-            .replace(/^\s*\[\d{1,2}:\d{2}:\d{2}\]\s*/, "")
-            .replace(/^you\s+(?:found|gained)\s+/i, "")
-            .replace(/[!.]+\s*$/, "")
-            .trim() || "Loot drop"
-        );
-      })(t.textContent)),
-      t.replaceWith(e),
-      e
-    );
-  }
-  function ht(t, e = 100) {
-    Array.from(t.querySelectorAll(":scope > .lootlogitem"))
-      .slice(e)
-      .forEach((t) => t.remove());
-  }
-  const bt = n.freeze([
-    "jewellery",
-    "enchants",
-    "maps",
-    "consumables",
-    "resources",
-    "misc",
-  ]);
-  let gt = null,
-    vt = 0,
-    $t = 0,
-    Ct = 0,
-    wt = 0,
-    St = 0,
-    kt = null,
-    xt = 0;
-  function Et(t, e = "jewellery") {
-    const n = o(t || "").toLowerCase();
-    return bt.includes(n) ? n : e;
-  }
-  function At() {
-    return {
-      dock: u(`${$}-inventory-dock`),
-      status: u(`${$}-inventory-status`),
-      refresh: u(`${$}-inventory-refresh`),
-      scroll: u(`${$}-inventory-scroll`),
-      content: u(`${$}-inventory-content`),
-    };
-  }
-  function Lt() {
-    const t = f(`#${$}-inventory-content > #inventory_shell`);
-    return Et(t?.dataset.currentTab);
-  }
-  function It(t, e = 0) {
-    const { dock: n, status: r, refresh: i } = At();
-    (n && n.setAttribute("aria-busy", o(e)),
-      r && (r.textContent = t),
-      i && (i.disabled = e),
-      h($t),
-      e &&
-        ($t = y(() => {
-          ((vt = 0), (gt = null));
-          const t = At();
-          if (Ct && !wt)
-            return (
-              (wt = 1),
-              t.dock?.setAttribute("aria-busy", "true"),
-              t.refresh && (t.refresh.disabled = 1),
-              t.status &&
-                (t.status.textContent =
-                  "Inventory is still initializing. Retrying…"),
-              h(St),
-              void (St = y(() => {
-                qt(1);
-              }, 2500))
-            );
-          ((Ct = 0),
-            t.dock?.setAttribute("aria-busy", "false"),
-            t.refresh && (t.refresh.disabled = 0),
-            t.status &&
-              (t.status.textContent =
-                "Inventory did not respond. Use Refresh to try again."));
-        }, 15e3)));
-  }
-  function Tt(t) {
-    const { dock: n, status: o, refresh: r, scroll: i, content: s } = At();
-    if (!(n && i && s && t)) return 0;
-    const c = a(u("popup")?.contains(t)),
-      l = Et(t.dataset.currentTab),
-      d = gt?.tab === l ? gt.top : 0;
-    ((gt = null),
-      s.replaceChildren(t),
-      (n.dataset.currentTab = l),
-      n.setAttribute("aria-busy", "false"),
-      o && (o.textContent = ""),
-      r && (r.disabled = 0),
-      h($t),
-      h(St),
-      (Ct = 0));
-    const p = u("mainnav");
-    return (
-      p && (p.value = "1"),
-      (function (t = 0) {
-        if (!t) return;
-        const e = u("popupholder"),
-          n = u("popup"),
-          o = u("popupresponse");
-        (e && (e.style.visibility = "hidden"),
-          n && n.replaceChildren(),
-          o && o.replaceChildren());
-      })(c || vt),
-      (vt = 0),
-      requestAnimationFrame(() => {
-        !(function (t, e, n, o) {
-          if (((t.scrollTop = o), "consumables" !== n)) return;
-          const r = e.querySelector("#inventory-consumable-inline-result");
-          if (!r?.textContent.trim()) return;
-          const i = t.getBoundingClientRect(),
-            a = r.getBoundingClientRect();
-          t.scrollTop = b(0, t.scrollTop + a.top - i.top - 8);
-        })(i, s, l, d);
-      }),
-      e.dispatchEvent(
-        new CustomEvent("lyraniaPersistentInventoryMounted", {
-          detail: { tab: l },
-        }),
-      ),
-      1
-    );
-  }
-  function qt(e = 0) {
-    if (f(`#${$}-inventory-content > #inventory_shell`)) Ct = 0;
-    else {
-      if ("function" != typeof t.inventorySimple)
-        return (
-          (Ct = 0),
-          void It("Inventory is unavailable. Use Refresh to try again.")
-        );
-      (e || (wt = 0), (Ct = 1), t.inventorySimple("jewellery"));
+        style.textContent = css;
+        return true;
     }
-  }
-  function Rt() {
-    const e = u("dungeonmapcontainer"),
-      n = e?.parentElement?.querySelectorAll(".dungeonmapRoomType") || [];
-    if (!e || n.length < 4) return 0;
-    const o = e.querySelectorAll(".map_room_moblist_grid");
-    if (!o.length) return 0;
-    e.classList.add("lyrania-dungeon-summary");
-    const i = { mobs: 0, regular: 0, challenge: 0, empty: 0 };
-    return (
-      o.forEach((t) => {
-        const e = r.parseInt(t.textContent, 10) || 0;
-        ((i.mobs += e),
-          e <= 0
-            ? (i.empty += 1)
-            : t.classList.contains("maproom_challenge_room")
-              ? (i.challenge += 1)
-              : t.classList.contains("maproom_regular_room") &&
-                (i.regular += 1));
-      }),
-      [
-        ["Mobs Left", i.mobs],
-        ["Regular Rooms", i.regular],
-        ["Challenge Rooms", i.challenge],
-        ["Empty Rooms", i.empty],
-      ].forEach(([t, e], o) => {
-        n[o].textContent = `${t} (${e})${o < 3 ? " | " : ""}`;
-      }),
-      e.querySelectorAll("img").forEach((e) => {
-        const n = new URL(e.src, t.location.href).pathname;
-        /\/(?:open-)?chest\.svg$/.test(n) || (e.style.opacity = "0");
-      }),
-      1
-    );
-  }
-  const _t = [
-    function () {
-      const n = v.chatChannelSidebar,
-        o = v.chatQuickMenu;
-      if (!n && !o) return 1;
-      const r = u("chatwindow");
-      if (!r) return 0;
-      if (n && !u(`${$}-channels`)) {
-        const t = u("chat_row"),
-          e = u("chatchannel");
-        if (!t || !e) return 0;
-        (!(function (t, e) {
-          const n = d("aside");
-          ((n.id = `${$}-channels`),
-            n.setAttribute("aria-label", "Chat channels"));
-          const o = Array.from(e.options, (t) => ({
-            value: t.value,
-            label: M(t.text),
-            marker: `[ ${t.text.trim()} ]`,
-          }));
-          _ = o.map(({ value: t, marker: e }) => ({ value: t, marker: e }));
-          const r = P("All", "lyrania-chat-filter lyrania-channel-select");
-          function i(t, o, r, i = "", a = 1) {
-            r && q.add(t);
-            const s = d("div");
-            s.className = `lyrania-channel-row ${i}`.trim();
-            const c = P(o, "lyrania-chat-filter lyrania-channel-select");
-            if (
-              ((c.dataset.channel = t),
-              c.addEventListener("click", () => {
-                (N(t),
-                  (I = t),
-                  (e.value = "global" === t ? "0" : t),
-                  F(n),
-                  Q());
-              }),
-              s.appendChild(c),
-              !a)
-            )
-              return (
-                s.classList.add("lyrania-no-toggle"),
-                void n.appendChild(s)
-              );
-            const l = P("", "lyrania-channel-toggle");
-            (W(l, r),
-              l.addEventListener("click", () => {
-                const e = !q.has(t);
-                (e ? (q.add(t), N(t)) : q.delete(t),
-                  "global" === t && (T = e),
-                  W(l, e),
-                  Q());
-              }),
-              s.appendChild(l),
-              n.appendChild(s));
-          }
-          ((r.dataset.channel = "all"),
-            r.addEventListener("click", () => {
-              ((I = "all"), (e.value = "0"), F(n), Q());
-            }),
-            n.appendChild(r));
-          const a = o.filter(({ value: t }) => /^\d+$/.test(t.trim()));
-          (o
-            .filter(({ value: t }) => !/^\d+$/.test(t.trim()))
-            .forEach(({ value: t, label: e }) => {
-              i(t, e, A[t] ? O(t) : 1);
-            }),
-            a.forEach(({ value: t, label: e }) => {
-              i(t, e, 1);
-            }),
-            i("w", "Whispers", 1, "lyrania-special-row", 0),
-            N("global"),
-            (T = 1),
-            i("global", "Global Chat", 1),
-            t.classList.add(`${$}-layout`),
-            t.insertBefore(n, t.firstChild),
-            (e.hidden = 1));
-          const s = u("chat");
-          if (s) {
-            const t = () => {
-              const t = b(100, g(s.getBoundingClientRect().height - 10));
-              ((n.style.height = `${t}px`), (n.style.maxHeight = `${t}px`));
-            };
-            (t(), new ResizeObserver(t).observe(s));
-          }
-          F(n);
-        })(t, e),
-          new c(X).observe(r, { childList: 1 }),
-          Q());
-      }
-      return (
-        o &&
-          !e.documentElement.dataset.lyraniaQuickMenu &&
-          ((e.documentElement.dataset.lyraniaQuickMenu = "installed"),
-          p("click", (n) => {
-            const o = n.target.closest?.("#chatwindow .chatname");
-            if (o)
-              return (
-                n.preventDefault(),
-                n.stopPropagation(),
-                void (function (n) {
-                  J();
-                  const o = n.textContent.trim();
-                  if (!o) return;
-                  const r = d("div");
-                  ((r.id = `${$}-quick-menu`),
-                    r.setAttribute("role", "menu"),
-                    K(r, "View Profile", () => U("profile", o)),
-                    K(r, "Whisper", () => z("w", o)),
-                    K(r, "Send Mail", () => U("post", 0, o, "")),
-                    K(r, "Wire Platinum", () => z("wire", o)),
-                    K(r, "Wire Jade", () => z("wirejade", o)),
-                    K(r, "Wire Item", () => z("wireitem", o)),
-                    e.body.appendChild(r),
-                    (D = r));
-                  const a = n.getBoundingClientRect(),
-                    s = r.getBoundingClientRect(),
-                    c = i.min(a.right + 5, t.innerWidth - s.width - 6),
-                    l = i.min(a.top, t.innerHeight - s.height - 6);
-                  ((r.style.left = `${b(6, c)}px`),
-                    (r.style.top = `${b(6, l)}px`),
-                    r.querySelector("button")?.focus());
-                })(o)
-              );
-            n.target.closest?.(`#${$}-quick-menu`) || J();
-          }),
-          p("keydown", (t) => {
-            "Escape" === t.key && J();
-          }),
-          m("resize", J),
-          m("scroll", J, 1)),
-        1
-      );
-    },
-    function () {
-      if (!v.tripleDpHour) return 1;
-      if (u(`${$}-triple-hour`)) return 1;
-      const t = u("serverTime")?.parentElement;
-      if (!t) return 0;
-      const e = d("div");
-      ((e.id = `${$}-triple-hour`),
-        (e.innerHTML = "Triple DP Hour: <span>--:--:--</span>"),
-        t.insertAdjacentElement("afterend", e));
-      const i = e.querySelector("span");
-      let a = "";
-      return tt(() => {
-        const t = u("serverTime")?.textContent.slice(0, 5);
-        if (t && t === a) return;
-        a = t;
-        const e = (function (t = Z()) {
-          const e = (function (t = Z()) {
-              return n.fromEntries(
-                k
-                  .formatToParts(new s(t))
-                  .filter(({ type: t }) => "literal" !== t)
-                  .map(({ type: t, value: e }) => [t, r(e)]),
-              );
-            })(t),
-            i = Y() || e,
-            a = 24 * (e.day - 1) + i.hour,
-            c = a % 20;
-          if (0 === c) return "Now";
-          const l = a + 20 - c,
-            u = 24 * new s(s.UTC(e.year, e.month, 0)).getUTCDate();
-          return `${o(l >= u ? 0 : l % 24).padStart(2, "0")}:00:00`;
-        })();
-        i.textContent !== e && (i.textContent = e);
-      });
-    },
-    function () {
-      if (!v.killsPerHour) return 1;
-      if (u(`${$}-kph`)) return 1;
-      const t = u("sidecounter");
-      if (!t) return 0;
-      const e = u("serverTime"),
-        n = u("killscount");
-      if (!e || !n) return 0;
-      const o = d("div");
-      ((o.innerHTML = `Kills Per Hour: <span id="${$}-kph">0.0</span>`),
-        t.appendChild(o));
-      const r = o.querySelector("span");
-      return tt(() => {
-        const t = et(n.textContent),
-          e = Y();
-        if (!e) return;
-        const o = e.hour + e.minute / 60 + e.second / 3600,
-          i = o > 0 ? (t / o).toFixed(1) : "0.0";
-        r.textContent !== i && (r.textContent = i);
-      });
-    },
-    function () {
-      if (!v.hideInactiveDpTimers) return 1;
-      const t = u("bonusdisplays");
-      if (!t) return 0;
-      if (t.dataset.lyraniaInactiveDpHider) return 1;
-      t.dataset.lyraniaInactiveDpHider = "installed";
-      const e = () => {
-        ["doubledp", "tripledp", "quaddp"].forEach((t) => {
-          const e = u(t);
-          e?.parentElement &&
-            (e.parentElement.hidden =
-              "inactive" === e.textContent.trim().toLowerCase());
+
+    function readCachedRemoteTheme() {
+        try {
+            const cached = JSON.parse(localStorage.getItem(REMOTE_THEME_CACHE_KEY));
+            return cached?.url === REMOTE_THEME_URL && typeof cached.css === 'string'
+                ? cached.css
+                : '';
+        } catch (_error) {
+            return '';
+        }
+    }
+
+    async function loadRemoteTheme() {
+        const cachedCss = readCachedRemoteTheme();
+        if (cachedCss) installRemoteTheme(cachedCss);
+
+        try {
+            const response = await fetch(REMOTE_THEME_URL, {
+                cache: 'no-cache',
+                credentials: 'omit'
+            });
+            if (!response.ok) throw new Error(`GitHub returned HTTP ${response.status}`);
+
+            const css = await response.text();
+            if (!installRemoteTheme(css)) throw new Error('The downloaded theme was not valid CSS text.');
+            try {
+                localStorage.setItem(REMOTE_THEME_CACHE_KEY, JSON.stringify({
+                    url: REMOTE_THEME_URL,
+                    css
+                }));
+            } catch (_error) {
+                // The live theme still works when browser storage is unavailable.
+            }
+        } catch (error) {
+            if (!cachedCss) console.warn(`[${SCRIPT_ID}] Could not load the remote theme.`, error);
+        }
+    }
+
+    function normalizeChannelLabel(label) {
+        const trimmed = label.trim();
+        return CHANNEL_LABELS[trimmed] || trimmed;
+    }
+
+    function setSelectedButton(sidebar) {
+        sidebar.querySelectorAll('.lyrania-channel-select[data-channel]').forEach((button) => {
+            const selected = button.dataset.channel === selectedChannel;
+            button.classList.toggle('is-selected', selected);
+            button.setAttribute('aria-pressed', String(selected));
         });
-      };
-      return (
-        new c(e).observe(t, { childList: 1, characterData: 1, subtree: 1 }),
-        e(),
-        1
-      );
-    },
-    function () {
-      if (!v.heldEnterAlertGuard) return 1;
-      if (t.alert?.lyraniaHeldEnterAlertGuardVersion === C) return 1;
-      if ("function" != typeof t.alert) return 0;
-      let n = t.alert;
-      for (let t = 0; t < 5; t += 1) {
-        const t = n?.lyraniaNativeAlert;
-        if ("function" != typeof t || t === n) break;
-        n = t;
-      }
-      const r = [];
-      let i = 0,
-        a = 0,
-        s = 0,
-        c = 0,
-        l = null,
-        f = 0;
-      const b = (t) =>
-        "Enter" === t.key || "Enter" === t.code || "NumpadEnter" === t.code;
-      function g() {
-        c && (h(c), (c = 0));
-      }
-      function w() {
-        (g(),
-          i ||
-            (c = y(() => {
-              ((c = 0), i || ((a = 0), l && (s = 1)));
-            }, 300)));
-      }
-      function S() {
-        if (l || !r.length || !e.body) return;
-        const t = (function () {
-          let t = u(`${$}-alert-overlay`);
-          if (t)
-            return {
-              overlay: t,
-              dialog: t.querySelector(`#${$}-alert-dialog`),
-              message: t.querySelector(`#${$}-alert-message`),
-              okButton: t.querySelector(`#${$}-alert-ok`),
-            };
-          ((t = d("div")), (t.id = `${$}-alert-overlay`), (t.hidden = 1));
-          const n = d("section");
-          ((n.id = `${$}-alert-dialog`),
-            (n.tabIndex = -1),
-            n.setAttribute("role", "alertdialog"),
-            n.setAttribute("aria-modal", "true"),
-            n.setAttribute("aria-labelledby", `${$}-alert-title`),
-            n.setAttribute("aria-describedby", `${$}-alert-message`));
-          const o = d("h2");
-          ((o.id = `${$}-alert-title`), (o.textContent = "Lyrania notice"));
-          const r = d("p");
-          r.id = `${$}-alert-message`;
-          const i = d("div");
-          i.id = `${$}-alert-actions`;
-          const a = P("OK");
-          return (
-            (a.id = `${$}-alert-ok`),
-            i.appendChild(a),
-            n.append(o, r, i),
-            t.appendChild(n),
-            e.body.appendChild(t),
-            { overlay: t, dialog: n, message: r, okButton: a }
-          );
-        })();
-        ((l = { messageText: r.shift(), ...t }),
-          (a = 1),
-          (s = 0),
-          (f = 0),
-          g(),
-          i || w(),
-          (l.message.textContent = o(l.messageText ?? "")),
-          (l.overlay.hidden = 0));
-        try {
-          l.dialog.focus({ preventScroll: 1 });
-        } catch (t) {
-          l.dialog.focus();
+    }
+
+    function isNativeChatEnabled(channel) {
+        const control = NATIVE_CHAT_CONTROLS[channel];
+        const button = control && document.getElementById(control.buttonId);
+        if (!button) return true;
+
+        const color = getComputedStyle(button).backgroundColor.replace(/\s+/g, '').toLowerCase();
+        return color !== 'rgb(0,0,0)'
+            && color !== 'rgba(0,0,0,0)'
+            && color !== 'transparent';
+    }
+
+    function ensureNativeChatEnabled(channel) {
+        const control = NATIVE_CHAT_CONTROLS[channel];
+        if (!control || isNativeChatEnabled(channel)) return;
+        callGameFunction('commands', control.command);
+    }
+
+    function updateChannelToggle(button, enabled) {
+        button.classList.toggle('is-enabled', enabled);
+        button.setAttribute('aria-pressed', String(enabled));
+        button.textContent = enabled ? 'On' : 'Off';
+        button.title = enabled ? 'Shown in All' : 'Hidden from All';
+    }
+
+    function isGlobalOrBossAnnouncement(line) {
+        if (line.querySelector(`
+            .globalchatcolor,
+            [class*="boss" i],
+            [class*="motd" i],
+            [class*="bonus" i]
+        `)) {
+            return true;
         }
-      }
-      function k(t = 0) {
-        l &&
-          ((l.overlay.hidden = 1),
-          (l = null),
-          (s = 0),
-          (f = 0),
-          t && ((a = 1), g()),
-          y(S, 0));
-      }
-      (m(
-        "keydown",
-        (t) => {
-          b(t) &&
-            ((i = 1),
-            g(),
-            (l || a) &&
-              (t.preventDefault(),
-              t.stopImmediatePropagation(),
-              l && s && !t.repeat && k(1)));
-        },
-        1,
-      ),
-        m(
-          "keyup",
-          (t) => {
-            b(t) &&
-              ((i = 0),
-              (l || a) &&
-                (t.preventDefault(), t.stopImmediatePropagation(), w()));
-          },
-          1,
-        ),
-        p(
-          "pointerdown",
-          (t) => {
-            l &&
-              ((f = t.isTrusted && 0 === t.button && t.target === l.okButton),
-              l.dialog.contains(t.target) ||
-                (t.preventDefault(), t.stopImmediatePropagation()));
-          },
-          1,
-        ),
-        p(
-          "pointercancel",
-          () => {
-            f = 0;
-          },
-          1,
-        ),
-        p(
-          "click",
-          (t) => {
-            if (l) {
-              if (t.target === l.okButton) {
-                const e = f;
-                return (
-                  (f = 0),
-                  t.preventDefault(),
-                  t.stopImmediatePropagation(),
-                  void (e && k(0))
-                );
-              }
-              ((f = 0),
-                l.dialog.contains(t.target) ||
-                  (t.preventDefault(), t.stopImmediatePropagation()));
+
+        const text = line.textContent.replace(/\s+/g, ' ').trim();
+        if (/\bmessage\s+of\s+the\s+day\s*:/i.test(text)
+            || /(?:^|\s)g?motd\s*:/i.test(text)
+            || /\bauto\s+reconciliation\b/i.test(text)
+            || /\brecovered\s+[\d,]+\s+auto\s+battles?\s+while\s+(?:your\s+game\s+tab\s+was\s+inactive|you\s+were\s+offline)\b/i.test(text)
+            || /\bbonus\s+(?:effect|event|modifier|active|activated)\b/i.test(text)) {
+            return true;
+        }
+
+        // Bonus system notices do not have a player-name element. This catches
+        // alternate bonus wording without hiding normal player conversations.
+        if (!line.querySelector('.chatname') && /\bbonus(?:es)?\b/i.test(text)) {
+            return true;
+        }
+
+        for (const link of line.querySelectorAll('a[href]')) {
+            const href = (link.getAttribute('href') || '').replace(/\s+/g, '').toLowerCase();
+            if (href.includes('performnav(9)')
+                || href.includes('contract()')
+                || href.includes('boss')) return true;
+        }
+        return false;
+    }
+
+    function lineMatchesSelectedChannel(line) {
+        if (selectedChannel === 'all') {
+            if (isGlobalOrBossAnnouncement(line)) return showGlobalChat;
+            if (line.querySelector('.whisperchatcolor')) return true;
+
+            for (const [channel, className] of CHANNEL_CLASS_ENTRIES) {
+                if (channel !== 'w' && line.querySelector(`.${className}`)) {
+                    return enabledAllChannels.has(channel);
+                }
             }
-          },
-          1,
-        ));
-      const x = function (t) {
-        (r.push(t), S());
-      };
-      return (
-        (x.lyraniaHeldEnterAlertGuardVersion = C),
-        (x.lyraniaNativeAlert = n),
-        (t.alert = x),
-        1
-      );
-    },
-    function () {
-      if (!v.bufferXp) return 1;
-      if (t.updategems?.lyraniaBufferXpWrapperVersion === C) return 1;
-      if ("function" != typeof t.updategems || !u("expli")) return 0;
-      it = (function () {
-        const t = et(u("lvlli")?.textContent),
-          e = f("#expli [data-tippy-content]")?.getAttribute(
-            "data-tippy-content",
-          ),
-          n = o(e || "").match(/^\s*([\d,]+)/),
-          r = n ? et(n[1]) : 0;
-        return t > 0 && r >= 0 ? { level: t, bufferXp: r } : null;
-      })();
-      const e = t.updategems,
-        n = async function (...t) {
-          const n = await e.apply(this, t);
-          return (
-            (function (t) {
-              const e = et(t[11]),
-                n = et(t[12]),
-                o = u("expli");
-              if (!e || !o) return;
-              const a = (function (t, e) {
-                  if (t < 1) return 1;
-                  const n = (2 * t - 1) ** 2 + (8 * e) / 25;
-                  return b(1, (1 + i.sqrt(b(0, n))) / 2);
-                })(e, n),
-                s = g(a + r.EPSILON),
-                c = (function () {
-                  for (const t of [
-                    "#content",
-                    "#popupresponse",
-                    "#popup",
-                    "#rightinfo",
-                  ]) {
-                    const e = f(t),
-                      n = ot(e);
-                    if (n > 0) return n;
-                    const o = nt(e?.textContent);
-                    if (o > 0) return o;
-                  }
-                  return 0;
-                })(),
-                l = (function (t, e, n) {
-                  if (!t || e < t.level) return 0;
-                  const o = e - t.level,
-                    a = o > 0 ? (25 * o * (t.level + e - 1)) / 2 : 0,
-                    s = n - t.bufferXp + a;
-                  return r.isFinite(s) && s > 0 ? i.round(s) : 0;
-                })(it, e, n),
-                p = c || l;
-              it = { level: e, bufferXp: n };
-              const m = p > 0 ? ` (${rt(p, s)})` : "",
-                y = d("span");
-              ((y.dataset.tippyContent = `${n.toLocaleString()}/${(25 * e).toLocaleString()} XP`),
-                (y.textContent = `${s.toLocaleString()}${m}`),
-                o.replaceChildren(y));
-            })(t),
-            n
-          );
-        };
-      ((n.lyraniaBufferXpWrapperVersion = C), (t.updategems = n));
-      const a = u("content");
-      if (a) {
-        let t = 0;
-        new c(() => {
-          t ||
-            ((t = 1),
-            requestAnimationFrame(() => {
-              ((t = 0), at());
-            }));
-        }).observe(a, { childList: 1, characterData: 1, subtree: 1 });
-      }
-      at();
-      const s = u("expli")?.previousElementSibling;
-      return (s && (s.textContent = "Buffer Level:"), 1);
-    },
-    function () {
-      if (!v.persistentLootLog) return 1;
-      const e = u("lootlog"),
-        o = u("chattabs"),
-        i = u("chatpanes"),
-        a = u("chatwindow"),
-        s = u("inputchat"),
-        c = u("chatbutton");
-      if (!(e && o && i && a && s && c && "function" == typeof t.lootlog))
-        return 0;
-      if (t.lootlog.lyraniaPersistentLootWrapper) return 1;
-      (e.classList.add(`${$}-loot-layout`),
-        o.classList.add(`${$}-chat-loot-split`));
-      const l = d("section");
-      l.id = `${$}-chat-column`;
-      const p = d("div");
-      ((p.id = `${$}-chat-composer`),
-        i.insertBefore(l, a),
-        p.append(s, c),
-        l.append(p, a));
-      const f = d("section");
-      f.id = `${$}-loot-summary`;
-      const m = d("section");
-      ((m.id = `${$}-loot-messages`),
-        Array.from(e.children).forEach((t) => {
-          m.appendChild(yt(t));
-        }),
-        ht(m),
-        e.append(f, m));
-      const y = (function () {
-        const t = lt();
-        try {
-          const e = JSON.parse(localStorage.getItem(ct()));
-          if (!e || "object" != typeof e) return t;
-          ((t.totalDrops = b(0, r(e.totalDrops) || 0)),
-            n.keys(t.loot).forEach((n) => {
-              const o = e.loot?.[n];
-              o &&
-                ["total", "base", "bonus", "drops"].forEach((e) => {
-                  t.loot[n][e] = b(0, r(o[e]) || 0);
+
+            for (const channel of chatChannelMarkers) {
+                if (line.textContent.includes(channel.marker)) {
+                    return enabledAllChannels.has(channel.value);
+                }
+            }
+            return true;
+        }
+
+        // Whispers remain visible in every filtered view so replies are not missed.
+        if (line.querySelector('.whisperchatcolor')) {
+            return true;
+        }
+
+        if (selectedChannel === 'global') return isGlobalOrBossAnnouncement(line);
+
+        const className = CHANNEL_CLASS_NAMES[selectedChannel];
+        if (className) {
+            return Boolean(line.querySelector(`.${className}`));
+        }
+
+        const channel = chatChannelMarkers.find(
+            (item) => item.value === selectedChannel
+        );
+        return Boolean(channel && line.textContent.includes(channel.marker));
+    }
+
+    function updateChatLineVisibility(line) {
+        line.hidden = !lineMatchesSelectedChannel(line);
+    }
+
+    function filterChat() {
+        const chatWindow = document.getElementById('chatwindow');
+        if (!chatWindow) return;
+
+        chatWindow.querySelectorAll('.chatline').forEach((line) => {
+            updateChatLineVisibility(line);
+        });
+    }
+
+    function filterAddedChatLines(records) {
+        records.forEach((record) => {
+            record.addedNodes.forEach((node) => {
+                if (node.nodeType === 1 && node.matches('.chatline')) {
+                    updateChatLineVisibility(node);
+                }
+                node.querySelectorAll?.('.chatline').forEach((line) => {
+                    updateChatLineVisibility(line);
                 });
+            });
+        });
+    }
+
+    function createChannelSidebar(chatRow, channelSelect) {
+        const sidebar = document.createElement('aside');
+        sidebar.id = `${SCRIPT_ID}-channels`;
+        sidebar.setAttribute('aria-label', 'Chat channels');
+
+        const channels = Array.from(channelSelect.options, (option) => ({
+                value: option.value,
+                label: normalizeChannelLabel(option.text),
+                marker: `[ ${option.text.trim()} ]`
             }));
-        } catch (t) {}
-        return t;
-      })();
-      mt(y);
-      const h = t.lootlog,
-        g = function (t) {
-          const n = h.apply(this, arguments),
-            o = e.querySelector(":scope > .lootlogitem");
-          return (
-            o && (m.prepend(yt(o)), ht(m)),
-            (function (t, e) {
-              const n = pt(t);
-              return n
-                ? (function (t, e, n, o = 0) {
-                    const i = t.loot[e];
-                    if (!i) return 0;
-                    const a = b(0, r(n) || 0),
-                      s = b(0, r(o) || 0);
-                    return (
-                      (i.base += a),
-                      (i.bonus += s),
-                      (i.total += a + s),
-                      (i.drops += 1),
-                      (t.totalDrops += 1),
-                      1
-                    );
-                  })(e, n.type, n.base, n.bonus)
-                : 0;
-            })(t, y) && (ut(y), mt(y)),
-            n
-          );
-        };
-      return ((g.lyraniaPersistentLootWrapper = 1), (t.lootlog = g), 1);
-    },
-    function () {
-      if (!v.isolatedInventoryRequests) return 1;
-      const e = t.inventorySimple;
-      if (e?.lyraniaIsolatedInventoryVersion === C) return 1;
-      if ("function" != typeof e) return 0;
-      const n = new Set([
-          "purchase_lockbox",
-          "use_lockbox",
-          "conjure_enchant",
-          "add_jewel_mod",
-          "add_jewel_mod_confirm",
-          "map_trade",
-        ]),
-        i = (t) => u(t)?.value || "",
-        s = function (...e) {
-          const s = o(e[1] || ""),
-            c = r.parseInt(e[2], 10),
-            l = u("popupresdisplay"),
-            d =
-              "enchants" === e[0] && "enchant_table_state" === s
-                ? (l?.scrollTop ?? null)
-                : null;
-          if ("loadout" === s && 1 === c) {
-            const n = t.prompt("What would you like to call this loadout?");
-            if (!n) return void y(() => t.inventorySimple("jewellery"), 0);
-            ((e[3] = n), (e[4] = i("pet")));
-          } else
-            "loadout" !== s ||
-              (2 !== c && 3 !== c) ||
-              ((e[3] = i("loadout")), (e[4] = i("pet")));
-          if (
-            ("use_lockbox" === s && (e[2] = i("lockboxquant")),
-            "purchase_lockbox" === s && (e[2] = i("buy_lockboxquant")),
-            "remove_enchant_confirm" === s &&
-              (e[3] = a(u("enchantsavable")?.checked)),
-            n.has(s) &&
-              "function" == typeof t.lockInventoryActionButton &&
-              !t.lockInventoryActionButton(s))
-          )
-            return;
-          const p = new URLSearchParams({ tab: o(e[0] || "jewellery") });
-          void 0 !== e[1] && p.set("action", o(e[1]));
-          for (let t = 2; t < e.length; t += 1)
-            void 0 !== e[t] && p.set("extrainfo" + (t - 1), o(e[t]));
-          xt += 1;
-          const m = xt;
-          kt && kt.readyState !== XMLHttpRequest.DONE && kt.abort();
-          const h = new XMLHttpRequest();
-          ((kt = h),
-            h.open("POST", "inventory_simplified.php", 1),
-            (h.timeout = 2e4),
-            h.setRequestHeader(
-              "Content-Type",
-              "application/x-www-form-urlencoded",
-            ),
-            (h.onload = () => {
-              if (m !== xt) return;
-              if (((kt = null), h.status < 200 || h.status >= 300))
-                return void It(
-                  "Inventory request failed. Use Refresh to try again.",
-                );
-              const n = h.responseText.split("[BREAK]");
-              if (1 === t.popupui && "function" == typeof t.openpopuppane)
-                t.openpopuppane(n[0]);
-              else {
-                const t = u("content");
-                t && (t.innerHTML = n[0]);
-              }
-              (n.slice(1).forEach((e) => {
-                if (e.trim())
-                  try {
-                    t.eval(e);
-                  } catch (t) {}
-              }),
-                "function" == typeof t.InventoryPageInit &&
-                  t.InventoryPageInit(),
-                "consumables" === e[0] &&
-                  "function" ==
-                    typeof t.renderInventoryConsumableInlineResult &&
-                  t.renderInventoryConsumableInlineResult());
-              const o = a(f(`#${$}-inventory-content > #inventory_shell`));
-              !o && null !== d && l
-                ? (l.scrollTop = d)
-                : !o &&
-                  "enchants" === e[0] &&
-                  void 0 !== e[1] &&
-                  l &&
-                  l.scrollTo({ top: 0, behavior: "smooth" });
-            }));
-          const b = () => {
-            m === xt &&
-              ((kt = null),
-              It("Inventory request failed. Use Refresh to try again."));
-          };
-          return ((h.onerror = b), (h.ontimeout = b), h.send(p.toString()), h);
-        };
-      return (
-        (s.lyraniaIsolatedInventoryVersion = C),
-        (s.lyraniaOriginalInventorySimple = e),
-        (t.inventorySimple = s),
-        1
-      );
-    },
-    function () {
-      if (!v.persistentInventory) return 1;
-      if (
-        !(function () {
-          const n = u("holder");
-          if (!n) return null;
-          let o = u(`${$}-inventory-dock`);
-          if (o) return o;
-          ((o = d("aside")),
-            (o.id = `${$}-inventory-dock`),
-            o.setAttribute("aria-labelledby", `${$}-inventory-title`),
-            o.setAttribute("aria-busy", "true"),
-            (o.innerHTML = `<header id="${$}-inventory-bar"><span id="${$}-inventory-heading"><span id="${$}-inventory-title-line"><strong id="${$}-inventory-title">Inventory</strong><span id="${$}-inventory-status" role="status" aria-live="polite">Waiting for the game to finish loading…</span></span></span><button type="button" id="${$}-inventory-refresh">Refresh</button></header><div id="${$}-inventory-scroll"><div id="${$}-inventory-content"></div></div>`));
-          const r = u("chat_row");
-          return (
-            n.insertBefore(o, r || null),
-            n.classList.add(`${$}-has-inventory-dock`),
-            e.documentElement.classList.add(`${$}-persistent-inventory`),
-            o
-              .querySelector(`#${$}-inventory-refresh`)
-              ?.addEventListener("click", () => {
-                "function" == typeof t.inventorySimple &&
-                  t.inventorySimple(Lt());
-              }),
-            o
-          );
-        })()
-      )
-        return 0;
-      if (
-        !(function () {
-          const e = t.openpopuppane;
-          if (e?.lyraniaPersistentInventoryRouterVersion === C) return 1;
-          if ("function" != typeof e) return 0;
-          const n = function (t) {
-            if (
-              !(function (t) {
-                if ("string" != typeof t || !t.includes("inventory_shell"))
-                  return 0;
-                const e = d("template");
-                return (
-                  (e.innerHTML = t.trim()),
-                  Tt(e.content.querySelector("#inventory_shell"))
-                );
-              })(t)
-            )
-              return e.apply(this, arguments);
-          };
-          return (
-            (n.lyraniaPersistentInventoryRouterVersion = C),
-            (n.lyraniaOriginalOpenPopupPane = e),
-            (t.openpopuppane = n),
-            1
-          );
-        })() ||
-        !(function () {
-          const n = t.inventorySimple;
-          if (n?.lyraniaPersistentInventoryVersion === C) return 1;
-          if ("function" != typeof n) return 0;
-          const o = function (...t) {
-            const { scroll: o } = At(),
-              r = Lt(),
-              i = Et(t[0], r);
-            ((vt = ["mainnav", "popupnav"].includes(e.activeElement?.id)),
-              (gt = { tab: i === r ? r : null, top: o?.scrollTop || 0 }),
-              It(
-                f(`#${$}-inventory-content > #inventory_shell`)
-                  ? "Refreshing inventory…"
-                  : "Loading inventory…",
-                1,
-              ));
-            try {
-              return n.apply(this, t);
-            } catch (t) {
-              throw (
-                (vt = 0),
-                (gt = null),
-                It("Inventory could not be loaded. Use Refresh to try again."),
-                t
-              );
+        chatChannelMarkers = channels.map(({ value, marker }) => ({ value, marker }));
+
+        const allButton = createButton('All', 'lyrania-chat-filter lyrania-channel-select');
+        allButton.dataset.channel = 'all';
+        allButton.addEventListener('click', () => {
+            selectedChannel = 'all';
+            channelSelect.value = '0';
+            setSelectedButton(sidebar);
+            filterChat();
+        });
+        sidebar.appendChild(allButton);
+
+        function addChannelRow(value, label, enabled, extraClass = '', toggleable = true) {
+            if (enabled) enabledAllChannels.add(value);
+
+            const row = document.createElement('div');
+            row.className = `lyrania-channel-row ${extraClass}`.trim();
+
+            const selectButton = createButton(label, 'lyrania-chat-filter lyrania-channel-select');
+            selectButton.dataset.channel = value;
+            selectButton.addEventListener('click', () => {
+                ensureNativeChatEnabled(value);
+                selectedChannel = value;
+                channelSelect.value = value === 'global' ? '0' : value;
+                setSelectedButton(sidebar);
+                filterChat();
+            });
+
+            row.appendChild(selectButton);
+            if (!toggleable) {
+                row.classList.add('lyrania-no-toggle');
+                sidebar.appendChild(row);
+                return;
             }
-          };
-          return (
-            (o.lyraniaPersistentInventoryVersion = C),
-            (o.lyraniaOriginalInventorySimple = n),
-            (t.inventorySimple = o),
-            1
-          );
-        })()
-      )
-        return 0;
-      if (
-        (function () {
-          const t = f("#popup #inventory_shell, #content #inventory_shell");
-          return t ? Tt(t) : 0;
-        })()
-      )
-        return 1;
-      let n = 0;
-      const o = () => {
-        n || ((n = 1), qt());
-      };
-      return (
-        p(
-          "battleContentLoaded",
-          () => {
-            y(o, 5e3);
-          },
-          { once: 1 },
-        ),
-        y(o, 8e3),
-        1
-      );
-    },
-    function () {
-      if (!v.popupOutsideClose) return 1;
-      const n = "data-lyrania-popup-outside-close-version";
-      if (e.documentElement.getAttribute(n) === C) return 1;
-      let o = 0;
-      const r = () => {
-          const t = u("popupholder");
-          return t &&
-            "visible" === l(t).visibility &&
-            ["popup", "popupresponse"].some((t) => {
-              const e = u(t);
-              return e && (e.childElementCount > 0 || e.textContent.trim());
-            })
-            ? t
-            : null;
-        },
-        i = (t) => t instanceof Element && a(t.closest(`#${$}-inventory-dock`)),
-        s = () => {
-          const e = r();
-          return e
-            ? ("function" == typeof t.closepage
-                ? t.closepage()
-                : (e.style.visibility = "hidden"),
-              1)
-            : 0;
-        };
-      return (
-        p(
-          "pointerdown",
-          (t) => {
-            const e = r();
-            o = a(e && 0 === t.button && !e.contains(t.target) && !i(t.target));
-          },
-          1,
-        ),
-        p(
-          "pointercancel",
-          () => {
-            o = 0;
-          },
-          1,
-        ),
-        p(
-          "click",
-          (t) => {
-            const e = r(),
-              n = o && e && !e.contains(t.target) && !i(t.target);
-            ((o = 0),
-              n && (t.preventDefault(), t.stopImmediatePropagation(), s()));
-          },
-          1,
-        ),
-        p(
-          "keydown",
-          (t) => {
-            "Escape" === t.key && r() && (t.preventDefault(), s());
-          },
-          1,
-        ),
-        e.documentElement.setAttribute(n, C),
-        1
-      );
-    },
-    function () {
-      if (!v.dungeonMapSummary) return 1;
-      if (t.dungeonmap?.lyraniaDungeonMapSummaryWrapper) return 1;
-      if ("function" != typeof t.dungeonmap) return 0;
-      const n = t.dungeonmap,
-        o = function (...t) {
-          const o = n.apply(this, t);
-          return (
-            (function () {
-              if (Rt()) return;
-              let t = 0;
-              const n = new c(() => {
-                t ||
-                  ((t = 1),
-                  requestAnimationFrame(() => {
-                    ((t = 0), Rt() && n.disconnect());
-                  }));
-              });
-              (n.observe(u("popup") || e.body, { childList: 1, subtree: 1 }),
-                y(() => n.disconnect(), 15e3));
-            })(),
-            o
-          );
-        };
-      return ((o.lyraniaDungeonMapSummaryWrapper = 1), (t.dungeonmap = o), 1);
-    },
-    function () {
-      if (!v.actionTimerFix || t.__lyraniaActionTimerFixInstalled) return 1;
-      const n = [
-          "auto",
-          "improvedauto",
-          "battle",
-          "improvedbattle",
-          "dungeonbattle",
-          "improveddungeonbattle",
-        ],
-        i = [
-          "timer",
-          "timer2",
-          "finishActionTimer",
-          "scheduleServerAction",
-          "clearServerAction",
-          "performnav",
-          "guildpage",
-          "boss",
-          "gboss",
-          ...n,
-          "moblist",
-          "improvedmoblist",
-          "map",
-          "gmap",
-        ];
-      if (!t.jQuery || i.some((e) => "function" != typeof t[e])) return 0;
-      t.__lyraniaActionTimerFixInstalled = 1;
-      const s = t.timer,
-        d = t.scheduleServerAction,
-        m = t.finishActionTimer,
-        h = new Set(),
-        g = [
-          "#content .kung_fu_button",
-          "#content #bb",
-          "#content #attackboss",
-          '#content [onclick*="auto("]',
-          '#content [onclick*="battle("]',
-          '#content [onclick*="boss("]',
-          '#content [onclick*="gboss("]',
-        ].join(",");
-      let $ = 0,
-        C = 0,
-        w = 0,
-        S = null,
-        k = null,
-        x = 0,
-        E = 0,
-        A = 0;
-      function L() {
-        try {
-          const t =
-            "undefined" == typeof actionTimerEndsAt ? 0 : r(actionTimerEndsAt);
-          if (t > 0) return t;
-          const e = b(
-            "undefined" == typeof timertime ? 0 : r(timertime) || 0,
-            "undefined" == typeof timer2time ? 0 : r(timer2time) || 0,
-          );
-          return e > 0 ? Z() + e : 0;
-        } catch (t) {
-          return 0;
+
+            const toggleButton = createButton('', 'lyrania-channel-toggle');
+            updateChannelToggle(toggleButton, enabled);
+            toggleButton.addEventListener('click', () => {
+                const nextEnabled = !enabledAllChannels.has(value);
+                if (nextEnabled) {
+                    enabledAllChannels.add(value);
+                    ensureNativeChatEnabled(value);
+                } else {
+                    enabledAllChannels.delete(value);
+                }
+                if (value === 'global') showGlobalChat = nextEnabled;
+                updateChannelToggle(toggleButton, nextEnabled);
+                filterChat();
+            });
+
+            row.appendChild(toggleButton);
+            sidebar.appendChild(row);
         }
-      }
-      function I() {
-        return b(0, b(L(), w) - Z());
-      }
-      const T = [
-        "#content input#bb",
-        "#content button#bb",
-        "#content #attackboss",
-        '#content input[type="button"][value="Attack!"]',
-        '#content input[type="button"][value="Fight"]',
-        '#content input[type="button"][value="Continue"]',
-      ].join(",");
-      function q() {
-        const t = u("timer");
-        (t &&
-          (S
-            ? (t.dataset.lyraniaActionQueued = "true")
-            : delete t.dataset.lyraniaActionQueued),
-          e.querySelectorAll("[data-lyrania-queued-control]").forEach((t) => {
-            delete t.dataset.lyraniaQueuedControl;
-          }),
-          S?.source?.isConnected &&
-            (S.source.dataset.lyraniaQueuedControl = "true"));
-      }
-      function R() {
-        const t = f("#capt, #captchadiv");
-        return a(t && t.getClientRects().length > 0);
-      }
-      function _() {
-        if (I() > 0 || $ > 0 || S) return;
-        if (R()) return;
-        const t = u("popupholder");
-        if (t && "visible" === l(t).visibility) return;
-        const n = e.activeElement;
-        if (n && n !== e.body && n !== e.documentElement && n.isConnected)
-          return;
-        const o = [...e.querySelectorAll(T)].find(
-          (t) =>
-            !t.disabled &&
-            !t.closest("#capt, #captchadiv") &&
-            t.getClientRects().length > 0 &&
-            "hidden" !== l(t).visibility,
+
+        const numberedChannels = channels.filter(({ value }) => /^\d+$/.test(value.trim()));
+        const standardChannels = channels.filter(({ value }) => !/^\d+$/.test(value.trim()));
+
+        standardChannels.forEach(({ value, label }) => {
+            const enabled = NATIVE_CHAT_CONTROLS[value]
+                ? isNativeChatEnabled(value)
+                : true;
+            addChannelRow(value, label, enabled);
+        });
+
+        numberedChannels.forEach(({ value, label }) => {
+            addChannelRow(value, label, true);
+        });
+
+        addChannelRow('w', 'Whispers', true, 'lyrania-special-row', false);
+        ensureNativeChatEnabled('global');
+        showGlobalChat = true;
+        addChannelRow('global', 'Global Chat', true);
+
+        chatRow.classList.add(`${SCRIPT_ID}-layout`);
+        chatRow.insertBefore(sidebar, chatRow.firstChild);
+        channelSelect.hidden = true;
+
+        const chat = document.getElementById('chat');
+        if (chat) {
+            const constrainSidebarHeight = () => {
+                const availableHeight = Math.max(100, Math.floor(chat.getBoundingClientRect().height - 10));
+                sidebar.style.height = `${availableHeight}px`;
+                sidebar.style.maxHeight = `${availableHeight}px`;
+            };
+            constrainSidebarHeight();
+            new ResizeObserver(constrainSidebarHeight).observe(chat);
+        }
+        setSelectedButton(sidebar);
+    }
+
+    function setChatCommand(command, playerName) {
+        const input = document.getElementById('inputchat');
+        if (!input) return;
+        input.value = `/${command} ${playerName} `;
+        input.style.color = '#DD77DD';
+        input.focus();
+    }
+
+    function callGameFunction(functionName, ...args) {
+        const gameFunction = window[functionName];
+        if (typeof gameFunction === 'function') {
+            gameFunction(...args);
+        } else {
+            console.warn(`[${SCRIPT_ID}] The game function "${functionName}" is unavailable.`);
+        }
+    }
+
+    function closeQuickMenu() {
+        quickMenu?.remove();
+        quickMenu = null;
+    }
+
+    function addQuickMenuAction(menu, label, action) {
+        const button = createButton(label);
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            closeQuickMenu();
+            action();
+        });
+        menu.appendChild(button);
+    }
+
+    function openQuickMenu(chatName) {
+        closeQuickMenu();
+
+        const playerName = chatName.textContent.trim();
+        if (!playerName) return;
+
+        const menu = document.createElement('div');
+        menu.id = `${SCRIPT_ID}-quick-menu`;
+        menu.setAttribute('role', 'menu');
+
+        addQuickMenuAction(menu, 'View Profile', () => callGameFunction('profile', playerName));
+        addQuickMenuAction(menu, 'Whisper', () => setChatCommand('w', playerName));
+        addQuickMenuAction(menu, 'Send Mail', () => callGameFunction('post', 0, playerName, ''));
+        addQuickMenuAction(menu, 'Wire Platinum', () => setChatCommand('wire', playerName));
+        addQuickMenuAction(menu, 'Wire Jade', () => setChatCommand('wirejade', playerName));
+        addQuickMenuAction(menu, 'Wire Item', () => setChatCommand('wireitem', playerName));
+
+        document.body.appendChild(menu);
+        quickMenu = menu;
+
+        const nameRect = chatName.getBoundingClientRect();
+        const menuRect = menu.getBoundingClientRect();
+        const left = Math.min(nameRect.right + 5, window.innerWidth - menuRect.width - 6);
+        const top = Math.min(nameRect.top, window.innerHeight - menuRect.height - 6);
+        menu.style.left = `${Math.max(6, left)}px`;
+        menu.style.top = `${Math.max(6, top)}px`;
+        menu.querySelector('button')?.focus();
+    }
+
+    function installQuickMenu() {
+        document.addEventListener('click', (event) => {
+            const chatName = event.target.closest?.('#chatwindow .chatname');
+            if (chatName) {
+                event.preventDefault();
+                event.stopPropagation();
+                openQuickMenu(chatName);
+                return;
+            }
+
+            if (!event.target.closest?.(`#${SCRIPT_ID}-quick-menu`)) {
+                closeQuickMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeQuickMenu();
+        });
+
+        window.addEventListener('resize', closeQuickMenu);
+        window.addEventListener('scroll', closeQuickMenu, true);
+    }
+
+    function initializeChatMods() {
+        const wantsSidebar = MODS.chatChannelSidebar;
+        const wantsQuickMenu = MODS.chatQuickMenu;
+        if (!wantsSidebar && !wantsQuickMenu) return true;
+
+        const chatWindow = document.getElementById('chatwindow');
+        if (!chatWindow) return false;
+
+        if (wantsSidebar && !document.getElementById(`${SCRIPT_ID}-channels`)) {
+            const chatRow = document.getElementById('chat_row');
+            const channelSelect = document.getElementById('chatchannel');
+            if (!chatRow || !channelSelect) return false;
+            createChannelSidebar(chatRow, channelSelect);
+
+            const observer = new MutationObserver(filterAddedChatLines);
+            observer.observe(chatWindow, { childList: true });
+            filterChat();
+        }
+
+        if (wantsQuickMenu && !document.documentElement.dataset.lyraniaQuickMenu) {
+            document.documentElement.dataset.lyraniaQuickMenu = 'installed';
+            installQuickMenu();
+        }
+        return true;
+    }
+
+    function getEstimatedServerTimestamp() {
+        try {
+            const timestamp = Number(window.estimatedServerNow?.());
+            if (Number.isFinite(timestamp) && timestamp > 0) return timestamp;
+        } catch (_error) {
+            // Fall back to the browser clock until server synchronization completes.
+        }
+        return Date.now();
+    }
+
+    function getLondonTime(timestamp = getEstimatedServerTimestamp()) {
+        return Object.fromEntries(
+            LONDON_TIME_FORMATTER.formatToParts(new Date(timestamp))
+                .filter(({ type }) => type !== 'literal')
+                .map(({ type, value }) => [type, Number(value)])
         );
-        if (o)
-          try {
-            o.focus({ preventScroll: 1 });
-          } catch (t) {
-            o.focus();
-          }
-      }
-      function D() {
-        ((S = null), k && t.clearServerAction(k), (k = null), q());
-      }
-      function B() {
-        ((x = 0), (E = 0));
-      }
-      function P(e = 0, n = 0) {
-        (e && D(),
-          (w = b(w, L())),
-          (A = a(n)),
-          (function () {
-            (h.forEach((e) => t.clearServerAction(e)), h.clear());
-            try {
-              const t =
-                ("undefined" != typeof autoing && 0 !== r(autoing)) ||
-                ("undefined" != typeof am && r(am) > 0) ||
-                ("undefined" != typeof funcheck && a(funcheck));
-              ("undefined" != typeof varstopauto && (varstopauto = 1),
-                "undefined" != typeof autoing && (autoing = 0),
-                "undefined" != typeof am && (am = 0),
-                "undefined" != typeof stopboss && (stopboss = 1),
-                "function" == typeof clearAutoBattleResumeState &&
-                  clearAutoBattleResumeState(),
-                t &&
-                  fetch("stopauto.php", { credentials: "same-origin" }).catch(
-                    () => {},
-                  ));
-            } catch (t) {}
-          })(),
-          (C = 1),
-          q());
-      }
-      function H(t) {
-        ((C = 0), (w = 0), (A = 0));
-        try {
-          ("boss" === t && "undefined" != typeof stopboss && (stopboss = 0),
-            "boss" !== t &&
-              "undefined" != typeof varstopauto &&
-              (varstopauto = 0));
-        } catch (t) {}
-      }
-      function j(e = I()) {
-        S &&
-          (k && t.clearServerAction(k),
-          (k = d.call(t, b(0, e), () => {
-            ((k = null), M());
-          })));
-      }
-      function M() {
-        if (!S) return;
-        const e = I();
-        if (e > 0 || $ > 0) return (q(), void j(e || 100));
-        const n = S;
-        D();
-        try {
-          m.call(t);
-        } catch (t) {}
-        (H(n.type), n.original.apply(n.context, n.args));
-      }
-      function F(t, n, o, r) {
-        if ($ > 0) return;
-        if (I() <= 0) return (H(t), n.apply(o, r));
-        const i = e.activeElement,
-          a = i?.matches?.(g) ? i : null;
-        ((S = { type: t, original: n, context: o, args: r, source: a }),
-          q(),
-          j());
-      }
-      function O(e, n) {
-        const o = t[e];
-        t[e] = function (...t) {
-          return n(o, this, t);
+    }
+
+    function formatTripleDpHour(hour) {
+        return `${String(hour).padStart(2, '0')}:00:00`;
+    }
+
+    function getDisplayedServerTime() {
+        const match = document.getElementById('serverTime')?.textContent.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+        if (!match) return null;
+
+        const [, hour, minute, second] = match.map(Number);
+        if (hour > 23 || minute > 59 || second > 59) return null;
+        return { hour, minute, second };
+    }
+
+    function getTripleDpHour(timestamp = getEstimatedServerTimestamp()) {
+        const london = getLondonTime(timestamp);
+        const serverTime = getDisplayedServerTime() || london;
+        const elapsedHours = (london.day - 1) * 24 + serverTime.hour;
+        const hoursSinceTripleDp = elapsedHours % TRIPLE_DP_INTERVAL_HOURS;
+        if (hoursSinceTripleDp === 0) return 'Now';
+
+        const nextStart = elapsedHours + TRIPLE_DP_INTERVAL_HOURS - hoursSinceTripleDp;
+        const hoursInMonth = new Date(Date.UTC(london.year, london.month, 0)).getUTCDate() * 24;
+
+        // The cycle starts over at 00:00 UK server time on the first of every month.
+        return formatTripleDpHour(nextStart >= hoursInMonth ? 0 : nextStart % 24);
+    }
+
+    function subscribeToServerClock(callback) {
+        const serverTime = document.getElementById('serverTime');
+        if (!serverTime) return false;
+
+        serverClockSubscribers.add(callback);
+        if (!serverClockObserver) {
+            serverClockObserver = new MutationObserver(() => {
+                serverClockSubscribers.forEach((subscriber) => subscriber());
+            });
+            serverClockObserver.observe(serverTime, {
+                childList: true,
+                characterData: true,
+                subtree: true
+            });
+        }
+        callback();
+        return true;
+    }
+
+    function initializeTripleDpHour() {
+        if (!MODS.tripleDpHour) return true;
+        if (document.getElementById(`${SCRIPT_ID}-triple-hour`)) return true;
+
+        const serverTimeRow = document.getElementById('serverTime')?.parentElement;
+        if (!serverTimeRow) return false;
+
+        const row = document.createElement('div');
+        row.id = `${SCRIPT_ID}-triple-hour`;
+        row.innerHTML = 'Triple DP Hour: <span>--:--:--</span>';
+        serverTimeRow.insertAdjacentElement('afterend', row);
+
+        const output = row.querySelector('span');
+        let lastMinute = '';
+        return subscribeToServerClock(() => {
+            const serverMinute = document.getElementById('serverTime')?.textContent.slice(0, 5);
+            if (serverMinute && serverMinute === lastMinute) return;
+            lastMinute = serverMinute;
+            const display = getTripleDpHour();
+            if (output.textContent !== display) output.textContent = display;
+        });
+    }
+
+    function parseFormattedNumber(value) {
+        const number = Number(String(value ?? '').replace(/[^\d.-]/g, ''));
+        return Number.isFinite(number) ? number : 0;
+    }
+
+    function initializeKillsPerHour() {
+        if (!MODS.killsPerHour) return true;
+        if (document.getElementById(`${SCRIPT_ID}-kph`)) return true;
+
+        const sideCounter = document.getElementById('sidecounter');
+        if (!sideCounter) return false;
+
+        const serverTime = document.getElementById('serverTime');
+        const killCount = document.getElementById('killscount');
+        if (!serverTime || !killCount) return false;
+
+        const row = document.createElement('div');
+        row.innerHTML = `Kills Per Hour: <span id="${SCRIPT_ID}-kph">0.0</span>`;
+        sideCounter.appendChild(row);
+
+        const output = row.querySelector('span');
+        const update = () => {
+            const kills = parseFormattedNumber(killCount.textContent);
+            const time = getDisplayedServerTime();
+            if (!time) return;
+            const elapsedHours = time.hour + time.minute / 60 + time.second / 3600;
+            const display = elapsedHours > 0 ? (kills / elapsedHours).toFixed(1) : '0.0';
+            if (output.textContent !== display) output.textContent = display;
         };
-      }
-      ((t.scheduleServerAction = function (t, e) {
-        if (
-          !(function (t) {
-            return /\b(?:fun|boss|gboss|dungeonbattle|improveddungeonbattle)\s*\(/.test(
-              Function.prototype.toString.call(t),
+        return subscribeToServerClock(update);
+    }
+
+    function initializeInactiveDpTimerHider() {
+        if (!MODS.hideInactiveDpTimers) return true;
+        const bonusDisplay = document.getElementById('bonusdisplays');
+        if (!bonusDisplay) return false;
+        if (bonusDisplay.dataset.lyraniaInactiveDpHider) return true;
+        bonusDisplay.dataset.lyraniaInactiveDpHider = 'installed';
+
+        const update = () => {
+            ['doubledp', 'tripledp', 'quaddp'].forEach((id) => {
+                const timer = document.getElementById(id);
+                if (timer?.parentElement) {
+                    timer.parentElement.hidden = timer.textContent.trim().toLowerCase() === 'inactive';
+                }
+            });
+        };
+
+        new MutationObserver(update).observe(bonusDisplay, {
+            childList: true,
+            characterData: true,
+            subtree: true
+        });
+        update();
+        return true;
+    }
+
+    function initializeHeldEnterAlertGuard() {
+        if (!MODS.heldEnterAlertGuard) return true;
+        if (window.alert?.lyraniaHeldEnterAlertGuardVersion === SCRIPT_VERSION) return true;
+        if (typeof window.alert !== 'function') return false;
+
+        // Unwrap this suite's older guards if a new version is installed without
+        // first reloading the page.
+        let nativeAlert = window.alert;
+        for (let index = 0; index < 5; index += 1) {
+            const priorNativeAlert = nativeAlert?.lyraniaNativeAlert;
+            if (typeof priorNativeAlert !== 'function' || priorNativeAlert === nativeAlert) break;
+            nativeAlert = priorNativeAlert;
+        }
+
+        const ENTER_RELEASE_QUIET_MS = 300;
+        const pendingAlerts = [];
+        let enterIsDown = false;
+        let enterBlockedUntilRelease = false;
+        let keyboardArmed = false;
+        let releaseTimer = 0;
+        let activeAlert = null;
+        let okPointerArmed = false;
+
+        const isEnter = (event) => event.key === 'Enter'
+            || event.code === 'Enter'
+            || event.code === 'NumpadEnter';
+
+        function clearReleaseTimer() {
+            if (!releaseTimer) return;
+            window.clearTimeout(releaseTimer);
+            releaseTimer = 0;
+        }
+
+        function scheduleKeyboardArm() {
+            clearReleaseTimer();
+            if (enterIsDown) return;
+            releaseTimer = window.setTimeout(() => {
+                releaseTimer = 0;
+                if (enterIsDown) return;
+                enterBlockedUntilRelease = false;
+                if (activeAlert) keyboardArmed = true;
+            }, ENTER_RELEASE_QUIET_MS);
+        }
+
+        function createAlertElements() {
+            let overlay = document.getElementById(`${SCRIPT_ID}-alert-overlay`);
+            if (overlay) return {
+                overlay,
+                dialog: overlay.querySelector(`#${SCRIPT_ID}-alert-dialog`),
+                message: overlay.querySelector(`#${SCRIPT_ID}-alert-message`),
+                okButton: overlay.querySelector(`#${SCRIPT_ID}-alert-ok`)
+            };
+
+            overlay = document.createElement('div');
+            overlay.id = `${SCRIPT_ID}-alert-overlay`;
+            overlay.hidden = true;
+
+            const dialog = document.createElement('section');
+            dialog.id = `${SCRIPT_ID}-alert-dialog`;
+            dialog.tabIndex = -1;
+            dialog.setAttribute('role', 'alertdialog');
+            dialog.setAttribute('aria-modal', 'true');
+            dialog.setAttribute('aria-labelledby', `${SCRIPT_ID}-alert-title`);
+            dialog.setAttribute('aria-describedby', `${SCRIPT_ID}-alert-message`);
+
+            const title = document.createElement('h2');
+            title.id = `${SCRIPT_ID}-alert-title`;
+            title.textContent = 'Lyrania notice';
+
+            const message = document.createElement('p');
+            message.id = `${SCRIPT_ID}-alert-message`;
+
+            const actions = document.createElement('div');
+            actions.id = `${SCRIPT_ID}-alert-actions`;
+
+            const okButton = createButton('OK');
+            okButton.id = `${SCRIPT_ID}-alert-ok`;
+            actions.appendChild(okButton);
+            dialog.append(title, message, actions);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            return { overlay, dialog, message, okButton };
+        }
+
+        function showNextAlert() {
+            if (activeAlert || !pendingAlerts.length || !document.body) return;
+            const elements = createAlertElements();
+            activeAlert = { messageText: pendingAlerts.shift(), ...elements };
+            enterBlockedUntilRelease = true;
+            keyboardArmed = false;
+            okPointerArmed = false;
+            clearReleaseTimer();
+            if (!enterIsDown) scheduleKeyboardArm();
+
+            activeAlert.message.textContent = String(activeAlert.messageText ?? '');
+            activeAlert.overlay.hidden = false;
+            try {
+                activeAlert.dialog.focus({ preventScroll: true });
+            } catch (_error) {
+                activeAlert.dialog.focus();
+            }
+        }
+
+        function closeActiveAlert(fromKeyboard = false) {
+            if (!activeAlert) return;
+            activeAlert.overlay.hidden = true;
+            activeAlert = null;
+            keyboardArmed = false;
+            okPointerArmed = false;
+
+            // The Enter press that closes the alert is also consumed through its
+            // release, so it cannot fall through to the game underneath.
+            if (fromKeyboard) {
+                enterBlockedUntilRelease = true;
+                clearReleaseTimer();
+            }
+            window.setTimeout(showNextAlert, 0);
+        }
+
+        window.addEventListener('keydown', (event) => {
+            if (!isEnter(event)) return;
+            enterIsDown = true;
+            clearReleaseTimer();
+            if (!activeAlert && !enterBlockedUntilRelease) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            if (activeAlert && keyboardArmed && !event.repeat) {
+                closeActiveAlert(true);
+            }
+        }, true);
+
+        window.addEventListener('keyup', (event) => {
+            if (!isEnter(event)) return;
+            enterIsDown = false;
+            if (!activeAlert && !enterBlockedUntilRelease) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            scheduleKeyboardArm();
+        }, true);
+
+        document.addEventListener('pointerdown', (event) => {
+            if (!activeAlert) return;
+            okPointerArmed = event.isTrusted
+                && event.button === 0
+                && event.target === activeAlert.okButton;
+            if (!activeAlert.dialog.contains(event.target)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
+        document.addEventListener('pointercancel', () => {
+            okPointerArmed = false;
+        }, true);
+        document.addEventListener('click', (event) => {
+            if (!activeAlert) return;
+            if (event.target === activeAlert.okButton) {
+                const allowClose = okPointerArmed;
+                okPointerArmed = false;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (allowClose) closeActiveAlert(false);
+                return;
+            }
+            okPointerArmed = false;
+            if (!activeAlert.dialog.contains(event.target)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
+
+        const guardedAlert = function (message) {
+            pendingAlerts.push(message);
+            showNextAlert();
+            return undefined;
+        };
+        guardedAlert.lyraniaHeldEnterAlertGuardVersion = SCRIPT_VERSION;
+        guardedAlert.lyraniaNativeAlert = nativeAlert;
+        window.alert = guardedAlert;
+        return true;
+    }
+
+    function initializeActionTimerFix() {
+        if (!MODS.actionTimerFix || window.__lyraniaActionTimerFixInstalled) return true;
+
+        const actionFunctions = [
+            'auto', 'improvedauto', 'battle', 'improvedbattle',
+            'dungeonbattle', 'improveddungeonbattle'
+        ];
+        const menuFunctions = ['moblist', 'improvedmoblist', 'map', 'gmap'];
+        const requiredFunctions = [
+            'timer', 'timer2', 'finishActionTimer',
+            'scheduleServerAction', 'clearServerAction',
+            'performnav', 'guildpage', 'boss', 'gboss',
+            ...actionFunctions, ...menuFunctions
+        ];
+        if (!window.jQuery
+            || requiredFunctions.some((name) => typeof window[name] !== 'function')) return false;
+
+        window.__lyraniaActionTimerFixInstalled = true;
+        const originalTimer = window.timer;
+        const originalSchedule = window.scheduleServerAction;
+        const originalFinishTimer = window.finishActionTimer;
+        const actionSchedules = new Set();
+        const controlSelector = [
+            '#content .kung_fu_button',
+            '#content #bb',
+            '#content #attackboss',
+            '#content [onclick*="auto("]',
+            '#content [onclick*="battle("]',
+            '#content [onclick*="boss("]',
+            '#content [onclick*="gboss("]'
+        ].join(',');
+        let activeRequests = 0;
+        let navigating = false;
+        let preservedDeadline = 0;
+        let queuedAction = null;
+        let queuedHandle = null;
+        let manualCombatPendingContinue = false;
+        let allowNextMoblistCooldown = false;
+        let navigationAcceptsRequestedCooldown = false;
+
+        function currentDeadline() {
+            try {
+                const exact = typeof actionTimerEndsAt === 'undefined'
+                    ? 0
+                    : Number(actionTimerEndsAt);
+                if (exact > 0) return exact;
+
+                const remaining = Math.max(
+                    typeof timertime === 'undefined' ? 0 : Number(timertime) || 0,
+                    typeof timer2time === 'undefined' ? 0 : Number(timer2time) || 0
+                );
+                return remaining > 0 ? getEstimatedServerTimestamp() + remaining : 0;
+            } catch (_error) {
+                return 0;
+            }
+        }
+
+        function remainingCooldown() {
+            return Math.max(
+                0,
+                Math.max(currentDeadline(), preservedDeadline) - getEstimatedServerTimestamp()
             );
-          })(e)
-        )
-          return d.apply(this, arguments);
-        let n;
-        return (
-          (n = d.call(this, t, function (...t) {
-            return (h.delete(n), e.apply(this, t));
-          })),
-          h.add(n),
-          n
-        );
-      }),
-        (t.timer = function (t, ...e) {
-          const n = b(0, r(t) || 0);
-          if (!C) return ((w = 0), (A = 0), s.call(this, n, ...e));
-          const o = Z(),
-            i = b(0, w - o),
-            a = b(A ? n : 0, i);
-          w = a > 0 ? o + a : 0;
-          const c = s.call(this, a, ...e);
-          return (q(), c);
-        }),
-        (t.timer2 = function (...e) {
-          return t.timer.apply(this, e);
-        }),
-        t.jQuery(e).on("ajaxSend.lyraniaActionTimerFix", (t, e, n) => {
-          const r = o(n?.url || "")
-            .split("?")[0]
-            .toLowerCase();
-          /(?:^|\/)(?:auto|improvedauto|battle|improvedbattle|dungeonbattle|improveddungeonbattle|bosses|gboss)\.php$/.test(
-            r,
-          ) &&
-            (($ += 1),
-            e.always(() =>
-              y(() => {
-                (($ = b(0, $ - 1)), M());
-              }, 0),
+        }
+
+        const primaryActionSelector = [
+            '#content input#bb',
+            '#content button#bb',
+            '#content #attackboss',
+            '#content input[type="button"][value="Attack!"]',
+            '#content input[type="button"][value="Fight"]',
+            '#content input[type="button"][value="Continue"]'
+        ].join(',');
+
+        function renderQueue() {
+            const timerDisplay = document.getElementById('timer');
+            if (timerDisplay) {
+                if (queuedAction) timerDisplay.dataset.lyraniaActionQueued = 'true';
+                else delete timerDisplay.dataset.lyraniaActionQueued;
+            }
+            document.querySelectorAll('[data-lyrania-queued-control]').forEach((control) => {
+                delete control.dataset.lyraniaQueuedControl;
+            });
+            if (queuedAction?.source?.isConnected) {
+                queuedAction.source.dataset.lyraniaQueuedControl = 'true';
+            }
+        }
+
+        function visiblePrimaryAction() {
+            return [...document.querySelectorAll(primaryActionSelector)].find((control) => (
+                !control.disabled
+                && !control.closest('#capt, #captchadiv')
+                && control.getClientRects().length > 0
+                && getComputedStyle(control).visibility !== 'hidden'
             ));
-        }),
-        (t.finishActionTimer = function (...t) {
-          const n = m.apply(this, t);
-          return (
-            R() &&
-              e.activeElement?.closest?.("#capt, #captchadiv") &&
-              e.activeElement.blur(),
-            M(),
-            y(_, 0),
-            n
-          );
-        }),
-        p(
-          "click",
-          (t) => {
-            const e = t.target.closest?.(
-              '#content input[type="button"], #content input[type="submit"], #content button',
+        }
+
+        function botCheckIsVisible() {
+            const botCheck = document.querySelector('#capt, #captchadiv');
+            return Boolean(botCheck && botCheck.getClientRects().length > 0);
+        }
+
+        function restorePrimaryActionFocus() {
+            if (remainingCooldown() > 0 || activeRequests > 0 || queuedAction) return;
+            if (botCheckIsVisible()) return;
+
+            const popupHolder = document.getElementById('popupholder');
+            if (popupHolder && getComputedStyle(popupHolder).visibility === 'visible') return;
+
+            const active = document.activeElement;
+            const focusIsFree = !active
+                || active === document.body
+                || active === document.documentElement
+                || !active.isConnected;
+            if (!focusIsFree) return;
+
+            const primaryAction = visiblePrimaryAction();
+            if (!primaryAction) return;
+            try {
+                primaryAction.focus({ preventScroll: true });
+            } catch (_error) {
+                primaryAction.focus();
+            }
+        }
+
+        function isActionSchedule(callback) {
+            return /\b(?:fun|boss|gboss|dungeonbattle|improveddungeonbattle)\s*\(/
+                .test(Function.prototype.toString.call(callback));
+        }
+
+        window.scheduleServerAction = function (delay, callback) {
+            if (!isActionSchedule(callback)) {
+                return originalSchedule.apply(this, arguments);
+            }
+
+            let handle;
+            handle = originalSchedule.call(this, delay, function (...args) {
+                actionSchedules.delete(handle);
+                return callback.apply(this, args);
+            });
+            actionSchedules.add(handle);
+            return handle;
+        };
+
+        function stopRepeatingActions() {
+            actionSchedules.forEach((handle) => window.clearServerAction(handle));
+            actionSchedules.clear();
+
+            try {
+                const autoWasRunning = (typeof autoing !== 'undefined' && Number(autoing) !== 0)
+                    || (typeof am !== 'undefined' && Number(am) > 0)
+                    || (typeof funcheck !== 'undefined' && Boolean(funcheck));
+
+                if (typeof varstopauto !== 'undefined') varstopauto = 1;
+                if (typeof autoing !== 'undefined') autoing = 0;
+                if (typeof am !== 'undefined') am = 0;
+                if (typeof stopboss !== 'undefined') stopboss = 1;
+                if (typeof clearAutoBattleResumeState === 'function') clearAutoBattleResumeState();
+                if (autoWasRunning) {
+                    fetch('stopauto.php', { credentials: 'same-origin' }).catch(() => {});
+                }
+            } catch (error) {
+                console.warn('[lyrania-action-timer-fix] Could not stop the prior action.', error);
+            }
+        }
+
+        function cancelQueuedAction() {
+            queuedAction = null;
+            if (queuedHandle) window.clearServerAction(queuedHandle);
+            queuedHandle = null;
+            renderQueue();
+        }
+
+        function clearManualCombatCycle() {
+            manualCombatPendingContinue = false;
+            allowNextMoblistCooldown = false;
+        }
+
+        function beginNavigation(cancelPending = false, acceptRequestedCooldown = false) {
+            if (cancelPending) cancelQueuedAction();
+            preservedDeadline = Math.max(preservedDeadline, currentDeadline());
+            navigationAcceptsRequestedCooldown = Boolean(acceptRequestedCooldown);
+            stopRepeatingActions();
+            navigating = true;
+            renderQueue();
+        }
+
+        window.timer = function (delay, ...rest) {
+            const milliseconds = Math.max(0, Number(delay) || 0);
+            if (!navigating) {
+                preservedDeadline = 0;
+                navigationAcceptsRequestedCooldown = false;
+                return originalTimer.call(this, milliseconds, ...rest);
+            }
+
+            // A newly requested mob-list timer is valid only after a manual combat
+            // result's Continue button. Initial Battle navigation and auto completion
+            // should return immediately, while an already-running cooldown is carried.
+            const serverNow = getEstimatedServerTimestamp();
+            const carriedMilliseconds = Math.max(0, preservedDeadline - serverNow);
+            const requestedMilliseconds = navigationAcceptsRequestedCooldown
+                ? milliseconds
+                : 0;
+            const effectiveMilliseconds = Math.max(
+                requestedMilliseconds,
+                carriedMilliseconds
             );
-            if (!e) return;
-            const n = o(e.value || e.textContent || "")
-              .trim()
-              .toLowerCase();
-            /^(?:attack!?|fight!?)$/.test(n)
-              ? ((x = 1), (E = 0))
-              : "continue" === n && ((E = x), (x = 0));
-          },
-          1,
-        ),
-        O("performnav", (t, e, n) => (B(), P(1, 0), t.apply(e, n))),
-        ["moblist", "improvedmoblist"].forEach((t) =>
-          O(t, (t, e, n) => {
-            const o = E;
-            return (B(), P(0, o), t.apply(e, n));
-          }),
-        ),
-        O("map", (t, e, n) => (B(), P(0, 0), t.apply(e, n))),
-        O("gmap", (t, e, n) => (P(0, 0), t.apply(e, n))),
-        O(
-          "guildpage",
-          (t, e, n) => (11 === r(n[0]) && (B(), P(0, 0)), t.apply(e, n)),
-        ),
-        n.forEach((t) => O(t, (t, e, n) => F("regular", t, e, n))),
-        ["boss", "gboss"].forEach((t) =>
-          O(t, (t, e, n) =>
-            1 === r(n[0]) ? F("boss", t, e, n) : (B(), P(0, 0), t.apply(e, n)),
-          ),
-        ));
-      const N = u("content");
-      if (N) {
-        let e = 0;
-        new c(() => {
-          ((C || S) && q(),
-            e && t.cancelAnimationFrame(e),
-            (e = t.requestAnimationFrame(() => {
-              ((e = 0), _());
-            })));
-        }).observe(N, { childList: 1, subtree: 1 });
-      }
-      return (y(_, 0), 1);
-    },
-  ];
-  (!(async function () {
-    const t = (function () {
-      try {
-        const t = JSON.parse(localStorage.getItem(S));
-        return t?.url === w && "string" == typeof t.css ? t.css : "";
-      } catch (t) {
-        return "";
-      }
-    })();
-    t && j(t);
-    try {
-      const t = await fetch(w, { cache: "no-cache", credentials: "omit" });
-      if (!t.ok) throw new Error(`GitHub returned HTTP ${t.status}`);
-      const e = await t.text();
-      if (!j(e))
-        throw new Error("The downloaded theme was not valid CSS text.");
-      try {
-        localStorage.setItem(S, JSON.stringify({ url: w, css: e }));
-      } catch (t) {}
-    } catch (t) {}
-  })(),
-    _t.forEach((t) => {
-      try {
-        t();
-      } catch (t) {}
-    }));
+            preservedDeadline = effectiveMilliseconds > 0
+                ? serverNow + effectiveMilliseconds
+                : 0;
+
+            const result = originalTimer.call(this, effectiveMilliseconds, ...rest);
+            renderQueue();
+            return result;
+        };
+        window.timer2 = function (...args) {
+            return window.timer.apply(this, args);
+        };
+
+        function prepareAction(type) {
+            navigating = false;
+            preservedDeadline = 0;
+            navigationAcceptsRequestedCooldown = false;
+            try {
+                if (type === 'boss' && typeof stopboss !== 'undefined') stopboss = 0;
+                if (type !== 'boss' && typeof varstopauto !== 'undefined') varstopauto = 0;
+            } catch (_error) {
+                // The native action will initialize unavailable state.
+            }
+        }
+
+        function scheduleQueueCheck(delay = remainingCooldown()) {
+            if (!queuedAction) return;
+            if (queuedHandle) window.clearServerAction(queuedHandle);
+            queuedHandle = originalSchedule.call(window, Math.max(0, delay), () => {
+                queuedHandle = null;
+                runQueuedAction();
+            });
+        }
+
+        function runQueuedAction() {
+            if (!queuedAction) return;
+            const remaining = remainingCooldown();
+            if (remaining > 0 || activeRequests > 0) {
+                renderQueue();
+                scheduleQueueCheck(remaining || 100);
+                return;
+            }
+
+            const action = queuedAction;
+            cancelQueuedAction();
+            try {
+                originalFinishTimer.call(window);
+            } catch (_error) {
+                // The queued action can initialize its own timer.
+            }
+            prepareAction(action.type);
+            action.original.apply(action.context, action.args);
+        }
+
+        function executeOrQueue(type, original, context, args) {
+            // Repeated Enter presses can reach the old action button before its
+            // request returns. Native fighting/actionprogress guards treat those as
+            // no-ops, so never turn an in-flight repeat into a second queued attack.
+            if (activeRequests > 0) return undefined;
+            if (remainingCooldown() <= 0) {
+                prepareAction(type);
+                return original.apply(context, args);
+            }
+            const activeControl = document.activeElement;
+            const source = activeControl?.matches?.(controlSelector) ? activeControl : null;
+            queuedAction = { type, original, context, args, source };
+            renderQueue();
+            scheduleQueueCheck();
+            return undefined;
+        }
+
+        function wrap(functionName, handler) {
+            const original = window[functionName];
+            window[functionName] = function (...args) {
+                return handler(original, this, args);
+            };
+        }
+
+        window.jQuery(document).on(
+            'ajaxSend.lyraniaActionTimerFix',
+            (_event, request, settings) => {
+                const url = String(settings?.url || '').split('?')[0].toLowerCase();
+                if (!/(?:^|\/)(?:auto|improvedauto|battle|improvedbattle|dungeonbattle|improveddungeonbattle|bosses|gboss)\.php$/.test(url)) return;
+                activeRequests += 1;
+                request.always(() => window.setTimeout(() => {
+                    activeRequests = Math.max(0, activeRequests - 1);
+                    runQueuedAction();
+                }, 0));
+            }
+        );
+
+        window.finishActionTimer = function (...args) {
+            const result = originalFinishTimer.apply(this, args);
+            if (botCheckIsVisible() && document.activeElement?.closest?.('#capt, #captchadiv')) {
+                document.activeElement.blur();
+            }
+            runQueuedAction();
+            window.setTimeout(restorePrimaryActionFocus, 0);
+            return result;
+        };
+
+        document.addEventListener('click', (event) => {
+            const control = event.target.closest?.(
+                '#content input[type="button"], #content input[type="submit"], #content button'
+            );
+            if (!control) return;
+
+            const label = String(control.value || control.textContent || '')
+                .trim()
+                .toLowerCase();
+            if (/^(?:attack!?|fight!?)$/.test(label)) {
+                manualCombatPendingContinue = true;
+                allowNextMoblistCooldown = false;
+            } else if (label === 'continue') {
+                allowNextMoblistCooldown = manualCombatPendingContinue;
+                manualCombatPendingContinue = false;
+            }
+        }, true);
+
+        wrap('performnav', (original, context, args) => {
+            clearManualCombatCycle();
+            beginNavigation(true, false);
+            return original.apply(context, args);
+        });
+        ['moblist', 'improvedmoblist'].forEach((name) => wrap(name, (original, context, args) => {
+            const acceptRequestedCooldown = allowNextMoblistCooldown;
+            clearManualCombatCycle();
+            beginNavigation(false, acceptRequestedCooldown);
+            return original.apply(context, args);
+        }));
+        wrap('map', (original, context, args) => {
+            clearManualCombatCycle();
+            beginNavigation(false, false);
+            return original.apply(context, args);
+        });
+        wrap('gmap', (original, context, args) => {
+            beginNavigation(false, false);
+            return original.apply(context, args);
+        });
+        wrap('guildpage', (original, context, args) => {
+            if (Number(args[0]) === 11) {
+                clearManualCombatCycle();
+                beginNavigation(false, false);
+            }
+            return original.apply(context, args);
+        });
+        actionFunctions.forEach((name) => wrap(name, (original, context, args) => (
+            executeOrQueue('regular', original, context, args)
+        )));
+        ['boss', 'gboss'].forEach((name) => wrap(name, (original, context, args) => {
+            if (Number(args[0]) === 1) {
+                return executeOrQueue('boss', original, context, args);
+            }
+            clearManualCombatCycle();
+            beginNavigation(false, false);
+            return original.apply(context, args);
+        }));
+
+        const content = document.getElementById('content');
+        if (content) {
+            let focusFrame = 0;
+            new MutationObserver(() => {
+                if (navigating || queuedAction) renderQueue();
+                if (focusFrame) window.cancelAnimationFrame(focusFrame);
+                focusFrame = window.requestAnimationFrame(() => {
+                    focusFrame = 0;
+                    restorePrimaryActionFocus();
+                });
+            }).observe(content, { childList: true, subtree: true });
+        }
+        window.setTimeout(restorePrimaryActionFocus, 0);
+        return true;
+    }
+    function projectedBufferLevel(level, bufferXp) {
+        if (level < 1) return 1;
+        const discriminant = ((2 * level) - 1) ** 2 + (8 * bufferXp) / 25;
+        return Math.max(1, (1 + Math.sqrt(Math.max(0, discriminant))) / 2);
+    }
+
+    function parseCompactExperience(numberText, suffix = '') {
+        const multipliers = {
+            '': 1,
+            k: 1_000,
+            m: 1_000_000,
+            b: 1_000_000_000,
+            t: 1_000_000_000_000
+        };
+        const number = Number(String(numberText).replace(/,/g, ''));
+        const multiplier = multipliers[String(suffix).trim().toLowerCase()];
+        return Number.isFinite(number) && multiplier
+            ? Math.round(number * multiplier)
+            : 0;
+    }
+
+    function parseActionXpText(value, rewardOnly = false) {
+        const text = plainText(value);
+        const match = text.match(/Money\s*:[\s\S]{0,200}?Exp\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i)
+            || (!rewardOnly && text.match(/(?:Exp|Experience)\s*:\s*([\d,.]+)\s*([KMBT]?)\b/i));
+        return match ? parseCompactExperience(match[1], match[2]) : 0;
+    }
+
+    function findLatestActionXp() {
+        for (const selector of ['#content', '#popupresponse', '#popup', '#rightinfo']) {
+            const root = document.querySelector(selector);
+            const exactActionXp = findExactRenderedActionXp(root);
+            if (exactActionXp > 0) return exactActionXp;
+
+            const actionXp = parseActionXpText(root?.textContent);
+            if (actionXp > 0) return actionXp;
+        }
+        return 0;
+    }
+
+    function findExactRenderedActionXp(root) {
+        if (!root) return 0;
+        const titledValues = root.querySelectorAll('.text-center span[title]');
+        for (const value of titledValues) {
+            const label = value.querySelector('strong')?.textContent.trim().toLowerCase();
+            if (label !== 'exp:') continue;
+
+            const actionXp = parseFormattedNumber(value.getAttribute('title'));
+            if (actionXp > 0) return actionXp;
+        }
+        return 0;
+    }
+
+    function readDisplayedBufferState() {
+        const level = parseFormattedNumber(document.getElementById('lvlli')?.textContent);
+        const tooltip = document.querySelector('#expli [data-tippy-content]')
+            ?.getAttribute('data-tippy-content');
+        const bufferMatch = String(tooltip || '').match(/^\s*([\d,]+)/);
+        const bufferXp = bufferMatch ? parseFormattedNumber(bufferMatch[1]) : 0;
+        return level > 0 && bufferXp >= 0 ? { level, bufferXp } : null;
+    }
+
+    function calculateBufferXpGain(previousState, level, bufferXp) {
+        if (!previousState || level < previousState.level) return 0;
+
+        const levelsGained = level - previousState.level;
+        const spentOnLevels = levelsGained > 0
+            ? 25 * levelsGained * (previousState.level + level - 1) / 2
+            : 0;
+        const gainedXp = bufferXp - previousState.bufferXp + spentOnLevels;
+        return Number.isFinite(gainedXp) && gainedXp > 0 ? Math.round(gainedXp) : 0;
+    }
+
+    function formatActionRate(actionXp, bufferLevel) {
+        const change = actionXp / (25 * bufferLevel) - 1;
+        const rounded = Math.abs(change) < 0.005 ? 0 : change;
+        return `${rounded > 0 ? '+' : ''}${rounded.toFixed(2)} per action`;
+    }
+
+    let lastBufferState = null;
+
+    function renderBufferXp(updateArguments) {
+        const level = parseFormattedNumber(updateArguments[11]);
+        const bufferXp = parseFormattedNumber(updateArguments[12]);
+        const output = document.getElementById('expli');
+        if (!level || !output) return;
+
+        const projectedLevel = projectedBufferLevel(level, bufferXp);
+        const endingLevel = Math.floor(projectedLevel + Number.EPSILON);
+        const displayedActionXp = findLatestActionXp();
+        const derivedActionXp = calculateBufferXpGain(lastBufferState, level, bufferXp);
+        const actionXp = displayedActionXp || derivedActionXp;
+        lastBufferState = { level, bufferXp };
+        const actionText = actionXp > 0 ? ` (${formatActionRate(actionXp, endingLevel)})` : '';
+
+        const value = document.createElement('span');
+        value.dataset.tippyContent = `${bufferXp.toLocaleString()}/${(25 * level).toLocaleString()} XP`;
+        value.textContent = `${endingLevel.toLocaleString()}${actionText}`;
+        output.replaceChildren(value);
+    }
+
+    function enforceRenderedBufferActionRate() {
+        const output = document.getElementById('expli');
+        if (!output) return;
+
+        const content = document.getElementById('content');
+        const actionXp = findExactRenderedActionXp(content)
+            || parseActionXpText(content?.textContent || content?.innerText, true);
+        if (actionXp <= 0) return;
+
+        const value = output.firstElementChild || output;
+        const bufferLevelMatch = value.textContent.match(/^\s*([\d,]+)/);
+        const bufferLevel = bufferLevelMatch
+            ? parseFormattedNumber(bufferLevelMatch[1])
+            : 0;
+        if (bufferLevel <= 0) return;
+
+        const expectedSuffix = `(${formatActionRate(actionXp, bufferLevel)})`;
+        if (value.textContent.includes(expectedSuffix)) return;
+
+        const baseText = value.textContent
+            .replace(/\s*\([^)]*\sper action\)\s*$/i, '')
+            .trim();
+        value.textContent = `${baseText} ${expectedSuffix}`;
+    }
+
+    function initializeBufferXp() {
+        if (!MODS.bufferXp) return true;
+        if (window.updategems?.lyraniaBufferXpWrapperVersion === SCRIPT_VERSION) return true;
+        if (typeof window.updategems !== 'function' || !document.getElementById('expli')) return false;
+
+        lastBufferState = readDisplayedBufferState();
+        const originalUpdateGems = window.updategems;
+        const wrappedUpdateGems = async function (...args) {
+            const result = await originalUpdateGems.apply(this, args);
+            renderBufferXp(args);
+            return result;
+        };
+        wrappedUpdateGems.lyraniaBufferXpWrapperVersion = SCRIPT_VERSION;
+        window.updategems = wrappedUpdateGems;
+
+        const content = document.getElementById('content');
+        if (content) {
+            let updateScheduled = false;
+            new MutationObserver(() => {
+                if (updateScheduled) return;
+                updateScheduled = true;
+                requestAnimationFrame(() => {
+                    updateScheduled = false;
+                    enforceRenderedBufferActionRate();
+                });
+            }).observe(content, { childList: true, characterData: true, subtree: true });
+        }
+        enforceRenderedBufferActionRate();
+
+        const label = document.getElementById('expli')?.previousElementSibling;
+        if (label) label.textContent = 'Buffer Level:';
+        return true;
+    }
+
+    const LOOT_TYPES = Object.freeze({
+        jade: 'Jade',
+        fragments: 'Fragments',
+        gold: 'Currency',
+        tokens: 'Tokens',
+        diamonds: 'Diamonds',
+        sapphires: 'Sapphires',
+        rubies: 'Rubies',
+        emeralds: 'Emeralds',
+        opals: 'Opals',
+        health: 'Health',
+        attack: 'Attack',
+        defence: 'Defence',
+        accuracy: 'Accuracy',
+        evasion: 'Evasion'
+    });
+
+    function emptyLootTotals() {
+        return Object.fromEntries(Object.keys(LOOT_TYPES).map((key) => [key, {
+            total: 0,
+            base: 0,
+            bonus: 0,
+            drops: 0
+        }]));
+    }
+
+    function getLootStorageKey() {
+        const account = window.userId || window.username || 'unknown-account';
+        return `lyrania-mod-suite:loot-statistics:${account}`;
+    }
+
+    function newLootState() {
+        return { version: 1, totalDrops: 0, loot: emptyLootTotals() };
+    }
+
+    function loadLootState() {
+        const cleanState = newLootState();
+        try {
+            const saved = JSON.parse(localStorage.getItem(getLootStorageKey()));
+            if (!saved || typeof saved !== 'object') return cleanState;
+
+            cleanState.totalDrops = Math.max(0, Number(saved.totalDrops) || 0);
+            Object.keys(cleanState.loot).forEach((key) => {
+                const values = saved.loot?.[key];
+                if (!values) return;
+                ['total', 'base', 'bonus', 'drops'].forEach((field) => {
+                    cleanState.loot[key][field] = Math.max(0, Number(values[field]) || 0);
+                });
+            });
+        } catch (error) {
+            console.warn(`[${SCRIPT_ID}] Saved loot statistics could not be loaded.`, error);
+        }
+        return cleanState;
+    }
+
+    function saveLootState(state) {
+        try {
+            localStorage.setItem(getLootStorageKey(), JSON.stringify(state));
+        } catch (error) {
+            console.warn(`[${SCRIPT_ID}] Loot statistics could not be saved.`, error);
+        }
+    }
+
+    function addLoot(state, type, base, bonus = 0) {
+        const entry = state.loot[type];
+        if (!entry) return false;
+
+        const safeBase = Math.max(0, Number(base) || 0);
+        const safeBonus = Math.max(0, Number(bonus) || 0);
+        entry.base += safeBase;
+        entry.bonus += safeBonus;
+        entry.total += safeBase + safeBonus;
+        entry.drops += 1;
+        state.totalDrops += 1;
+        return true;
+    }
+
+    function parseCurrency(text) {
+        const multipliers = { p: 1_000_000, g: 10_000, s: 100, c: 1 };
+        let total = 0;
+        const pattern = /([\d,]+(?:\.\d+)?)\s*([pgsc])\b/gi;
+        let match;
+        while ((match = pattern.exec(text)) !== null) {
+            total += parseFormattedNumber(match[1]) * multipliers[match[2].toLowerCase()];
+        }
+        return total;
+    }
+
+    function detectLootType(text) {
+        const lower = text.toLowerCase();
+        if (lower.includes('jade')) return 'jade';
+        if (lower.includes('fragment')) return 'fragments';
+        if (lower.includes('diamond')) return 'diamonds';
+        if (lower.includes('sapphire')) return 'sapphires';
+        if (lower.includes('ruby') || lower.includes('rubies')) return 'rubies';
+        if (lower.includes('emerald')) return 'emeralds';
+        if (lower.includes('opal')) return 'opals';
+        return null;
+    }
+
+    function parseLootDrop(rawLine) {
+        const text = plainText(rawLine).replace(/\s+/g, ' ').trim();
+        if (!text || /^welcome to lyrania!?$/i.test(text)) return null;
+        const bonusMatch = text.match(
+            /\(\s*([\d,]+)\s*\+\s*([\d,]+)\s+(?:level\s+)?bonus\s*\)/i
+        );
+
+        const statMatch = text.match(/\bgained\s+([\d,]+)\s+(Health|Attack|Defence|Accuracy|Evasion)\b/i);
+        if (statMatch) {
+            const amount = parseFormattedNumber(statMatch[1]);
+            return {
+                type: statMatch[2].toLowerCase(),
+                base: bonusMatch ? parseFormattedNumber(bonusMatch[1]) : Math.min(1, amount),
+                bonus: bonusMatch ? parseFormattedNumber(bonusMatch[2]) : Math.max(0, amount - 1),
+                hasBonus: Boolean(bonusMatch)
+            };
+        }
+
+        if (/\btoken(?:s| source)?\b/i.test(text)) {
+            const tokenPatterns = [
+                /\(([\d,]+)\s+token source\b/i,
+                /\bfound\s+(?:an?\s+)?([\d,]+)\s+tokens?\b/i,
+                /\b([\d,]+)\s+tokens?\b/i
+            ];
+            for (const pattern of tokenPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    return {
+                        type: 'tokens',
+                        base: parseFormattedNumber(match[1]),
+                        bonus: 0,
+                        hasBonus: false
+                    };
+                }
+            }
+        }
+
+        const containsCurrency = /\b(?:platinum|gold|silver|copper)\b|[\d,]+(?:\.\d+)?\s*[pgsc]\b/i.test(text);
+        if (containsCurrency) {
+            const details = text.match(/\(([^)]*)\)/)?.[1] || text;
+            const [basePart, ...bonusParts] = details.split('+');
+            const base = parseCurrency(basePart);
+            const bonus = parseCurrency(bonusParts.join(' '));
+            if (base || bonus) {
+                return {
+                    type: 'gold',
+                    base,
+                    bonus,
+                    hasBonus: bonusParts.length > 0
+                };
+            }
+        }
+
+        const lootType = detectLootType(text);
+        if (lootType && bonusMatch) {
+            return {
+                type: lootType,
+                base: parseFormattedNumber(bonusMatch[1]),
+                bonus: parseFormattedNumber(bonusMatch[2]),
+                hasBonus: true
+            };
+        }
+
+        if (lootType) {
+            const itemNames = {
+                jade: 'jades?',
+                fragments: '(?:jewel(?:lery)?\\s+)?fragments?',
+                diamonds: 'diamonds?',
+                sapphires: 'sapphires?',
+                rubies: 'rub(?:y|ies)',
+                emeralds: 'emeralds?',
+                opals: 'opals?'
+            };
+            const quantityMatch = text.match(new RegExp(
+                `\\bfound\\s+(?:an?\\s+)?([\\d,]+)\\s+${itemNames[lootType]}\\b`,
+                'i'
+            ));
+            const singleMatch = text.match(new RegExp(
+                `\\bfound\\s+an?\\s+${itemNames[lootType]}\\b`,
+                'i'
+            ));
+            if (quantityMatch || singleMatch) {
+                return {
+                    type: lootType,
+                    base: quantityMatch ? parseFormattedNumber(quantityMatch[1]) : 1,
+                    bonus: 0,
+                    hasBonus: false
+                };
+            }
+        }
+
+        return null;
+    }
+
+    function parseLootLine(rawLine, state) {
+        const drop = parseLootDrop(rawLine);
+        return drop ? addLoot(state, drop.type, drop.base, drop.bonus) : false;
+    }
+
+    function formatCurrency(value) {
+        let remaining = Math.floor(Number(value) || 0);
+        const platinum = Math.floor(remaining / 1_000_000);
+        remaining %= 1_000_000;
+        const gold = Math.floor(remaining / 10_000);
+        remaining %= 10_000;
+        const silver = Math.floor(remaining / 100);
+        const copper = remaining % 100;
+        return `${platinum.toLocaleString()}p ${gold}g ${silver}s ${copper}c`;
+    }
+
+    function formatCompactLootLine(rawLine) {
+        const drop = parseLootDrop(rawLine);
+        if (drop) {
+            const formatter = drop.type === 'gold'
+                ? formatCurrency
+                : (value) => Number(value || 0).toLocaleString();
+            const total = drop.base + drop.bonus;
+            const breakdown = drop.hasBonus
+                ? ` (${formatter(drop.base)}+${formatter(drop.bonus)})`
+                : '';
+            return `${LOOT_TYPES[drop.type]} - ${formatter(total)}${breakdown}`;
+        }
+
+        const fallback = plainText(rawLine)
+            .replace(/\s+/g, ' ')
+            .replace(/^\s*\[\d{1,2}:\d{2}:\d{2}\]\s*/, '')
+            .replace(/^you\s+(?:found|gained)\s+/i, '')
+            .replace(/[!.]+\s*$/, '')
+            .trim();
+        return fallback || 'Loot drop';
+    }
+
+    function renderLootStatistics(state) {
+        const summary = document.getElementById(`${SCRIPT_ID}-loot-summary`);
+        if (!summary) return;
+
+        const expandedTypes = new Set(
+            Array.from(summary.querySelectorAll('.lyrania-loot-stat[open]'))
+                .map((item) => item.dataset.lootType)
+        );
+        const cards = Object.entries(LOOT_TYPES).map(([key, label]) => {
+            const entry = state.loot[key];
+            const formatter = key === 'gold' ? formatCurrency : (value) => value.toLocaleString();
+            return `
+                <details class="lyrania-loot-stat" data-loot-type="${key}"${expandedTypes.has(key) ? ' open' : ''}>
+                    <summary>
+                        <span>${label}</span>
+                        <strong>${formatter(entry.total)}</strong>
+                    </summary>
+                    <div class="lyrania-loot-stat-values">
+                        <span><small>Base</small><b>${formatter(entry.base)}</b></span>
+                        <span><small>Bonus</small><b>${formatter(entry.bonus)}</b></span>
+                        <span><small>Drops</small><b>${entry.drops.toLocaleString()}</b></span>
+                    </div>
+                </details>`;
+        }).join('');
+
+        summary.innerHTML = `
+            <div class="lyrania-loot-heading">
+                <strong>Loot Statistics</strong>
+                <button type="button" id="${SCRIPT_ID}-loot-reset">Reset</button>
+            </div>
+            <div class="lyrania-loot-total">Total tracked drops: ${state.totalDrops.toLocaleString()}</div>
+            <div class="lyrania-loot-stat-grid">${cards}</div>`;
+
+        document.getElementById(`${SCRIPT_ID}-loot-reset`)?.addEventListener('click', () => {
+            if (!window.confirm('Reset all saved loot statistics for this account?')) return;
+            const resetState = newLootState();
+            Object.assign(state, resetState);
+            saveLootState(state);
+            renderLootStatistics(state);
+        });
+    }
+
+    function compactLootMessage(message) {
+        if (!(message instanceof Element) || !message.classList.contains('lootlogitem')) {
+            return message;
+        }
+        if (message.classList.contains('lyrania-loot-entry')) return message;
+
+        const compact = document.createElement('div');
+        Array.from(message.attributes).forEach(({ name, value }) => {
+            compact.setAttribute(name, value);
+        });
+        compact.classList.add('lyrania-loot-entry');
+        compact.textContent = formatCompactLootLine(message.textContent);
+        message.replaceWith(compact);
+        return compact;
+    }
+
+    function trimCompactLootMessages(messages, maximum = 100) {
+        Array.from(messages.querySelectorAll(':scope > .lootlogitem'))
+            .slice(maximum)
+            .forEach((message) => message.remove());
+    }
+
+    function initializePersistentLootLog() {
+        if (!MODS.persistentLootLog) return true;
+        const lootLog = document.getElementById('lootlog');
+        const chatTabs = document.getElementById('chattabs');
+        const chatPanes = document.getElementById('chatpanes');
+        const chatWindow = document.getElementById('chatwindow');
+        const chatInput = document.getElementById('inputchat');
+        const chatButton = document.getElementById('chatbutton');
+        if (!lootLog || !chatTabs || !chatPanes || !chatWindow || !chatInput || !chatButton
+            || typeof window.lootlog !== 'function') return false;
+        if (window.lootlog.lyraniaPersistentLootWrapper) return true;
+
+        lootLog.classList.add(`${SCRIPT_ID}-loot-layout`);
+        chatTabs.classList.add(`${SCRIPT_ID}-chat-loot-split`);
+
+        const chatColumn = document.createElement('section');
+        chatColumn.id = `${SCRIPT_ID}-chat-column`;
+        const composer = document.createElement('div');
+        composer.id = `${SCRIPT_ID}-chat-composer`;
+        chatPanes.insertBefore(chatColumn, chatWindow);
+        composer.append(chatInput, chatButton);
+        chatColumn.append(composer, chatWindow);
+
+        const summary = document.createElement('section');
+        summary.id = `${SCRIPT_ID}-loot-summary`;
+        const messages = document.createElement('section');
+        messages.id = `${SCRIPT_ID}-loot-messages`;
+
+        Array.from(lootLog.children).forEach((child) => {
+            messages.appendChild(compactLootMessage(child));
+        });
+        trimCompactLootMessages(messages);
+        lootLog.append(summary, messages);
+
+        const state = loadLootState();
+        renderLootStatistics(state);
+
+        const originalLootLog = window.lootlog;
+        const wrappedLootLog = function (line) {
+            const result = originalLootLog.apply(this, arguments);
+            const newMessage = lootLog.querySelector(':scope > .lootlogitem');
+            if (newMessage) {
+                messages.prepend(compactLootMessage(newMessage));
+                trimCompactLootMessages(messages);
+            }
+
+            if (parseLootLine(line, state)) {
+                saveLootState(state);
+                renderLootStatistics(state);
+            }
+            return result;
+        };
+        wrappedLootLog.lyraniaPersistentLootWrapper = true;
+        window.lootlog = wrappedLootLog;
+        return true;
+    }
+
+    const INVENTORY_TABS = Object.freeze([
+        'jewellery',
+        'enchants',
+        'maps',
+        'consumables',
+        'resources',
+        'misc'
+    ]);
+    const INITIAL_INVENTORY_DELAY_MS = 5000;
+    const INITIAL_INVENTORY_FALLBACK_DELAY_MS = 8000;
+    const INITIAL_INVENTORY_RETRY_DELAY_MS = 2500;
+    let pendingInventoryScroll = null;
+    let pendingInventoryPopupClose = false;
+    let inventoryLoadWatchdog = 0;
+    let initialInventoryRequestPending = false;
+    let initialInventoryRetryUsed = false;
+    let initialInventoryRetryTimer = 0;
+    let activeInventoryRequest = null;
+    let inventoryRequestSequence = 0;
+
+    function normalizeInventoryTab(tab, fallback = 'jewellery') {
+        const normalized = String(tab || '').toLowerCase();
+        return INVENTORY_TABS.includes(normalized) ? normalized : fallback;
+    }
+
+    function getPersistentInventoryElements() {
+        return {
+            dock: document.getElementById(`${SCRIPT_ID}-inventory-dock`),
+            status: document.getElementById(`${SCRIPT_ID}-inventory-status`),
+            refresh: document.getElementById(`${SCRIPT_ID}-inventory-refresh`),
+            scroll: document.getElementById(`${SCRIPT_ID}-inventory-scroll`),
+            content: document.getElementById(`${SCRIPT_ID}-inventory-content`)
+        };
+    }
+
+    function getPersistentInventoryTab() {
+        const shell = document.querySelector(
+            `#${SCRIPT_ID}-inventory-content > #inventory_shell`
+        );
+        return normalizeInventoryTab(shell?.dataset.currentTab);
+    }
+
+    function wrapIsolatedInventoryRequests() {
+        if (!MODS.isolatedInventoryRequests) return true;
+        const originalInventorySimple = window.inventorySimple;
+        if (originalInventorySimple?.lyraniaIsolatedInventoryVersion === SCRIPT_VERSION) {
+            return true;
+        }
+        if (typeof originalInventorySimple !== 'function') return false;
+
+        const antiRaceActions = new Set([
+            'purchase_lockbox',
+            'use_lockbox',
+            'conjure_enchant',
+            'add_jewel_mod',
+            'add_jewel_mod_confirm',
+            'map_trade'
+        ]);
+
+        const readValue = (id) => document.getElementById(id)?.value || '';
+        const readChecked = (id) => Boolean(document.getElementById(id)?.checked);
+
+        const wrappedInventorySimple = function (...args) {
+            const action = String(args[1] || '');
+            const actionCode = Number.parseInt(args[2], 10);
+            const popupScroll = document.getElementById('popupresdisplay');
+            const preservePopupScroll = args[0] === 'enchants'
+                && action === 'enchant_table_state';
+            const preservedPopupScrollTop = preservePopupScroll
+                ? popupScroll?.scrollTop ?? null
+                : null;
+
+            if (action === 'loadout' && actionCode === 1) {
+                const loadoutName = window.prompt('What would you like to call this loadout?');
+                if (!loadoutName) {
+                    window.setTimeout(() => window.inventorySimple('jewellery'), 0);
+                    return undefined;
+                }
+                args[3] = loadoutName;
+                args[4] = readValue('pet');
+            } else if (action === 'loadout' && (actionCode === 2 || actionCode === 3)) {
+                args[3] = readValue('loadout');
+                args[4] = readValue('pet');
+            }
+
+            if (action === 'use_lockbox') args[2] = readValue('lockboxquant');
+            if (action === 'purchase_lockbox') args[2] = readValue('buy_lockboxquant');
+            if (action === 'remove_enchant_confirm') args[3] = readChecked('enchantsavable');
+            if (
+                antiRaceActions.has(action)
+                && typeof window.lockInventoryActionButton === 'function'
+                && !window.lockInventoryActionButton(action)
+            ) {
+                return undefined;
+            }
+
+            const body = new URLSearchParams({ tab: String(args[0] || 'jewellery') });
+            if (args[1] !== undefined) body.set('action', String(args[1]));
+            for (let index = 2; index < args.length; index += 1) {
+                if (args[index] !== undefined) {
+                    body.set(`extrainfo${index - 1}`, String(args[index]));
+                }
+            }
+
+            inventoryRequestSequence += 1;
+            const requestSequence = inventoryRequestSequence;
+            if (activeInventoryRequest && activeInventoryRequest.readyState !== XMLHttpRequest.DONE) {
+                activeInventoryRequest.abort();
+            }
+
+            const request = new XMLHttpRequest();
+            activeInventoryRequest = request;
+            request.open('POST', 'inventory_simplified.php', true);
+            request.timeout = 20000;
+            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+            request.onload = () => {
+                if (requestSequence !== inventoryRequestSequence) return;
+                activeInventoryRequest = null;
+                if (request.status < 200 || request.status >= 300) {
+                    setPersistentInventoryStatus('Inventory request failed. Use Refresh to try again.');
+                    return;
+                }
+
+                const responseParts = request.responseText.split('[BREAK]');
+                if (window.popupui === 1 && typeof window.openpopuppane === 'function') {
+                    window.openpopuppane(responseParts[0]);
+                } else {
+                    const content = document.getElementById('content');
+                    if (content) content.innerHTML = responseParts[0];
+                }
+
+                responseParts.slice(1).forEach((script) => {
+                    if (!script.trim()) return;
+                    try {
+                        window.eval(script);
+                    } catch (error) {
+                        console.error(`[${SCRIPT_ID}] Inventory response script failed.`, error);
+                    }
+                });
+
+                if (typeof window.InventoryPageInit === 'function') window.InventoryPageInit();
+                if (
+                    args[0] === 'consumables'
+                    && typeof window.renderInventoryConsumableInlineResult === 'function'
+                ) {
+                    window.renderInventoryConsumableInlineResult();
+                }
+
+                const inventoryIsDocked = Boolean(
+                    document.querySelector(`#${SCRIPT_ID}-inventory-content > #inventory_shell`)
+                );
+                if (!inventoryIsDocked && preservedPopupScrollTop !== null && popupScroll) {
+                    popupScroll.scrollTop = preservedPopupScrollTop;
+                } else if (
+                    !inventoryIsDocked
+                    && args[0] === 'enchants'
+                    && args[1] !== undefined
+                    && popupScroll
+                ) {
+                    popupScroll.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            };
+
+            const showRequestError = () => {
+                if (requestSequence !== inventoryRequestSequence) return;
+                activeInventoryRequest = null;
+                setPersistentInventoryStatus('Inventory request failed. Use Refresh to try again.');
+            };
+            request.onerror = showRequestError;
+            request.ontimeout = showRequestError;
+            request.send(body.toString());
+            return request;
+        };
+
+        wrappedInventorySimple.lyraniaIsolatedInventoryVersion = SCRIPT_VERSION;
+        wrappedInventorySimple.lyraniaOriginalInventorySimple = originalInventorySimple;
+        window.inventorySimple = wrappedInventorySimple;
+        return true;
+    }
+
+    function setPersistentInventoryStatus(message, busy = false) {
+        const { dock, status, refresh } = getPersistentInventoryElements();
+        if (dock) dock.setAttribute('aria-busy', String(busy));
+        if (status) status.textContent = message;
+        if (refresh) refresh.disabled = busy;
+
+        window.clearTimeout(inventoryLoadWatchdog);
+        if (!busy) return;
+        inventoryLoadWatchdog = window.setTimeout(() => {
+            pendingInventoryPopupClose = false;
+            pendingInventoryScroll = null;
+            const current = getPersistentInventoryElements();
+
+            if (initialInventoryRequestPending && !initialInventoryRetryUsed) {
+                initialInventoryRetryUsed = true;
+                current.dock?.setAttribute('aria-busy', 'true');
+                if (current.refresh) current.refresh.disabled = true;
+                if (current.status) {
+                    current.status.textContent = 'Inventory is still initializing. Retrying…';
+                }
+                window.clearTimeout(initialInventoryRetryTimer);
+                initialInventoryRetryTimer = window.setTimeout(() => {
+                    requestInitialPersistentInventory(true);
+                }, INITIAL_INVENTORY_RETRY_DELAY_MS);
+                return;
+            }
+
+            initialInventoryRequestPending = false;
+            current.dock?.setAttribute('aria-busy', 'false');
+            if (current.refresh) current.refresh.disabled = false;
+            if (current.status) {
+                current.status.textContent = 'Inventory did not respond. Use Refresh to try again.';
+            }
+        }, 15000);
+    }
+
+    function createPersistentInventoryDock() {
+        const holder = document.getElementById('holder');
+        if (!holder) return null;
+
+        let dock = document.getElementById(`${SCRIPT_ID}-inventory-dock`);
+        if (dock) return dock;
+
+        dock = document.createElement('aside');
+        dock.id = `${SCRIPT_ID}-inventory-dock`;
+        dock.setAttribute('aria-labelledby', `${SCRIPT_ID}-inventory-title`);
+        dock.setAttribute('aria-busy', 'true');
+        dock.innerHTML = `
+            <header id="${SCRIPT_ID}-inventory-bar">
+                <span id="${SCRIPT_ID}-inventory-heading">
+                    <span id="${SCRIPT_ID}-inventory-title-line">
+                        <strong id="${SCRIPT_ID}-inventory-title">Inventory</strong>
+                        <span id="${SCRIPT_ID}-inventory-status" role="status" aria-live="polite">
+                            Waiting for the game to finish loading…
+                        </span>
+                    </span>
+                </span>
+                <button type="button" id="${SCRIPT_ID}-inventory-refresh">Refresh</button>
+            </header>
+            <div id="${SCRIPT_ID}-inventory-scroll">
+                <div id="${SCRIPT_ID}-inventory-content"></div>
+            </div>`;
+
+        const chatRow = document.getElementById('chat_row');
+        holder.insertBefore(dock, chatRow || null);
+        holder.classList.add(`${SCRIPT_ID}-has-inventory-dock`);
+        document.documentElement.classList.add(`${SCRIPT_ID}-persistent-inventory`);
+
+        dock.querySelector(`#${SCRIPT_ID}-inventory-refresh`)?.addEventListener('click', () => {
+            if (typeof window.inventorySimple !== 'function') return;
+            window.inventorySimple(getPersistentInventoryTab());
+        });
+        return dock;
+    }
+
+    function hideInventoryPopupShell(force = false) {
+        if (!force) return;
+        const popupHolder = document.getElementById('popupholder');
+        const popup = document.getElementById('popup');
+        const response = document.getElementById('popupresponse');
+        if (popupHolder) popupHolder.style.visibility = 'hidden';
+        if (popup) popup.replaceChildren();
+        if (response) response.replaceChildren();
+    }
+
+    function restorePersistentInventoryScroll(scroll, content, tab, scrollTop) {
+        scroll.scrollTop = scrollTop;
+        if (tab !== 'consumables') return;
+
+        const result = content.querySelector('#inventory-consumable-inline-result');
+        if (!result?.textContent.trim()) return;
+        const scrollBounds = scroll.getBoundingClientRect();
+        const resultBounds = result.getBoundingClientRect();
+        scroll.scrollTop = Math.max(
+            0,
+            scroll.scrollTop + resultBounds.top - scrollBounds.top - 8
+        );
+    }
+
+    function mountPersistentInventoryShell(shell) {
+        const { dock, status, refresh, scroll, content } = getPersistentInventoryElements();
+        if (!dock || !scroll || !content || !shell) return false;
+
+        const shellWasInPopup = Boolean(document.getElementById('popup')?.contains(shell));
+        const nextTab = normalizeInventoryTab(shell.dataset.currentTab);
+        const restoreScroll = pendingInventoryScroll?.tab === nextTab
+            ? pendingInventoryScroll.top
+            : 0;
+        pendingInventoryScroll = null;
+
+        content.replaceChildren(shell);
+        dock.dataset.currentTab = nextTab;
+        dock.setAttribute('aria-busy', 'false');
+        if (status) status.textContent = '';
+        if (refresh) refresh.disabled = false;
+        window.clearTimeout(inventoryLoadWatchdog);
+        window.clearTimeout(initialInventoryRetryTimer);
+        initialInventoryRequestPending = false;
+
+        const mainNav = document.getElementById('mainnav');
+        if (mainNav) mainNav.value = '1';
+        hideInventoryPopupShell(shellWasInPopup || pendingInventoryPopupClose);
+        pendingInventoryPopupClose = false;
+
+        requestAnimationFrame(() => {
+            restorePersistentInventoryScroll(scroll, content, nextTab, restoreScroll);
+        });
+        document.dispatchEvent(new CustomEvent('lyraniaPersistentInventoryMounted', {
+            detail: { tab: nextTab }
+        }));
+        return true;
+    }
+
+    function routePersistentInventoryMarkup(markup) {
+        if (typeof markup !== 'string' || !markup.includes('inventory_shell')) return false;
+
+        const template = document.createElement('template');
+        template.innerHTML = markup.trim();
+        return mountPersistentInventoryShell(
+            template.content.querySelector('#inventory_shell')
+        );
+    }
+
+    function moveExistingInventoryShell() {
+        const shell = document.querySelector(
+            `#popup #inventory_shell, #content #inventory_shell`
+        );
+        return shell ? mountPersistentInventoryShell(shell) : false;
+    }
+
+    function wrapInventoryPopupRouter() {
+        const originalOpenPopupPane = window.openpopuppane;
+        if (originalOpenPopupPane?.lyraniaPersistentInventoryRouterVersion === SCRIPT_VERSION) {
+            return true;
+        }
+        if (typeof originalOpenPopupPane !== 'function') return false;
+
+        const wrappedOpenPopupPane = function (markup) {
+            if (routePersistentInventoryMarkup(markup)) return undefined;
+            return originalOpenPopupPane.apply(this, arguments);
+        };
+        wrappedOpenPopupPane.lyraniaPersistentInventoryRouterVersion = SCRIPT_VERSION;
+        wrappedOpenPopupPane.lyraniaOriginalOpenPopupPane = originalOpenPopupPane;
+        window.openpopuppane = wrappedOpenPopupPane;
+        return true;
+    }
+
+    function wrapPersistentInventoryRequests() {
+        const originalInventorySimple = window.inventorySimple;
+        if (originalInventorySimple?.lyraniaPersistentInventoryVersion === SCRIPT_VERSION) {
+            return true;
+        }
+        if (typeof originalInventorySimple !== 'function') return false;
+
+        const wrappedInventorySimple = function (...args) {
+            const { scroll } = getPersistentInventoryElements();
+            const currentTab = getPersistentInventoryTab();
+            const requestedTab = normalizeInventoryTab(args[0], currentTab);
+            pendingInventoryPopupClose = ['mainnav', 'popupnav']
+                .includes(document.activeElement?.id);
+            pendingInventoryScroll = {
+                tab: requestedTab === currentTab ? currentTab : null,
+                top: scroll?.scrollTop || 0
+            };
+            setPersistentInventoryStatus(
+                document.querySelector(`#${SCRIPT_ID}-inventory-content > #inventory_shell`)
+                    ? 'Refreshing inventory…'
+                    : 'Loading inventory…',
+                true
+            );
+
+            try {
+                return originalInventorySimple.apply(this, args);
+            } catch (error) {
+                pendingInventoryPopupClose = false;
+                pendingInventoryScroll = null;
+                setPersistentInventoryStatus('Inventory could not be loaded. Use Refresh to try again.');
+                throw error;
+            }
+        };
+        wrappedInventorySimple.lyraniaPersistentInventoryVersion = SCRIPT_VERSION;
+        wrappedInventorySimple.lyraniaOriginalInventorySimple = originalInventorySimple;
+        window.inventorySimple = wrappedInventorySimple;
+        return true;
+    }
+
+    function requestInitialPersistentInventory(isRetry = false) {
+        if (document.querySelector(`#${SCRIPT_ID}-inventory-content > #inventory_shell`)) {
+            initialInventoryRequestPending = false;
+            return;
+        }
+        if (typeof window.inventorySimple !== 'function') {
+            initialInventoryRequestPending = false;
+            setPersistentInventoryStatus('Inventory is unavailable. Use Refresh to try again.');
+            return;
+        }
+        if (!isRetry) initialInventoryRetryUsed = false;
+        initialInventoryRequestPending = true;
+        window.inventorySimple('jewellery');
+    }
+
+    function initializePersistentInventory() {
+        if (!MODS.persistentInventory) return true;
+        if (!createPersistentInventoryDock()) return false;
+        if (!wrapInventoryPopupRouter() || !wrapPersistentInventoryRequests()) return false;
+        if (moveExistingInventoryShell()) return true;
+
+        let requested = false;
+        const requestOnce = () => {
+            if (requested) return;
+            requested = true;
+            requestInitialPersistentInventory();
+        };
+        document.addEventListener('battleContentLoaded', () => {
+            window.setTimeout(requestOnce, INITIAL_INVENTORY_DELAY_MS);
+        }, { once: true });
+        window.setTimeout(requestOnce, INITIAL_INVENTORY_FALLBACK_DELAY_MS);
+        return true;
+    }
+
+    function initializePopupOutsideClose() {
+        if (!MODS.popupOutsideClose) return true;
+        const handlerAttribute = 'data-lyrania-popup-outside-close-version';
+        if (document.documentElement.getAttribute(handlerAttribute) === SCRIPT_VERSION) return true;
+
+        let pointerStartedOutside = false;
+
+        const getVisiblePopup = () => {
+            const holder = document.getElementById('popupholder');
+            if (!holder || getComputedStyle(holder).visibility !== 'visible') return null;
+
+            const hasPopupContent = ['popup', 'popupresponse'].some((id) => {
+                const node = document.getElementById(id);
+                return node && (node.childElementCount > 0 || node.textContent.trim());
+            });
+            return hasPopupContent ? holder : null;
+        };
+
+        const isInventoryDockTarget = (target) => target instanceof Element
+            && Boolean(target.closest(`#${SCRIPT_ID}-inventory-dock`));
+
+        const closeVisiblePopup = () => {
+            const holder = getVisiblePopup();
+            if (!holder) return false;
+            if (typeof window.closepage === 'function') {
+                window.closepage();
+            } else {
+                holder.style.visibility = 'hidden';
+            }
+            return true;
+        };
+
+        document.addEventListener('pointerdown', (event) => {
+            const holder = getVisiblePopup();
+            pointerStartedOutside = Boolean(
+                holder
+                && event.button === 0
+                && !holder.contains(event.target)
+                && !isInventoryDockTarget(event.target)
+            );
+        }, true);
+
+        document.addEventListener('pointercancel', () => {
+            pointerStartedOutside = false;
+        }, true);
+
+        document.addEventListener('click', (event) => {
+            const holder = getVisiblePopup();
+            const shouldClose = pointerStartedOutside
+                && holder
+                && !holder.contains(event.target)
+                && !isInventoryDockTarget(event.target);
+            pointerStartedOutside = false;
+            if (!shouldClose) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            closeVisiblePopup();
+        }, true);
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || !getVisiblePopup()) return;
+            event.preventDefault();
+            closeVisiblePopup();
+        }, true);
+
+        document.documentElement.setAttribute(handlerAttribute, SCRIPT_VERSION);
+        return true;
+    }
+
+    function enhanceDungeonMap() {
+        const container = document.getElementById('dungeonmapcontainer');
+        const labels = container?.parentElement?.querySelectorAll('.dungeonmapRoomType') || [];
+        if (!container || labels.length < 4) return false;
+
+        const rooms = container.querySelectorAll('.map_room_moblist_grid');
+        if (!rooms.length) return false;
+        container.classList.add('lyrania-dungeon-summary');
+        const totals = { mobs: 0, regular: 0, challenge: 0, empty: 0 };
+
+        rooms.forEach((room) => {
+            const mobs = Number.parseInt(room.textContent, 10) || 0;
+            totals.mobs += mobs;
+            if (mobs <= 0) totals.empty += 1;
+            else if (room.classList.contains('maproom_challenge_room')) totals.challenge += 1;
+            else if (room.classList.contains('maproom_regular_room')) totals.regular += 1;
+        });
+
+        const summaries = [
+            ['Mobs Left', totals.mobs],
+            ['Regular Rooms', totals.regular],
+            ['Challenge Rooms', totals.challenge],
+            ['Empty Rooms', totals.empty]
+        ];
+        summaries.forEach(([name, total], index) => {
+            labels[index].textContent = `${name} (${total})${index < 3 ? ' | ' : ''}`;
+        });
+
+        container.querySelectorAll('img').forEach((image) => {
+            const pathname = new URL(image.src, window.location.href).pathname;
+            const isChest = /\/(?:open-)?chest\.svg$/.test(pathname);
+            if (!isChest) image.style.opacity = '0';
+        });
+
+        return true;
+    }
+
+    function waitForDungeonMap() {
+        if (enhanceDungeonMap()) return;
+
+        let scheduled = false;
+        const observer = new MutationObserver(() => {
+            if (scheduled) return;
+            scheduled = true;
+            requestAnimationFrame(() => {
+                scheduled = false;
+                if (enhanceDungeonMap()) observer.disconnect();
+            });
+        });
+
+        observer.observe(document.getElementById('popup') || document.body, {
+            childList: true,
+            subtree: true
+        });
+        window.setTimeout(() => observer.disconnect(), 15000);
+    }
+
+    function initializeDungeonMapSummary() {
+        if (!MODS.dungeonMapSummary) return true;
+        if (window.dungeonmap?.lyraniaDungeonMapSummaryWrapper) return true;
+        if (typeof window.dungeonmap !== 'function') return false;
+
+        const originalDungeonMap = window.dungeonmap;
+        const wrappedDungeonMap = function (...args) {
+            const result = originalDungeonMap.apply(this, args);
+            waitForDungeonMap();
+            return result;
+        };
+        wrappedDungeonMap.lyraniaDungeonMapSummaryWrapper = true;
+        window.dungeonmap = wrappedDungeonMap;
+        return true;
+    }
+
+    function parseVersion(version) {
+        const match = String(version || '').trim().match(/^\d+(?:\.\d+)*$/);
+        return match ? match[0].split('.').map(Number) : null;
+    }
+
+    function compareVersions(leftVersion, rightVersion) {
+        const left = parseVersion(leftVersion);
+        const right = parseVersion(rightVersion);
+        if (!left || !right) return 0;
+
+        const length = Math.max(left.length, right.length);
+        for (let index = 0; index < length; index += 1) {
+            const difference = (left[index] || 0) - (right[index] || 0);
+            if (difference !== 0) return Math.sign(difference);
+        }
+        return 0;
+    }
+
+    function readUpdateCheckState() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(UPDATE_CHECK_STORAGE_KEY));
+            return saved && typeof saved === 'object' ? saved : {};
+        } catch (_error) {
+            return {};
+        }
+    }
+
+    function writeUpdateCheckState(state) {
+        try {
+            localStorage.setItem(UPDATE_CHECK_STORAGE_KEY, JSON.stringify(state));
+        } catch (_error) {
+            // Updating still works through the userscript manager without storage.
+        }
+    }
+
+    function showModUpdateNotification(latestVersion) {
+        if (compareVersions(latestVersion, SCRIPT_VERSION) <= 0) return;
+        try {
+            if (localStorage.getItem(UPDATE_DISMISSED_STORAGE_KEY) === latestVersion) return;
+        } catch (_error) {
+            // Continue without persisted dismissal state.
+        }
+        if (document.getElementById(`${SCRIPT_ID}-update-banner`)) return;
+
+        const banner = document.createElement('aside');
+        banner.id = `${SCRIPT_ID}-update-banner`;
+        banner.setAttribute('role', 'status');
+        banner.innerHTML = `
+            <strong>${SCRIPT_NAME} update available</strong>
+            <div>Version ${latestVersion} is available. You have ${SCRIPT_VERSION}.</div>
+            <a href="${SCRIPT_DOWNLOAD_URL}" target="_blank" rel="noopener noreferrer">Install update</a>
+        `;
+        const dismissButton = createButton('Later');
+        dismissButton.addEventListener('click', () => {
+            try {
+                localStorage.setItem(UPDATE_DISMISSED_STORAGE_KEY, latestVersion);
+            } catch (_error) {
+                // The banner can still be dismissed for the current page.
+            }
+            banner.remove();
+        });
+
+        banner.appendChild(dismissButton);
+        document.body.appendChild(banner);
+
+        if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+            const notification = new Notification(`${SCRIPT_NAME} update`, {
+                body: `Version ${latestVersion} is ready to install.`,
+                icon: 'https://lyrania.co.uk/favicon.ico'
+            });
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+            };
+        }
+    }
+
+    async function checkForModUpdate(force = false) {
+        const state = readUpdateCheckState();
+        if (state.latestVersion) showModUpdateNotification(state.latestVersion);
+
+        const checkedAt = Number(state.checkedAt) || 0;
+        if (!force && Date.now() - checkedAt < UPDATE_CHECK_INTERVAL_MS) return;
+
+        try {
+            const response = await fetch(`${SCRIPT_DOWNLOAD_URL}?update-check=${Date.now()}`, {
+                cache: 'no-store',
+                credentials: 'omit'
+            });
+            if (!response.ok) throw new Error(`GitHub returned HTTP ${response.status}`);
+
+            const source = await response.text();
+            const versionMatch = source.match(/^\/\/\s*@version\s+([^\s]+)\s*$/m);
+            if (!versionMatch || !parseVersion(versionMatch[1])) {
+                throw new Error('The published userscript has no valid @version value.');
+            }
+
+            const latestVersion = versionMatch[1];
+            writeUpdateCheckState({ checkedAt: Date.now(), latestVersion });
+            showModUpdateNotification(latestVersion);
+        } catch (error) {
+            writeUpdateCheckState({ ...state, checkedAt: Date.now() });
+            console.warn(`[${SCRIPT_ID}] Could not check GitHub for an update.`, error);
+        }
+    }
+
+    const initializers = [
+        initializeChatMods,
+        initializeTripleDpHour,
+        initializeKillsPerHour,
+        initializeInactiveDpTimerHider,
+        initializeHeldEnterAlertGuard,
+        initializeBufferXp,
+        initializePersistentLootLog,
+        wrapIsolatedInventoryRequests,
+        initializePersistentInventory,
+        initializePopupOutsideClose,
+        initializeDungeonMapSummary,
+        initializeActionTimerFix
+    ];
+
+    addStyles();
+    loadRemoteTheme();
+    initializers.forEach((initializeMod) => {
+        try {
+            if (!initializeMod()) {
+                console.warn(`[${SCRIPT_ID}] ${initializeMod.name} could not initialize.`);
+            }
+        } catch (error) {
+            console.error(`[${SCRIPT_ID}] ${initializeMod.name} failed to initialize.`, error);
+        }
+    });
+
+    checkForModUpdate();
+    window.setInterval(checkForModUpdate, UPDATE_CHECK_INTERVAL_MS);
 })();
