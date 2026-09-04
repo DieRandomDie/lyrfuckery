@@ -1,10 +1,10 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.6.1
+ * Version: 1.6.2
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision fixes action/map control sizing and restores constrained pane scrolling.
- * Lyrania Mod Suite 2.18.0+ adds the permanent inventory and compact loot used below.
+ * This revision consolidates all mod-suite styling here and fixes equipment scrolling.
+ * Lyrania Mod Suite 2.20.0+ uses this as its single stylesheet.
  *
  * Layouts
  *   Full width : 1440px and wider — game workspace + sticky inventory rail
@@ -14,513 +14,554 @@
 
 /* Structural styles moved from Lyrania Mod Suite 2.18.0. */
 #chat_row.lyrania-chat-enhancements-layout {
-                display: flex !important;
-                align-items: stretch;
-                gap: 8px;
-                overflow: visible;
-            }
-            #lyrania-chat-enhancements-channels {
-                box-sizing: border-box;
-                flex: 0 0 auto;
-                align-self: stretch;
-                width: max-content;
-                min-width: 145px;
-                margin-top: 10px;
-                padding: 8px;
-                border: 1px solid rgba(255, 255, 255, 0.65);
-                border-radius: 10px;
-                background: rgba(0, 0, 0, 0.78);
-                overflow: hidden auto;
-                scrollbar-gutter: stable;
-            }
-            #lyrania-chat-enhancements-channels .lyrania-chat-filter {
-                box-sizing: border-box;
-                display: block;
-                width: 100%;
-                height: 19px;
-                min-height: 19px;
-                margin: 0 0 2px;
-                padding: 0 5px;
-                border: 0;
-                border-radius: 4px;
-                color: #fff;
-                background: transparent;
-                font: inherit;
-                line-height: 19px;
-                text-align: left;
-                white-space: nowrap;
-                cursor: pointer;
-            }
-            #lyrania-chat-enhancements-channels .lyrania-channel-row {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) 27px;
-                gap: 3px;
-                align-items: center;
-                margin-bottom: 2px;
-            }
-            #lyrania-chat-enhancements-channels .lyrania-no-toggle { grid-template-columns: minmax(0, 1fr); }
-            #lyrania-chat-enhancements-channels .lyrania-channel-row .lyrania-chat-filter {
-                margin: 0;
-            }
-            #lyrania-chat-enhancements-channels .lyrania-channel-toggle {
-                box-sizing: border-box;
-                min-width: 27px;
-                height: 19px;
-                min-height: 19px;
-                padding: 2px 1px;
-                border: 1px solid rgba(255, 255, 255, 0.35);
-                border-radius: 4px;
-                color: #aaa;
-                background: #111;
-                font: inherit;
-                font-size: 8px;
-                line-height: 1;
-                cursor: pointer;
-            }
-            #lyrania-chat-enhancements-channels .lyrania-channel-toggle.is-enabled {
-                color: #fff;
-                background: #286b35;
-            }
-            #lyrania-chat-enhancements-channels .lyrania-chat-filter:hover,
-            #lyrania-chat-enhancements-channels .lyrania-chat-filter:focus-visible {
-                background: #222;
-                outline: 1px solid rgba(255, 255, 255, 0.35);
-            }
-            #lyrania-chat-enhancements-channels .lyrania-chat-filter.is-selected { background: #555; }
-            #lyrania-chat-enhancements-channels .lyrania-special-row {
-                margin-top: 4px;
-                border-top: 1px solid rgba(255, 255, 255, 0.25);
-                padding-top: 5px;
-            }
-            #chat_row.lyrania-chat-enhancements-layout #chat > .chatToggleButton { display: none !important; }
-            #chat_row.lyrania-chat-enhancements-layout > #chat {
-                box-sizing: border-box;
-                flex: 1 1 auto;
-                min-width: 0;
-                width: auto !important;
-            }
-            #lyrania-chat-enhancements-quick-menu {
-                position: fixed;
-                z-index: 2147483647;
-                min-width: 135px;
-                padding: 5px;
-                border: 1px solid rgba(255, 255, 255, 0.8);
-                border-radius: 6px;
-                color: #fff;
-                background: #050505;
-                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
-            }
-            #lyrania-chat-enhancements-quick-menu button {
-                display: block;
-                width: 100%;
-                padding: 5px 7px;
-                border: 0;
-                border-radius: 3px;
-                color: #fff;
-                background: transparent;
-                font: inherit;
-                text-align: left;
-                white-space: nowrap;
-                cursor: pointer;
-            }
-            #lyrania-chat-enhancements-quick-menu button:hover,
-            #lyrania-chat-enhancements-quick-menu button:focus-visible {
-                background: #333;
-                outline: none;
-            }
-            #timer[data-lyrania-action-queued="true"]::after {
-                content: " — Action queued";
-                color: #ffcc33;
-                font-weight: bold;
-            }
-            #chattabs.lyrania-chat-enhancements-chat-loot-split > #chatpanes {
-                display: grid;
-                grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-                gap: 8px;
-                align-items: stretch;
-                min-height: 0;
-                height: 100%;
-                overflow: hidden;
-            }
-            #lyrania-chat-enhancements-chat-column {
-                display: grid;
-                grid-template-rows: auto minmax(0, 1fr);
-                min-width: 0;
-                min-height: 0;
-                height: 100%;
-                overflow: hidden;
-            }
-            #lyrania-chat-enhancements-chat-composer {
-                display: flex;
-                align-items: stretch;
-                gap: 4px;
-                min-width: 0;
-                padding-right: 8px;
-                border-right: 1px solid rgba(255, 255, 255, 0.4);
-            }
-            #lyrania-chat-enhancements-chat-composer > #inputchat {
-                box-sizing: border-box;
-                flex: 1 1 auto;
-                min-width: 0;
-                width: auto !important;
-            }
-            #lyrania-chat-enhancements-chat-composer > #chatbutton {
-                box-sizing: border-box;
-                flex: 0 0 auto;
-            }
-            #chattabs.lyrania-chat-enhancements-chat-loot-split > nav { display: none !important; }
-            #chattabs.lyrania-chat-enhancements-chat-loot-split #chatwindow {
-                display: block !important;
-                box-sizing: border-box;
-                width: auto !important;
-                min-width: 0;
-                min-height: 0;
-                height: 100% !important;
-                padding-right: 8px;
-                border-right: 1px solid rgba(255, 255, 255, 0.4);
-                overflow: hidden auto !important;
-                overscroll-behavior: contain;
-                scrollbar-gutter: stable;
-            }
-            #chattabs.lyrania-chat-enhancements-chat-loot-split #lootlog.lyrania-chat-enhancements-loot-layout {
-                display: grid !important;
-                grid-template-rows: auto minmax(70px, 1fr);
-                gap: 8px;
-                width: auto !important;
-                min-width: 0;
-                height: 100% !important;
-                overflow: hidden;
-            }
-            #lyrania-chat-enhancements-loot-summary,
-            #lyrania-chat-enhancements-loot-messages {
-                box-sizing: border-box;
-                min-width: 0;
-                height: 100%;
-                overflow: hidden auto;
-            }
-            #lyrania-chat-enhancements-loot-summary {
-                height: auto;
-                overflow: visible;
-                padding-bottom: 6px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.4);
-            }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-heading {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 8px;
-                margin-bottom: 4px;
-            }
-            #lyrania-chat-enhancements-loot-summary button {
-                padding: 2px 8px;
-                border: 1px solid rgba(255, 255, 255, 0.5);
-                border-radius: 4px;
-                color: #fff;
-                background: #222;
-                cursor: pointer;
-            }
-            #lyrania-chat-enhancements-loot-summary button:hover { background: #444; }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-total { margin-bottom: 6px; }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
-                gap: 4px;
-            }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat {
-                min-width: 0;
-                border: 1px solid rgba(255, 255, 255, 0.14);
-                border-radius: 5px;
-            }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat[open] {
-                grid-column: 1 / -1;
-            }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) auto;
-                gap: 6px;
-                padding: 4px 6px;
-                list-style: none;
-                cursor: pointer;
-                font-size: 11px;
-            }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary::-webkit-details-marker {
-                display: none;
-            }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary span {
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values {
-                display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: 4px;
-                padding: 0 6px 5px;
-                text-align: right;
-            }
-            #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values small {
-                display: block;
-                opacity: 0.7;
-            }
-            #lyrania-chat-enhancements-loot-messages .lyrania-loot-entry {
-                display: block;
-                padding: 3px 5px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            #lyrania-chat-enhancements-update-banner {
-                position: fixed;
-                right: 16px;
-                bottom: 16px;
-                z-index: 1000000;
-                box-sizing: border-box;
-                width: min(390px, calc(100vw - 32px));
-                padding: 14px;
-                border: 1px solid #ffcc33;
-                border-radius: 6px;
-                color: #fff;
-                background: #161616;
-                box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
-                font: 14px/1.4 Arial, sans-serif;
-                text-align: left;
-            }
-            #lyrania-chat-enhancements-update-banner strong {
-                display: block;
-                margin-bottom: 6px;
-                color: #ffcc33;
-                font-size: 15px;
-            }
-            #lyrania-chat-enhancements-update-banner div { margin-bottom: 10px; }
-            #lyrania-chat-enhancements-update-banner a {
-                display: inline-block;
-                margin-right: 10px;
-                padding: 6px 10px;
-                border-radius: 4px;
-                color: #111;
-                background: #ffcc33;
-                font-weight: bold;
-                text-decoration: none;
-            }
-            #lyrania-chat-enhancements-update-banner button {
-                padding: 5px 10px;
-                border: 1px solid #777;
-                border-radius: 4px;
-                color: #fff;
-                background: #333;
-                cursor: pointer;
-            }
-            :where(#lyrania-chat-enhancements-inventory-dock) {
-                box-sizing: border-box;
-                display: flex;
-                flex-direction: column;
-                min-width: 0;
-                max-height: min(760px, 75vh);
-                margin: 10px 0;
-                border: 1px solid rgba(255, 255, 255, 0.35);
-                border-radius: 10px;
-                background: rgba(0, 0, 0, 0.72);
-                overflow: hidden;
-            }
-            :where(#lyrania-chat-enhancements-inventory-bar) {
-                box-sizing: border-box;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                padding: 9px 12px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            }
-            :where(#lyrania-chat-enhancements-inventory-heading) {
-                display: grid;
-                gap: 1px;
-                min-width: 0;
-            }
-            :where(#lyrania-chat-enhancements-inventory-heading) small {
-                color: #aaa;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 0.08em;
-                text-transform: uppercase;
-            }
-            :where(#lyrania-chat-enhancements-inventory-heading) strong { font-size: 15px; }
-            :where(#lyrania-chat-enhancements-inventory-refresh) {
-                flex: 0 0 auto;
-                min-width: 72px;
-                padding: 5px 9px;
-                border: 1px solid rgba(255, 255, 255, 0.45);
-                border-radius: 5px;
-                color: #fff;
-                background: #222;
-                font: inherit;
-                cursor: pointer;
-            }
-            :where(#lyrania-chat-enhancements-inventory-refresh):disabled {
-                cursor: wait;
-                opacity: 0.65;
-            }
-            :where(#lyrania-chat-enhancements-inventory-status) {
-                padding: 10px 12px;
-                color: #ccc;
-                font-size: 12px;
-            }
-            :where(#lyrania-chat-enhancements-inventory-status):empty { display: none; }
-            :where(#lyrania-chat-enhancements-inventory-scroll) {
-                box-sizing: border-box;
-                min-width: 0;
-                min-height: 0;
-                padding: 10px;
-                overflow: auto;
-                overscroll-behavior: contain;
-            }
-            :where(#lyrania-chat-enhancements-inventory-content) { min-width: 0; }
-            :where(#lyrania-chat-enhancements-inventory-content > #inventory_shell) {
-                box-sizing: border-box;
-                width: 100%;
-                min-width: 0;
-                margin-left: 0 !important;
-            }
-            :where(#holder.lyrania-chat-enhancements-has-inventory-dock > #lyrania-chat-enhancements-inventory-dock) {
-                grid-area: inventory;
-            }
-            #dungeonmapcontainer.lyrania-dungeon-summary .map_room_moblist_grid {
-                color: #fff !important;
-            }
-            @media (max-width: 760px) { #lyrania-chat-enhancements-channels { padding: 6px; } }
+  display: flex !important;
+  align-items: stretch;
+  gap: 8px;
+  overflow: visible;
+}
+#lyrania-chat-enhancements-channels {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: max-content;
+  min-width: 145px;
+  margin-top: 10px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.78);
+  overflow: hidden auto;
+  scrollbar-gutter: stable;
+}
+#lyrania-chat-enhancements-channels .lyrania-chat-filter {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 19px;
+  min-height: 19px;
+  margin: 0 0 2px;
+  padding: 0 5px;
+  border: 0;
+  border-radius: 4px;
+  color: #fff;
+  background: transparent;
+  font: inherit;
+  line-height: 19px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#lyrania-chat-enhancements-channels .lyrania-channel-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 27px;
+  gap: 3px;
+  align-items: center;
+  margin-bottom: 2px;
+}
+#lyrania-chat-enhancements-channels .lyrania-no-toggle {
+  grid-template-columns: minmax(0, 1fr);
+}
+#lyrania-chat-enhancements-channels .lyrania-channel-row .lyrania-chat-filter {
+  margin: 0;
+}
+#lyrania-chat-enhancements-channels .lyrania-channel-toggle {
+  box-sizing: border-box;
+  min-width: 27px;
+  height: 19px;
+  min-height: 19px;
+  padding: 2px 1px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  color: #aaa;
+  background: #111;
+  font: inherit;
+  font-size: 8px;
+  line-height: 1;
+  cursor: pointer;
+}
+#lyrania-chat-enhancements-channels .lyrania-channel-toggle.is-enabled {
+  color: #fff;
+  background: #286b35;
+}
+#lyrania-chat-enhancements-channels .lyrania-chat-filter:hover,
+#lyrania-chat-enhancements-channels .lyrania-chat-filter:focus-visible {
+  background: #222;
+  outline: 1px solid rgba(255, 255, 255, 0.35);
+}
+#lyrania-chat-enhancements-channels .lyrania-chat-filter.is-selected {
+  background: #555;
+}
+#lyrania-chat-enhancements-channels .lyrania-special-row {
+  margin-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  padding-top: 5px;
+}
+#chat_row.lyrania-chat-enhancements-layout #chat > .chatToggleButton {
+  display: none !important;
+}
+#chat_row.lyrania-chat-enhancements-layout > #chat {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto !important;
+}
+#lyrania-chat-enhancements-quick-menu {
+  position: fixed;
+  z-index: 2147483647;
+  min-width: 135px;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  color: #fff;
+  background: #050505;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+}
+#lyrania-chat-enhancements-quick-menu button {
+  display: block;
+  width: 100%;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 3px;
+  color: #fff;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#lyrania-chat-enhancements-quick-menu button:hover,
+#lyrania-chat-enhancements-quick-menu button:focus-visible {
+  background: #333;
+  outline: none;
+}
+#timer[data-lyrania-action-queued="true"]::after {
+  content: " — Action queued";
+  color: #ffcc33;
+  font-weight: bold;
+}
+#chattabs.lyrania-chat-enhancements-chat-loot-split > #chatpanes {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 8px;
+  align-items: stretch;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+#lyrania-chat-enhancements-chat-column {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+#lyrania-chat-enhancements-chat-composer {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.4);
+}
+#lyrania-chat-enhancements-chat-composer > #inputchat {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto !important;
+}
+#lyrania-chat-enhancements-chat-composer > #chatbutton {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+#chattabs.lyrania-chat-enhancements-chat-loot-split > nav {
+  display: none !important;
+}
+#chattabs.lyrania-chat-enhancements-chat-loot-split #chatwindow {
+  display: block !important;
+  box-sizing: border-box;
+  width: auto !important;
+  min-width: 0;
+  min-height: 0;
+  height: 100% !important;
+  padding-right: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.4);
+  overflow: hidden auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+#chattabs.lyrania-chat-enhancements-chat-loot-split
+  #lootlog.lyrania-chat-enhancements-loot-layout {
+  display: grid !important;
+  grid-template-rows: auto minmax(70px, 1fr);
+  gap: 8px;
+  width: auto !important;
+  min-width: 0;
+  height: 100% !important;
+  overflow: hidden;
+}
+#lyrania-chat-enhancements-loot-summary,
+#lyrania-chat-enhancements-loot-messages {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden auto;
+}
+#lyrania-chat-enhancements-loot-summary {
+  height: auto;
+  overflow: visible;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+#lyrania-chat-enhancements-loot-summary button {
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  color: #fff;
+  background: #222;
+  cursor: pointer;
+}
+#lyrania-chat-enhancements-loot-summary button:hover {
+  background: #444;
+}
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-total {
+  margin-bottom: 6px;
+}
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+  gap: 4px;
+}
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+}
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat[open] {
+  grid-column: 1 / -1;
+}
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  padding: 4px 6px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 11px;
+}
+#lyrania-chat-enhancements-loot-summary
+  .lyrania-loot-stat
+  > summary::-webkit-details-marker {
+  display: none;
+}
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 0 6px 5px;
+  text-align: right;
+}
+#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values small {
+  display: block;
+  opacity: 0.7;
+}
+#lyrania-chat-enhancements-loot-messages .lyrania-loot-entry {
+  display: block;
+  padding: 3px 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#lyrania-chat-enhancements-update-banner {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000000;
+  box-sizing: border-box;
+  width: min(390px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid #ffcc33;
+  border-radius: 6px;
+  color: #fff;
+  background: #161616;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+  font:
+    14px/1.4 Arial,
+    sans-serif;
+  text-align: left;
+}
+#lyrania-chat-enhancements-update-banner strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #ffcc33;
+  font-size: 15px;
+}
+#lyrania-chat-enhancements-update-banner div {
+  margin-bottom: 10px;
+}
+#lyrania-chat-enhancements-update-banner a {
+  display: inline-block;
+  margin-right: 10px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: #111;
+  background: #ffcc33;
+  font-weight: bold;
+  text-decoration: none;
+}
+#lyrania-chat-enhancements-update-banner button {
+  padding: 5px 10px;
+  border: 1px solid #777;
+  border-radius: 4px;
+  color: #fff;
+  background: #333;
+  cursor: pointer;
+}
+:where(#lyrania-chat-enhancements-inventory-dock) {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: min(760px, 75vh);
+  margin: 10px 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.72);
+  overflow: hidden;
+}
+:where(#lyrania-chat-enhancements-inventory-bar) {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+:where(#lyrania-chat-enhancements-inventory-heading) {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+:where(#lyrania-chat-enhancements-inventory-heading) small {
+  color: #aaa;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+:where(#lyrania-chat-enhancements-inventory-heading) strong {
+  font-size: 15px;
+}
+:where(#lyrania-chat-enhancements-inventory-refresh) {
+  flex: 0 0 auto;
+  min-width: 72px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 5px;
+  color: #fff;
+  background: #222;
+  font: inherit;
+  cursor: pointer;
+}
+:where(#lyrania-chat-enhancements-inventory-refresh):disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+:where(#lyrania-chat-enhancements-inventory-status) {
+  padding: 10px 12px;
+  color: #ccc;
+  font-size: 12px;
+}
+:where(#lyrania-chat-enhancements-inventory-status):empty {
+  display: none;
+}
+:where(#lyrania-chat-enhancements-inventory-scroll) {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+:where(#lyrania-chat-enhancements-inventory-content) {
+  min-width: 0;
+}
+:where(#lyrania-chat-enhancements-inventory-content > #inventory_shell) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin-left: 0 !important;
+}
+:where(
+  #holder.lyrania-chat-enhancements-has-inventory-dock
+    > #lyrania-chat-enhancements-inventory-dock
+) {
+  grid-area: inventory;
+}
+#dungeonmapcontainer.lyrania-dungeon-summary .map_room_moblist_grid {
+  color: #fff !important;
+}
+@media (max-width: 760px) {
+  #lyrania-chat-enhancements-channels {
+    padding: 6px;
+  }
+}
 
 :root {
-    color-scheme: dark;
-    --lyr-bg-0: #070a0f;
-    --lyr-bg-1: #0b111a;
-    --lyr-bg-2: #101925;
-    --lyr-surface: rgba(16, 25, 37, 0.94);
-    --lyr-surface-strong: rgba(20, 31, 45, 0.98);
-    --lyr-surface-soft: rgba(255, 255, 255, 0.045);
-    --lyr-surface-hover: rgba(255, 255, 255, 0.085);
-    --lyr-border: rgba(160, 190, 220, 0.18);
-    --lyr-border-strong: rgba(120, 190, 255, 0.38);
-    --lyr-text: #e8eef6;
-    --lyr-text-soft: #a9b7c8;
-    --lyr-text-faint: #76879b;
-    --lyr-accent: #62b7ff;
-    --lyr-accent-strong: #2e92ec;
-    --lyr-accent-soft: rgba(98, 183, 255, 0.14);
-    --lyr-gold: #f2c66d;
-    --lyr-success: #61d69b;
-    --lyr-warning: #f2bd63;
-    --lyr-danger: #ff7784;
-    --lyr-radius-sm: 7px;
-    --lyr-radius: 12px;
-    --lyr-radius-lg: 17px;
-    --lyr-shadow: 0 14px 38px rgba(0, 0, 0, 0.28);
-    --lyr-shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.18);
-    --lyr-gap: clamp(5px, 0.45vw, 8px);
-    --lyr-control-height: 36px;
-    --lyr-workspace-height: clamp(330px, 55dvh, 540px);
-    --lyr-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", sans-serif;
-    --theme-table-border-strong: rgba(120, 190, 255, 0.25);
-    --theme-table-border-soft: rgba(160, 190, 220, 0.14);
-    --theme-table-border-faint: rgba(160, 190, 220, 0.09);
-    --datatable-theme-bg-color: transparent;
-    --datatable-theme-bg-image: none;
-    --inventory-theme-bg-color: transparent;
-    --inventory-theme-bg-image: none;
-    --popup-theme-bg-color: #0e1722;
-    --popup-theme-bg-image: none;
-    --plat: #f7fbff;
-    --gold: #f2c66d;
-    --silver: #c9d3df;
-    --copper: #db9368;
-    --diamond: #62e5f3;
-    --sapphire: #7eb9ff;
-    --ruby: #ff6678;
-    --emerald: #62dc9a;
-    --opal: #eadfcb;
-    --jade: #a9e86f;
+  color-scheme: dark;
+  --lyr-bg-0: #070a0f;
+  --lyr-bg-1: #0b111a;
+  --lyr-bg-2: #101925;
+  --lyr-surface: rgba(16, 25, 37, 0.94);
+  --lyr-surface-strong: rgba(20, 31, 45, 0.98);
+  --lyr-surface-soft: rgba(255, 255, 255, 0.045);
+  --lyr-surface-hover: rgba(255, 255, 255, 0.085);
+  --lyr-border: rgba(160, 190, 220, 0.18);
+  --lyr-border-strong: rgba(120, 190, 255, 0.38);
+  --lyr-text: #e8eef6;
+  --lyr-text-soft: #a9b7c8;
+  --lyr-text-faint: #76879b;
+  --lyr-accent: #62b7ff;
+  --lyr-accent-strong: #2e92ec;
+  --lyr-accent-soft: rgba(98, 183, 255, 0.14);
+  --lyr-gold: #f2c66d;
+  --lyr-success: #61d69b;
+  --lyr-warning: #f2bd63;
+  --lyr-danger: #ff7784;
+  --lyr-radius-sm: 7px;
+  --lyr-radius: 12px;
+  --lyr-radius-lg: 17px;
+  --lyr-shadow: 0 14px 38px rgba(0, 0, 0, 0.28);
+  --lyr-shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.18);
+  --lyr-gap: clamp(5px, 0.45vw, 8px);
+  --lyr-control-height: 36px;
+  --lyr-workspace-height: clamp(330px, 55dvh, 540px);
+  --lyr-font:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --theme-table-border-strong: rgba(120, 190, 255, 0.25);
+  --theme-table-border-soft: rgba(160, 190, 220, 0.14);
+  --theme-table-border-faint: rgba(160, 190, 220, 0.09);
+  --datatable-theme-bg-color: transparent;
+  --datatable-theme-bg-image: none;
+  --inventory-theme-bg-color: transparent;
+  --inventory-theme-bg-image: none;
+  --popup-theme-bg-color: #0e1722;
+  --popup-theme-bg-image: none;
+  --plat: #f7fbff;
+  --gold: #f2c66d;
+  --silver: #c9d3df;
+  --copper: #db9368;
+  --diamond: #62e5f3;
+  --sapphire: #7eb9ff;
+  --ruby: #ff6678;
+  --emerald: #62dc9a;
+  --opal: #eadfcb;
+  --jade: #a9e86f;
 }
 
 html {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    min-height: 100%;
-    overflow-x: hidden !important;
-    background: var(--lyr-bg-0);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  overflow-x: hidden !important;
+  background: var(--lyr-bg-0);
 }
 
 body {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    min-height: 100vh;
-    height: auto;
-    margin: 0;
-    overflow-x: hidden !important;
-    color: var(--lyr-text);
-    background:
-        radial-gradient(circle at 10% -10%, rgba(46, 146, 236, 0.17), transparent 36rem),
-        radial-gradient(circle at 95% 10%, rgba(78, 92, 180, 0.12), transparent 32rem),
-        linear-gradient(145deg, var(--lyr-bg-0), var(--lyr-bg-1) 48%, #080d14);
-    background-attachment: fixed;
-    font-family: var(--lyr-font);
-    font-size: 13px;
-    line-height: 1.45;
-    text-align: left;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  height: auto;
+  margin: 0;
+  overflow-x: hidden !important;
+  color: var(--lyr-text);
+  background:
+    radial-gradient(
+      circle at 10% -10%,
+      rgba(46, 146, 236, 0.17),
+      transparent 36rem
+    ),
+    radial-gradient(
+      circle at 95% 10%,
+      rgba(78, 92, 180, 0.12),
+      transparent 32rem
+    ),
+    linear-gradient(145deg, var(--lyr-bg-0), var(--lyr-bg-1) 48%, #080d14);
+  background-attachment: fixed;
+  font-family: var(--lyr-font);
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
 }
 
 body,
 body * {
-    box-sizing: border-box;
-    scrollbar-color: rgba(120, 190, 255, 0.45) rgba(0, 0, 0, 0.16);
-    scrollbar-width: thin;
+  box-sizing: border-box;
+  scrollbar-color: rgba(120, 190, 255, 0.45) rgba(0, 0, 0, 0.16);
+  scrollbar-width: thin;
 }
 
 img,
 svg,
 video,
 canvas {
-    max-width: 100%;
+  max-width: 100%;
 }
 
 pre,
 code {
-    overflow-wrap: anywhere;
-    white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 body *::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
+  width: 9px;
+  height: 9px;
 }
 
 body *::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.16);
+  background: rgba(0, 0, 0, 0.16);
 }
 
 body *::-webkit-scrollbar-thumb {
-    border: 2px solid transparent;
-    border-radius: 999px;
-    background: rgba(120, 190, 255, 0.4);
-    background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(120, 190, 255, 0.4);
+  background-clip: padding-box;
 }
 
 ::selection {
-    color: #fff;
-    background: rgba(46, 146, 236, 0.7);
+  color: #fff;
+  background: rgba(46, 146, 236, 0.7);
 }
 
 a {
-    color: #8cc8ff;
-    text-decoration: none;
-    text-underline-offset: 0.18em;
+  color: #8cc8ff;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
 }
 
 a:hover {
-    color: #c3e3ff;
-    background: transparent;
-    text-decoration: underline;
+  color: #c3e3ff;
+  background: transparent;
+  text-decoration: underline;
 }
 
 a:focus-visible,
@@ -528,15 +569,15 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-    outline: 2px solid var(--lyr-accent);
-    outline-offset: 2px;
+  outline: 2px solid var(--lyr-accent);
+  outline-offset: 2px;
 }
 
 hr {
-    height: 1px;
-    margin: 10px 0;
-    border: 0;
-    background: var(--lyr-border);
+  height: 1px;
+  margin: 10px 0;
+  border: 0;
+  background: var(--lyr-border);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -544,90 +585,92 @@ hr {
 /* ------------------------------------------------------------------------- */
 
 #holder {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-        "header"
-        "game"
-        "inventory"
-        "chat";
-    gap: var(--lyr-gap);
-    width: calc(100% - 8px);
-    max-width: none;
-    margin: 4px auto 12px;
-    padding: 0;
-    text-align: left;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "header"
+    "game"
+    "inventory"
+    "chat";
+  gap: var(--lyr-gap);
+  width: calc(100% - 8px);
+  max-width: none;
+  margin: 4px auto 12px;
+  padding: 0;
+  text-align: left;
 }
 
 #holder > .lrow:first-child {
-    grid-area: header;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    margin: 0 !important;
+  grid-area: header;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 !important;
 }
 
 #header {
-    width: 100%;
-    height: auto;
-    min-width: 0;
+  width: 100%;
+  height: auto;
+  min-width: 0;
 }
 
 #middlesection {
-    grid-area: game;
-    display: grid;
-    grid-template-columns: 170px minmax(0, 1fr) 150px;
-    gap: var(--lyr-gap);
-    width: 100%;
-    min-width: 0;
-    min-height: 0;
-    height: var(--lyr-workspace-height);
+  grid-area: game;
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 150px;
+  gap: var(--lyr-gap);
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: var(--lyr-workspace-height);
 }
 
 #chat_row {
-    grid-area: chat;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
+  grid-area: chat;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 #lyrania-chat-enhancements-inventory-dock {
-    grid-area: inventory;
+  grid-area: inventory;
 }
 
 #main,
 #side1,
 #side2 {
-    float: none;
-    width: auto !important;
-    max-width: 100%;
-    min-width: 0;
-    min-height: 0;
-    height: 100%;
-    border: 1px solid var(--lyr-border);
-    border-radius: var(--lyr-radius-lg);
-    background: var(--lyr-surface);
-    box-shadow: var(--lyr-shadow-soft);
+  float: none;
+  width: auto !important;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--lyr-border);
+  border-radius: var(--lyr-radius-lg);
+  background: var(--lyr-surface);
+  box-shadow: var(--lyr-shadow-soft);
 }
 
 #main {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    font-size: 14px;
-    isolation: isolate;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 14px;
+  isolation: isolate;
 }
 
 #side1,
 #side2 {
-    position: relative;
-    height: 100% !important;
-    padding: 7px;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
+  position: relative;
+  height: 100% !important;
+  max-height: 100%;
+  padding: 7px;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -635,54 +678,54 @@ hr {
 /* ------------------------------------------------------------------------- */
 
 #header > .lrow {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(145px, 1fr));
-    gap: var(--lyr-gap);
-    align-items: stretch;
-    width: 100%;
-    max-width: 100%;
-    margin: 0 !important;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(145px, 1fr));
+  gap: var(--lyr-gap);
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 !important;
 }
 
 #header .headerbox {
-    flex: none !important;
-    min-width: 0;
-    min-height: 100px;
-    padding: 9px 10px;
-    overflow-wrap: anywhere;
-    border: 1px solid var(--lyr-border);
-    border-radius: var(--lyr-radius);
-    background:
-        linear-gradient(145deg, rgba(255, 255, 255, 0.055), transparent 58%),
-        var(--lyr-surface);
-    box-shadow: var(--lyr-shadow-soft);
-    font-size: 12px;
-    line-height: 1.65;
+  flex: none !important;
+  min-width: 0;
+  min-height: 100px;
+  padding: 9px 10px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--lyr-border);
+  border-radius: var(--lyr-radius);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), transparent 58%),
+    var(--lyr-surface);
+  box-shadow: var(--lyr-shadow-soft);
+  font-size: 12px;
+  line-height: 1.65;
 }
 
 #header .headerbox:hover {
-    border-color: rgba(120, 190, 255, 0.3);
+  border-color: rgba(120, 190, 255, 0.3);
 }
 
 #header .headerbox b {
-    color: var(--lyr-text-soft);
-    font-size: 11px;
-    font-weight: 650;
-    letter-spacing: 0.025em;
+  color: var(--lyr-text-soft);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.025em;
 }
 
 #header .headernav {
-    display: block;
-    text-align: left;
+  display: block;
+  text-align: left;
 }
 
 #header .headernav a {
-    display: inline-block;
-    padding-block: 1px;
+  display: inline-block;
+  padding-block: 1px;
 }
 
 #schemediv1:empty {
-    display: none;
+  display: none;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -691,32 +734,32 @@ hr {
 
 #side1 > div,
 #side2 > div {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    overflow-wrap: anywhere;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 #main > *,
 #content > * {
-    max-width: 100%;
-    min-width: 0;
+  max-width: 100%;
+  min-width: 0;
 }
 
 #side1 > div + div {
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid var(--lyr-border);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--lyr-border);
 }
 
 #side1 .mt-1,
 #side1 .mt-2 {
-    margin-top: 0 !important;
+  margin-top: 0 !important;
 }
 
 #tstimers {
-    height: auto !important;
-    min-height: 0;
+  height: auto !important;
+  min-height: 0;
 }
 
 #tstimer,
@@ -724,123 +767,123 @@ hr {
 #bonusdisplays,
 #sidecounter,
 #questtracker {
-    font-size: 12px;
-    line-height: 1.55;
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 #sidecounter,
 #questtracker {
-    position: static;
-    top: auto;
-    width: auto;
-    height: auto;
+  position: static;
+  top: auto;
+  width: auto;
+  height: auto;
 }
 
 #questtracker a {
-    display: block;
-    padding: 6px 7px;
-    border: 1px solid rgba(242, 198, 109, 0.2);
-    border-radius: var(--lyr-radius-sm);
-    background: rgba(242, 198, 109, 0.07);
+  display: block;
+  padding: 6px 7px;
+  border: 1px solid rgba(242, 198, 109, 0.2);
+  border-radius: var(--lyr-radius-sm);
+  background: rgba(242, 198, 109, 0.07);
 }
 
 #equipment h3 {
-    margin: 0;
-    color: var(--lyr-text);
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    text-align: left;
-    text-transform: uppercase;
+  margin: 0;
+  color: var(--lyr-text);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
 }
 
 #equipment p.equipment {
-    min-width: 0;
-    margin: 2px 0;
-    text-align: left;
+  min-width: 0;
+  margin: 2px 0;
+  text-align: left;
 }
 
 #equipment p.equipment a {
-    display: block;
-    min-width: 0;
-    padding: 4px 5px;
-    overflow-wrap: anywhere;
-    border-radius: 6px;
-    line-height: 1.32;
+  display: block;
+  min-width: 0;
+  padding: 4px 5px;
+  overflow-wrap: anywhere;
+  border-radius: 6px;
+  line-height: 1.32;
 }
 
 #equipment p.equipment a span {
-    color: var(--lyr-gold);
-    font-weight: 750;
-    font-variant-numeric: tabular-nums;
+  color: var(--lyr-gold);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 
 #equipment hr,
 #side2 > hr {
-    margin: 5px 0;
+  margin: 5px 0;
 }
 
 #equipment p.equipment a:hover {
-    background: var(--lyr-accent-soft);
-    text-decoration: none;
+  background: var(--lyr-accent-soft);
+  text-decoration: none;
 }
 
 #equipstuff {
-    min-width: 0;
-    margin-top: 6px;
-    padding: 7px;
-    overflow-wrap: anywhere;
-    border: 1px solid var(--lyr-border);
-    border-radius: 8px;
-    background: rgba(98, 183, 255, 0.055);
-    font-size: 12px;
-    line-height: 1.4;
-    font-variant-numeric: tabular-nums;
+  min-width: 0;
+  margin-top: 6px;
+  padding: 7px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--lyr-border);
+  border-radius: 8px;
+  background: rgba(98, 183, 255, 0.055);
+  font-size: 12px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
 }
 
 #equipstuff:empty {
-    display: none;
+  display: none;
 }
 
 #side2 > #equipment + hr {
-    display: none;
+  display: none;
 }
 
 #equipstuff::first-line {
-    color: #f4f8fc;
-    font-weight: 750;
+  color: #f4f8fc;
+  font-weight: 750;
 }
 
 #equipstuff > a,
 #equipstuff .text-center a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 25px;
-    margin: 3px 2px 1px 0;
-    padding: 3px 6px;
-    border: 1px solid rgba(98, 183, 255, 0.24);
-    border-radius: 6px;
-    background: rgba(98, 183, 255, 0.09);
-    font-weight: 700;
-    line-height: 1.15;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 25px;
+  margin: 3px 2px 1px 0;
+  padding: 3px 6px;
+  border: 1px solid rgba(98, 183, 255, 0.24);
+  border-radius: 6px;
+  background: rgba(98, 183, 255, 0.09);
+  font-weight: 700;
+  line-height: 1.15;
 }
 
 #equipstuff > a:hover,
 #equipstuff .text-center a:hover {
-    background: var(--lyr-accent-soft);
-    text-decoration: none;
+  background: var(--lyr-accent-soft);
+  text-decoration: none;
 }
 
 #equipstuff > a[href*="equipdowngrade"] {
-    border-color: rgba(255, 119, 132, 0.28);
-    color: #ff9da7;
-    background: rgba(255, 119, 132, 0.08);
+  border-color: rgba(255, 119, 132, 0.28);
+  color: #ff9da7;
+  background: rgba(255, 119, 132, 0.08);
 }
 
 #equipstuff .text-center {
-    margin-top: 5px;
-    padding-top: 4px;
-    border-top: 1px solid var(--lyr-border);
+  margin-top: 5px;
+  padding-top: 4px;
+  border-top: 1px solid var(--lyr-border);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -848,90 +891,91 @@ hr {
 /* ------------------------------------------------------------------------- */
 
 #loadoutpotions {
-    position: static !important;
-    inset: auto !important;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 5px;
-    width: auto !important;
-    padding: 6px 8px !important;
-    border-bottom: 1px solid var(--lyr-border);
-    background: rgba(255, 255, 255, 0.025);
+  position: static !important;
+  inset: auto !important;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  width: auto !important;
+  padding: 6px 8px !important;
+  border-bottom: 1px solid var(--lyr-border);
+  background: rgba(255, 255, 255, 0.025);
 }
 
 #loadoutpotions > span {
-    float: none !important;
+  float: none !important;
 }
 
 #timer {
-    min-height: 35px;
-    padding: 7px 8px 3px;
-    color: var(--lyr-text-soft);
-    font-weight: 700;
-    text-align: center;
+  min-height: 35px;
+  padding: 7px 8px 3px;
+  color: var(--lyr-text-soft);
+  font-weight: 700;
+  text-align: center;
 }
 
 #timer br:first-child {
-    display: none;
+  display: none;
 }
 
 #main > div:has(> #mainnav) {
-    padding: 2px 8px 6px;
+  padding: 2px 8px 6px;
 }
 
 #mainnav {
-    position: static !important;
-    top: auto !important;
-    z-index: auto !important;
-    min-width: min(240px, 100%);
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+  min-width: min(240px, 100%);
 }
 
 #content {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 0;
-    max-width: 100%;
-    padding: 7px 8px 10px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-gutter: stable;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  padding: 7px 8px 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 #content hr {
-    margin-block: 5px;
+  margin-block: 5px;
 }
 
 #content:empty {
-    padding: 0;
+  padding: 0;
 }
 
-#content :is(
+#content
+  :is(
     input[type="button"][value="Attack!"],
     input[type="button"][value="Fight"],
     input[type="button"][value="Continue"]
-) {
-    min-width: min(112px, 100%);
+  ) {
+  min-width: min(112px, 100%);
 }
 
 #content [data-lyrania-queued-control="true"] {
-    border-color: var(--lyr-warning) !important;
-    box-shadow: 0 0 0 2px rgba(242, 189, 99, 0.16) !important;
+  border-color: var(--lyr-warning) !important;
+  box-shadow: 0 0 0 2px rgba(242, 189, 99, 0.16) !important;
 }
 
 #bannerholder {
-    top: 12px;
-    left: 12px;
-    width: calc(100% - 24px);
-    border: 1px solid rgba(242, 198, 109, 0.3);
-    border-radius: var(--lyr-radius);
-    background: rgba(26, 23, 15, 0.96);
-    box-shadow: var(--lyr-shadow);
+  top: 12px;
+  left: 12px;
+  width: calc(100% - 24px);
+  border: 1px solid rgba(242, 198, 109, 0.3);
+  border-radius: var(--lyr-radius);
+  background: rgba(26, 23, 15, 0.96);
+  box-shadow: var(--lyr-shadow);
 }
 
 #banner {
-    margin: 16px;
+  margin: 16px;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -948,41 +992,41 @@ input[type="text"],
 input[type="search"],
 input[type="number"],
 input[type="password"] {
-    max-width: 100%;
-    min-height: var(--lyr-control-height);
-    border: 1px solid var(--lyr-border-strong);
-    border-radius: var(--lyr-radius-sm);
-    color: var(--lyr-text);
-    background: #111c29;
-    font: inherit;
-    line-height: 1.2;
+  max-width: 100%;
+  min-height: var(--lyr-control-height);
+  border: 1px solid var(--lyr-border-strong);
+  border-radius: var(--lyr-radius-sm);
+  color: var(--lyr-text);
+  background: #111c29;
+  font: inherit;
+  line-height: 1.2;
 }
 
 button,
 input[type="button"],
 input[type="submit"],
 input[type="reset"] {
-    height: auto;
-    padding: 7px 12px;
-    background: linear-gradient(180deg, #1d3a56, #142b40);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
-    font-weight: 650;
-    cursor: pointer;
+  height: auto;
+  padding: 7px 12px;
+  background: linear-gradient(180deg, #1d3a56, #142b40);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  font-weight: 650;
+  cursor: pointer;
 }
 
 button:hover,
 input[type="button"]:hover,
 input[type="submit"]:hover,
 input[type="reset"]:hover {
-    border-color: rgba(140, 200, 255, 0.62);
-    background: linear-gradient(180deg, #244c70, #193853);
+  border-color: rgba(140, 200, 255, 0.62);
+  background: linear-gradient(180deg, #244c70, #193853);
 }
 
 button:disabled,
 input:disabled,
 select:disabled {
-    cursor: not-allowed;
-    opacity: 0.52;
+  cursor: not-allowed;
+  opacity: 0.52;
 }
 
 select,
@@ -991,35 +1035,35 @@ input[type="text"],
 input[type="search"],
 input[type="number"],
 input[type="password"] {
-    height: auto;
-    padding: 7px 9px;
+  height: auto;
+  padding: 7px 9px;
 }
 
 select {
-    padding-right: 28px;
+  padding-right: 28px;
 }
 
 textarea {
-    min-height: 90px;
-    resize: vertical;
+  min-height: 90px;
+  resize: vertical;
 }
 
 input[type="checkbox"],
 input[type="radio"] {
-    width: 16px;
-    min-width: 16px;
-    height: 16px;
-    min-height: 16px;
-    accent-color: var(--lyr-accent-strong);
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  accent-color: var(--lyr-accent-strong);
 }
 
 #main label,
 #popup label,
 #lyrania-chat-enhancements-inventory-dock label {
-    float: none;
-    width: auto;
-    padding-top: 0;
-    text-align: left;
+  float: none;
+  width: auto;
+  padding-top: 0;
+  text-align: left;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1027,109 +1071,109 @@ input[type="radio"] {
 /* ------------------------------------------------------------------------- */
 
 .purchase-shell {
-    gap: 14px;
-    color: var(--lyr-text);
+  gap: 14px;
+  color: var(--lyr-text);
 }
 
 .purchase-stack,
 .purchase-utility-stack {
-    display: grid;
-    gap: 11px;
+  display: grid;
+  gap: 11px;
 }
 
 .purchase-summary-grid {
-    display: grid;
-    gap: 9px;
+  display: grid;
+  gap: 9px;
 }
 
 .purchase-form-line {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .purchase-card-centered {
-    text-align: center;
+  text-align: center;
 }
 
 .purchase-header-shell,
 .purchase-section-shell,
 .inventory-header-shell,
 .inventory-section-shell {
-    width: 100%;
-    max-width: none;
+  width: 100%;
+  max-width: none;
 }
 
 .purchase-card,
 .purchase-summary-item,
 .purchase-utility-item,
 .purchase-boost-card {
-    border-color: var(--lyr-border);
-    background:
-        linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 62%),
-        rgba(8, 15, 23, 0.55);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035) inset;
+  border-color: var(--lyr-border);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 62%),
+    rgba(8, 15, 23, 0.55);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035) inset;
 }
 
 .purchase-card {
-    padding: 15px;
-    border-radius: var(--lyr-radius);
+  padding: 15px;
+  border-radius: var(--lyr-radius);
 }
 
 .purchase-section-heading {
-    margin-bottom: 11px;
-    color: var(--lyr-text);
-    font-size: 17px;
-    font-weight: 750;
-    letter-spacing: -0.01em;
+  margin-bottom: 11px;
+  color: var(--lyr-text);
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
 }
 
 .purchase-subheading,
 .purchase-boost-name {
-    color: var(--lyr-text);
+  color: var(--lyr-text);
 }
 
 .purchase-note,
 .purchase-package-legacy-note {
-    color: var(--lyr-text-soft);
+  color: var(--lyr-text-soft);
 }
 
 .purchase-utility-item {
-    padding: 11px;
-    border: 1px solid var(--lyr-border);
-    border-radius: 9px;
+  padding: 11px;
+  border: 1px solid var(--lyr-border);
+  border-radius: 9px;
 }
 
 .purchase-summary-item {
-    padding: 12px;
-    border-radius: 10px;
+  padding: 12px;
+  border-radius: 10px;
 }
 
 .purchase-summary-label {
-    color: var(--lyr-text-soft);
-    font-size: 11px;
-    letter-spacing: 0.075em;
+  color: var(--lyr-text-soft);
+  font-size: 11px;
+  letter-spacing: 0.075em;
 }
 
 .purchase-summary-value {
-    color: #f4f8fc;
-    font-size: clamp(18px, 1.5vw, 24px);
-    font-variant-numeric: tabular-nums;
+  color: #f4f8fc;
+  font-size: clamp(18px, 1.5vw, 24px);
+  font-variant-numeric: tabular-nums;
 }
 
 .purchase-table-wrap,
 .dataTables_wrapper {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .purchase-table-wrap {
-    border: 1px solid var(--lyr-border);
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+  border: 1px solid var(--lyr-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 #content table,
@@ -1137,12 +1181,12 @@ input[type="radio"] {
 #lyrania-chat-enhancements-inventory-dock table,
 .dataTable,
 .datatablelogs {
-    max-width: 100%;
-    color: var(--lyr-text);
-    border-color: var(--theme-table-border-strong) !important;
-    border-collapse: collapse;
-    background: transparent !important;
-    font-variant-numeric: tabular-nums;
+  max-width: 100%;
+  color: var(--lyr-text);
+  border-color: var(--theme-table-border-strong) !important;
+  border-collapse: collapse;
+  background: transparent !important;
+  font-variant-numeric: tabular-nums;
 }
 
 .dataTable thead,
@@ -1157,30 +1201,30 @@ input[type="radio"] {
 .dataTable.order-column tbody tr > .sorting_3,
 .dataTable thead th,
 .dataTable tbody td {
-    background-color: transparent !important;
-    background-image: none !important;
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
 .dataTable thead th,
 .datatablelogs th {
-    padding: 9px 8px !important;
-    color: #dce9f6;
-    background: rgba(98, 183, 255, 0.09) !important;
-    border-bottom-color: var(--lyr-border-strong) !important;
-    font-size: 11px;
-    letter-spacing: 0.045em;
-    text-transform: uppercase;
+  padding: 9px 8px !important;
+  color: #dce9f6;
+  background: rgba(98, 183, 255, 0.09) !important;
+  border-bottom-color: var(--lyr-border-strong) !important;
+  font-size: 11px;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
 }
 
 .dataTable tbody td,
 .datatablelogs td {
-    padding: 8px !important;
-    border-bottom-color: var(--theme-table-border-faint) !important;
+  padding: 8px !important;
+  border-bottom-color: var(--theme-table-border-faint) !important;
 }
 
 .dataTable tbody tr:hover td,
 .datatablelogs tbody tr:hover td {
-    background: rgba(98, 183, 255, 0.06) !important;
+  background: rgba(98, 183, 255, 0.06) !important;
 }
 
 .dataTables_wrapper,
@@ -1188,21 +1232,21 @@ input[type="radio"] {
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_filter,
 .dataTables_wrapper .dataTables_paginate {
-    color: var(--lyr-text-soft) !important;
+  color: var(--lyr-text-soft) !important;
 }
 
 .dataTables_wrapper .dataTables_paginate .paginate_button {
-    border-color: transparent !important;
-    border-radius: 6px;
-    color: var(--lyr-text) !important;
-    background: transparent !important;
+  border-color: transparent !important;
+  border-radius: 6px;
+  color: var(--lyr-text) !important;
+  background: transparent !important;
 }
 
 .dataTables_wrapper .dataTables_paginate .paginate_button:hover,
 .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-    border-color: var(--lyr-border-strong) !important;
-    color: #fff !important;
-    background: var(--lyr-accent-soft) !important;
+  border-color: var(--lyr-border-strong) !important;
+  color: #fff !important;
+  background: var(--lyr-accent-soft) !important;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1210,102 +1254,102 @@ input[type="radio"] {
 /* ------------------------------------------------------------------------- */
 
 .mapLayout {
-    display: grid;
-    grid-template-columns: 150px 322px 150px;
-    align-items: start;
-    justify-content: center;
-    gap: 6px;
-    width: min(100%, 634px);
-    max-width: 100%;
-    margin: 8px auto 0;
+  display: grid;
+  grid-template-columns: 150px 322px 150px;
+  align-items: start;
+  justify-content: center;
+  gap: 6px;
+  width: min(100%, 634px);
+  max-width: 100%;
+  margin: 8px auto 0;
 }
 
 .mapInfoPanel {
-    width: 150px !important;
-    min-width: 150px;
-    max-width: 150px;
-    height: auto;
-    min-height: 322px;
-    padding: 8px;
-    overflow: hidden;
-    overflow-wrap: anywhere;
-    border: 1px solid var(--lyr-border);
-    border-radius: var(--lyr-radius);
-    background: rgba(6, 13, 20, 0.6);
+  width: 150px !important;
+  min-width: 150px;
+  max-width: 150px;
+  height: auto;
+  min-height: 322px;
+  padding: 8px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--lyr-border);
+  border-radius: var(--lyr-radius);
+  background: rgba(6, 13, 20, 0.6);
 }
 
 #rightinfo.mapInfoPanel {
-    height: auto;
-    min-height: 322px;
-    padding-bottom: 8px;
+  height: auto;
+  min-height: 322px;
+  padding-bottom: 8px;
 }
 
 #rightinfo.mapInfoPanel input[type="button"],
 #rightinfo.mapInfoPanel input[type="submit"],
 #rightinfo.mapInfoPanel button,
 #rightinfo.mapInfoPanel select {
-    box-sizing: border-box;
-    width: 100% !important;
-    max-width: 100%;
-    min-width: 0;
-    margin: 2px 0;
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+  margin: 2px 0;
 }
 
 #rightinfo.mapInfoPanel input[type="button"],
 #rightinfo.mapInfoPanel input[type="submit"],
 #rightinfo.mapInfoPanel button {
-    min-height: 30px;
-    padding: 5px 3px;
-    font-size: 10.5px;
-    white-space: nowrap;
+  min-height: 30px;
+  padding: 5px 3px;
+  font-size: 10.5px;
+  white-space: nowrap;
 }
 
 #rightinfo.mapInfoPanel #kung_fu_controls {
-    display: grid;
-    gap: 3px;
-    width: 100%;
+  display: grid;
+  gap: 3px;
+  width: 100%;
 }
 
 #rightinfo.mapInfoPanel #kung_fu_controls br {
-    display: none;
+  display: none;
 }
 
 #rightinfo.mapInfoPanel #inkcolour {
-    position: static !important;
+  position: static !important;
 }
 
 .mapContainer {
-    justify-self: center;
-    width: 230px !important;
-    height: 230px !important;
-    max-width: 100%;
-    border: 1px solid rgba(97, 214, 155, 0.28);
-    border-radius: var(--lyr-radius);
-    background: #082318;
-    box-shadow: 0 0 22px rgba(35, 133, 89, 0.12) inset;
-    overflow: hidden;
-    zoom: 1.4;
+  justify-self: center;
+  width: 230px !important;
+  height: 230px !important;
+  max-width: 100%;
+  border: 1px solid rgba(97, 214, 155, 0.28);
+  border-radius: var(--lyr-radius);
+  background: #082318;
+  box-shadow: 0 0 22px rgba(35, 133, 89, 0.12) inset;
+  overflow: hidden;
+  zoom: 1.4;
 }
 
 #dungeonmapcontainer {
-    max-width: 100%;
-    margin-inline: auto;
+  max-width: 100%;
+  margin-inline: auto;
 }
 
 #dungeonmapcontainer .map_room_moblist_grid {
-    font-family: var(--lyr-font);
-    font-size: 11px;
-    font-weight: 750;
-    text-shadow: 0 1px 2px #000;
+  font-family: var(--lyr-font);
+  font-size: 11px;
+  font-weight: 750;
+  text-shadow: 0 1px 2px #000;
 }
 
 .dungeonmapRoomType {
-    color: var(--lyr-text-soft);
+  color: var(--lyr-text-soft);
 }
 
 #dungeonmapDescription,
 #dungeonmapDescription2 {
-    line-height: 1.55;
+  line-height: 1.55;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1313,309 +1357,313 @@ input[type="radio"] {
 /* ------------------------------------------------------------------------- */
 
 #chat_row {
-    border: 1px solid var(--lyr-border);
-    border-radius: var(--lyr-radius-lg);
-    background: var(--lyr-surface);
-    box-shadow: var(--lyr-shadow-soft);
-    overflow: hidden;
+  border: 1px solid var(--lyr-border);
+  border-radius: var(--lyr-radius-lg);
+  background: var(--lyr-surface);
+  box-shadow: var(--lyr-shadow-soft);
+  overflow: hidden;
 }
 
 #chat {
-    float: none;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    min-height: clamp(260px, 32vh, 410px);
-    padding: 7px 8px 8px;
+  float: none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: clamp(260px, 32vh, 410px);
+  padding: 7px 8px 8px;
 }
 
 #chatresizehandle {
-    margin: -2px 0 6px;
+  margin: -2px 0 6px;
 }
 
 #chatresizehandle .chat-resize-grip {
-    width: 82px;
-    height: 4px;
-    background: rgba(140, 200, 255, 0.42);
-    box-shadow: none;
+  width: 82px;
+  height: 4px;
+  background: rgba(140, 200, 255, 0.42);
+  box-shadow: none;
 }
 
 #chatchannel,
 #inputchat,
 #chatbutton {
-    vertical-align: middle;
+  vertical-align: middle;
 }
 
 #inputchat {
-    width: min(600px, 100%);
+  width: min(600px, 100%);
 }
 
 #chattabs {
-    margin-top: 9px;
+  margin-top: 9px;
 }
 
 #chatwindow,
 #lootlog {
-    min-width: 0;
-    max-width: 100%;
-    padding: 9px 10px;
-    overflow-x: hidden !important;
-    border: 1px solid var(--lyr-border);
-    border-radius: 9px;
-    background: rgba(5, 10, 16, 0.42);
-    font-size: 12px;
-    line-height: 1.55;
+  min-width: 0;
+  max-width: 100%;
+  padding: 9px 10px;
+  overflow-x: hidden !important;
+  border: 1px solid var(--lyr-border);
+  border-radius: 9px;
+  background: rgba(5, 10, 16, 0.42);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 #chatwindow {
-    padding: 7px 8px;
+  padding: 7px 8px;
 }
 
 #lootlog {
-    padding: 6px;
+  padding: 6px;
 }
 
 div.chatline {
-    padding: 2px 5px;
-    border-radius: 4px;
+  padding: 2px 5px;
+  border-radius: 4px;
 }
 
 div.chatline:hover {
-    background: rgba(255, 255, 255, 0.025);
+  background: rgba(255, 255, 255, 0.025);
 }
 
 #lyrania-chat-enhancements-channels {
-    border-color: var(--lyr-border) !important;
-    border-radius: 10px !important;
-    background: rgba(5, 10, 16, 0.72) !important;
+  border-color: var(--lyr-border) !important;
+  border-radius: 10px !important;
+  background: rgba(5, 10, 16, 0.72) !important;
 }
 
 #lyrania-chat-enhancements-channels .lyrania-chat-filter {
-    border-radius: 6px !important;
+  border-radius: 6px !important;
 }
 
 #lyrania-chat-enhancements-channels .lyrania-chat-filter:hover,
 #lyrania-chat-enhancements-channels .lyrania-chat-filter:focus-visible,
 #lyrania-chat-enhancements-channels .lyrania-chat-filter.is-selected {
-    background: var(--lyr-accent-soft) !important;
+  background: var(--lyr-accent-soft) !important;
 }
 
 #lyrania-chat-enhancements-channels .lyrania-channel-toggle {
-    border-color: var(--lyr-border) !important;
-    background: #101924 !important;
+  border-color: var(--lyr-border) !important;
+  background: #101924 !important;
 }
 
 #lyrania-chat-enhancements-channels .lyrania-channel-toggle.is-enabled {
-    border-color: rgba(97, 214, 155, 0.42) !important;
-    background: rgba(35, 122, 79, 0.7) !important;
+  border-color: rgba(97, 214, 155, 0.42) !important;
+  background: rgba(35, 122, 79, 0.7) !important;
 }
 
 #lyrania-chat-enhancements-chat-composer {
-    gap: 7px !important;
-    padding-right: 6px !important;
-    border-right-color: var(--lyr-border) !important;
+  gap: 7px !important;
+  padding-right: 6px !important;
+  border-right-color: var(--lyr-border) !important;
 }
 
 #chattabs.lyrania-chat-enhancements-chat-loot-split > #chatpanes {
-    grid-template-columns: minmax(0, 2.5fr) minmax(230px, 1fr) !important;
-    gap: 7px !important;
-    max-width: 100%;
-    overflow-x: hidden !important;
+  grid-template-columns: minmax(0, 2.5fr) minmax(230px, 1fr) !important;
+  gap: 7px !important;
+  max-width: 100%;
+  overflow-x: hidden !important;
 }
 
 #chattabs.lyrania-chat-enhancements-chat-loot-split #chatwindow {
-    padding-right: 10px !important;
-    border-right: 1px solid var(--lyr-border) !important;
+  padding-right: 10px !important;
+  border-right: 1px solid var(--lyr-border) !important;
 }
 
 #lyrania-chat-enhancements-loot-summary {
-    height: auto !important;
-    min-height: 0;
-    padding: 6px 6px 8px !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-    border-bottom-color: var(--lyr-border) !important;
+  height: auto !important;
+  min-height: 0;
+  padding: 6px 6px 8px !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  border-bottom-color: var(--lyr-border) !important;
 }
 
 #lootlog.lyrania-chat-enhancements-loot-layout {
-    grid-template-rows: auto minmax(90px, 1fr) !important;
-    gap: 6px !important;
-    overflow-x: hidden !important;
+  grid-template-rows: auto minmax(90px, 1fr) !important;
+  gap: 6px !important;
+  overflow-x: hidden !important;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-heading {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    margin: -6px -6px 4px !important;
-    padding: 6px;
-    background: rgba(9, 16, 24, 0.97);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: -6px -6px 4px !important;
+  padding: 6px;
+  background: rgba(9, 16, 24, 0.97);
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-heading strong {
-    font-size: 12px;
-    letter-spacing: 0.035em;
-    text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
 }
 
 #lyrania-chat-enhancements-loot-summary button {
-    min-height: 26px;
-    padding: 3px 7px;
-    font-size: 10px;
+  min-height: 26px;
+  padding: 3px 7px;
+  font-size: 10px;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-total {
-    margin: 0 0 5px !important;
-    color: var(--lyr-text-soft);
-    font-size: 10px;
+  margin: 0 0 5px !important;
+  color: var(--lyr-text-soft);
+  font-size: 10px;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(108px, 100%), 1fr));
-    gap: 4px;
-    width: 100%;
-    max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(108px, 100%), 1fr));
+  gap: 4px;
+  width: 100%;
+  max-width: 100%;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat {
-    display: grid;
-    min-width: 0;
-    border: 1px solid var(--theme-table-border-faint);
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.025);
+  display: grid;
+  min-width: 0;
+  border: 1px solid var(--theme-table-border-faint);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat[open] {
-    grid-column: 1 / -1;
-    border-color: rgba(98, 183, 255, 0.28);
-    background: rgba(98, 183, 255, 0.055);
+  grid-column: 1 / -1;
+  border-color: rgba(98, 183, 255, 0.28);
+  background: rgba(98, 183, 255, 0.055);
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 4px;
-    align-items: center;
-    min-width: 0;
-    padding: 4px 5px 4px 15px;
-    overflow: hidden;
-    list-style: none;
-    color: #edf6ff;
-    font-size: 9px;
-    line-height: 1.2;
-    cursor: pointer;
-    position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  padding: 4px 5px 4px 15px;
+  overflow: hidden;
+  list-style: none;
+  color: #edf6ff;
+  font-size: 9px;
+  line-height: 1.2;
+  cursor: pointer;
+  position: relative;
 }
 
-#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary::-webkit-details-marker {
-    display: none;
+#lyrania-chat-enhancements-loot-summary
+  .lyrania-loot-stat
+  > summary::-webkit-details-marker {
+  display: none;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary::before {
-    position: absolute;
-    left: 5px;
-    color: var(--lyr-accent);
-    content: "›";
-    transition: transform 120ms ease;
+  position: absolute;
+  left: 5px;
+  color: var(--lyr-accent);
+  content: "›";
+  transition: transform 120ms ease;
 }
 
-#lyrania-chat-enhancements-loot-summary .lyrania-loot-stat[open] > summary::before {
-    transform: rotate(90deg);
+#lyrania-chat-enhancements-loot-summary
+  .lyrania-loot-stat[open]
+  > summary::before {
+  transform: rotate(90deg);
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary strong {
-    min-width: 0;
-    overflow-wrap: anywhere;
-    color: #f5f9fe;
-    font-size: 9px;
-    font-variant-numeric: tabular-nums;
-    text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #f5f9fe;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 3px;
-    padding: 0 5px 5px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 0 5px 5px;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values span {
-    min-width: 0;
-    padding: 3px;
-    overflow-wrap: anywhere;
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.14);
-    color: #f4f8fc;
-    font-size: 9px;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.2;
-    text-align: right;
+  min-width: 0;
+  padding: 3px;
+  overflow-wrap: anywhere;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.14);
+  color: #f4f8fc;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-align: right;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values small {
-    display: block;
-    color: var(--lyr-text-faint);
-    font-size: 7px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+  display: block;
+  color: var(--lyr-text-faint);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values b {
-    font-weight: 700;
+  font-weight: 700;
 }
 
 #lyrania-chat-enhancements-loot-messages {
-    height: auto !important;
-    min-width: 0;
-    padding: 2px 4px 4px;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
+  height: auto !important;
+  min-width: 0;
+  padding: 2px 4px 4px;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
 }
 
 #lyrania-chat-enhancements-loot-messages .lootlogitem {
-    min-width: 0;
-    margin: 0;
-    padding: 4px 5px;
-    overflow-wrap: anywhere;
-    border-bottom: 1px solid var(--theme-table-border-faint);
-    line-height: 1.38;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 5px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--theme-table-border-faint);
+  line-height: 1.38;
 }
 
 #lyrania-chat-enhancements-loot-messages .lootlogitem.lyrania-loot-entry {
-    display: block;
-    min-width: 0;
-    padding: 3px 5px;
-    overflow: hidden;
-    color: var(--lyr-text-soft);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  display: block;
+  min-width: 0;
+  padding: 3px 5px;
+  overflow: hidden;
+  color: var(--lyr-text-soft);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #lyrania-chat-enhancements-loot-messages .lootlogitem:nth-child(even) {
-    background: rgba(255, 255, 255, 0.018);
+  background: rgba(255, 255, 255, 0.018);
 }
 
 #lyrania-chat-enhancements-quick-menu {
-    border-color: var(--lyr-border-strong) !important;
-    border-radius: 10px !important;
-    background: #0c1520 !important;
-    box-shadow: var(--lyr-shadow) !important;
+  border-color: var(--lyr-border-strong) !important;
+  border-radius: 10px !important;
+  background: #0c1520 !important;
+  box-shadow: var(--lyr-shadow) !important;
 }
 
 #lyrania-chat-enhancements-update-banner {
-    border-color: rgba(242, 198, 109, 0.48) !important;
-    border-radius: 12px !important;
-    background: #111a24 !important;
-    box-shadow: var(--lyr-shadow) !important;
+  border-color: rgba(242, 198, 109, 0.48) !important;
+  border-radius: 12px !important;
+  background: #111a24 !important;
+  box-shadow: var(--lyr-shadow) !important;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1624,98 +1672,98 @@ div.chatline:hover {
 
 #popupcontainer,
 #popupcloser {
-    width: 100%;
-    height: 100dvh;
+  width: 100%;
+  height: 100dvh;
 }
 
 #popupcontainer {
-    z-index: 5000;
+  z-index: 5000;
 }
 
 #popupholder {
-    width: min(1040px, calc(100vw - 32px));
-    height: min(760px, calc(100dvh - 48px)) !important;
-    max-width: none;
-    max-height: none;
-    margin: 24px auto 0;
-    overflow: hidden;
-    border: 1px solid var(--lyr-border-strong);
-    border-radius: var(--lyr-radius-lg);
-    color: var(--lyr-text);
-    background: rgba(11, 18, 27, 0.985);
-    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
-    backdrop-filter: blur(16px);
+  width: min(1040px, calc(100vw - 32px));
+  height: min(760px, calc(100dvh - 48px)) !important;
+  max-width: none;
+  max-height: none;
+  margin: 24px auto 0;
+  overflow: hidden;
+  border: 1px solid var(--lyr-border-strong);
+  border-radius: var(--lyr-radius-lg);
+  color: var(--lyr-text);
+  background: rgba(11, 18, 27, 0.985);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(16px);
 }
 
 /* The dungeon map is a popup, so give it most of the viewport without
    increasing the normal battle action area's compact height. */
 #popupholder:has(#dungeonmapcontainer) {
-    width: min(1180px, calc(100vw - 8px));
-    height: calc(100dvh - 8px) !important;
-    margin-top: 4px;
+  width: min(1180px, calc(100vw - 8px));
+  height: calc(100dvh - 8px) !important;
+  margin-top: 4px;
 }
 
 #popuptopbar {
-    height: 44px;
-    border-bottom: 1px solid var(--lyr-border);
-    background: rgba(18, 29, 42, 0.98);
+  height: 44px;
+  border-bottom: 1px solid var(--lyr-border);
+  background: rgba(18, 29, 42, 0.98);
 }
 
 #popuptopbar > div:first-child {
-    margin: 4px 0 0 6px !important;
+  margin: 4px 0 0 6px !important;
 }
 
 #popupnav {
-    min-width: 190px;
+  min-width: 190px;
 }
 
 #popupclosetextcontainer {
-    right: 9px;
-    margin-top: 5px;
+  right: 9px;
+  margin-top: 5px;
 }
 
 #popupclosetextcontainer a {
-    display: block;
-    min-height: 34px;
-    padding: 7px 10px;
-    border: 1px solid var(--lyr-border);
-    border-radius: 7px;
-    color: var(--lyr-text);
-    background: rgba(255, 255, 255, 0.035);
-    line-height: 18px;
+  display: block;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--lyr-border);
+  border-radius: 7px;
+  color: var(--lyr-text);
+  background: rgba(255, 255, 255, 0.035);
+  line-height: 18px;
 }
 
 #popupclosetextcontainer font {
-    color: inherit !important;
+  color: inherit !important;
 }
 
 #popuprescontainer {
-    top: 44px;
+  top: 44px;
 }
 
 #popupresdisplay {
-    padding: 14px;
-    overflow-x: hidden !important;
-    background: transparent;
+  padding: 14px;
+  overflow-x: hidden !important;
+  background: transparent;
 }
 
 #popup,
 #popupresponse {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow-x: hidden;
-    color: var(--lyr-text);
-    background: transparent;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  color: var(--lyr-text);
+  background: transparent;
 }
 
 .glt-elm,
 .tippy-box {
-    color: var(--lyr-text);
-    background: #111c29;
-    border: 1px solid var(--lyr-border-strong);
-    border-radius: 10px;
-    box-shadow: var(--lyr-shadow);
+  color: var(--lyr-text);
+  background: #111c29;
+  border: 1px solid var(--lyr-border-strong);
+  border-radius: 10px;
+  box-shadow: var(--lyr-shadow);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1723,137 +1771,144 @@ div.chatline:hover {
 /* ------------------------------------------------------------------------- */
 
 #lyrania-chat-enhancements-inventory-dock {
-    container-name: lyr-inventory;
-    container-type: inline-size;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    min-width: 0;
-    min-height: 430px;
-    max-height: min(760px, 72vh);
-    margin: 0;
-    overflow: hidden;
-    border: 1px solid var(--lyr-border-strong);
-    border-radius: var(--lyr-radius-lg);
-    color: var(--lyr-text);
-    background:
-        linear-gradient(150deg, rgba(98, 183, 255, 0.055), transparent 34%),
-        var(--lyr-surface-strong);
-    box-shadow: var(--lyr-shadow);
+  container-name: lyr-inventory;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 430px;
+  max-height: min(760px, 72vh);
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--lyr-border-strong);
+  border-radius: var(--lyr-radius-lg);
+  color: var(--lyr-text);
+  background:
+    linear-gradient(150deg, rgba(98, 183, 255, 0.055), transparent 34%),
+    var(--lyr-surface-strong);
+  box-shadow: var(--lyr-shadow);
 }
 
 #lyrania-chat-enhancements-inventory-bar {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 44px;
-    padding: 6px 12px 6px 15px;
-    border-bottom: 1px solid var(--lyr-border);
-    background: rgba(255, 255, 255, 0.025);
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 12px 6px 15px;
+  border-bottom: 1px solid var(--lyr-border);
+  background: rgba(255, 255, 255, 0.025);
 }
 
 #lyrania-chat-enhancements-inventory-heading {
-    position: relative;
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    gap: 0;
-    min-width: 0;
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
 }
 
 #lyrania-chat-enhancements-inventory-heading strong {
-    flex: 0 0 auto;
-    color: #f5f9fe;
-    font-size: 16px;
-    letter-spacing: -0.01em;
+  flex: 0 0 auto;
+  color: #f5f9fe;
+  font-size: 16px;
+  letter-spacing: -0.01em;
 }
 
 #lyrania-chat-enhancements-inventory-title-line {
-    display: flex;
-    align-items: baseline;
-    gap: 9px;
-    min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
 }
 
 #lyrania-chat-enhancements-inventory-refresh {
-    min-width: 76px;
-    min-height: 32px;
-    padding: 5px 10px;
+  min-width: 76px;
+  min-height: 32px;
+  padding: 5px 10px;
 }
 
 #lyrania-chat-enhancements-inventory-status {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    padding: 0;
-    color: var(--lyr-text-soft);
-    border: 0;
-    background: none;
-    font-size: 10px;
-    font-weight: 500;
-    line-height: 1.4;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  color: var(--lyr-text-soft);
+  border: 0;
+  background: none;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #lyrania-chat-enhancements-inventory-status:empty {
-    display: block;
+  display: block;
 }
 
 #lyrania-chat-enhancements-inventory-scroll {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 0;
-    max-width: 100%;
-    padding: 0 7px 9px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  padding: 0 7px 9px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 #lyrania-chat-enhancements-inventory-content {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 #lyrania-chat-enhancements-inventory-content > #inventory_shell {
-    width: 100%;
-    min-width: 0;
-    margin: 0 !important;
-    padding: 0 0 12px !important;
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 0 12px !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock[aria-busy="true"] #lyrania-chat-enhancements-inventory-refresh {
-    cursor: wait;
+#lyrania-chat-enhancements-inventory-dock[aria-busy="true"]
+  #lyrania-chat-enhancements-inventory-refresh {
+  cursor: wait;
 }
 
-#lyrania-chat-enhancements-inventory-dock[aria-busy="true"] #lyrania-chat-enhancements-inventory-heading::after {
-    position: absolute;
-    bottom: -5px;
-    left: 0;
-    width: 34px;
-    height: 2px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, transparent, var(--lyr-accent), transparent);
-    content: "";
-    animation: lyr-inventory-loading 1.2s ease-in-out infinite;
+#lyrania-chat-enhancements-inventory-dock[aria-busy="true"]
+  #lyrania-chat-enhancements-inventory-heading::after {
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 34px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--lyr-accent),
+    transparent
+  );
+  content: "";
+  animation: lyr-inventory-loading 1.2s ease-in-out infinite;
 }
 
 @keyframes lyr-inventory-loading {
-    0%,
-    100% {
-        opacity: 0.25;
-        transform: translateX(0);
-    }
-    50% {
-        opacity: 1;
-        transform: translateX(24px);
-    }
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(24px);
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1861,123 +1916,123 @@ div.chatline:hover {
 /* ------------------------------------------------------------------------- */
 
 #inventory_shell {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow-x: hidden;
-    color: var(--lyr-text);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  color: var(--lyr-text);
 }
 
 #inventory_shell *,
 #lyrania-chat-enhancements-inventory-dock * {
-    min-width: 0;
+  min-width: 0;
 }
 
 #inventory_shell > hr {
-    display: none;
+  display: none;
 }
 
 .inventory-header-shell {
-    position: sticky;
-    top: 0;
-    z-index: 18;
-    width: 100%;
-    margin: 0 auto 8px;
-    padding: 7px 2px 6px;
-    border-bottom: 1px solid var(--lyr-border);
-    background: rgba(14, 23, 34, 0.975);
-    backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 18;
+  width: 100%;
+  margin: 0 auto 8px;
+  padding: 7px 2px 6px;
+  border-bottom: 1px solid var(--lyr-border);
+  background: rgba(14, 23, 34, 0.975);
+  backdrop-filter: blur(12px);
 }
 
 .inventory-tab-nav {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 4px;
-    width: 100%;
-    font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  font-size: 12px;
 }
 
 .inventory-tab-nav .purchase-tab-separator {
-    display: none;
+  display: none;
 }
 
 .inventory-tab-nav .purchase-tab-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 29px;
-    max-width: 100%;
-    padding: 5px 8px;
-    border: 1px solid transparent;
-    border-radius: 999px;
-    color: var(--lyr-text-soft);
-    background: rgba(255, 255, 255, 0.035);
-    font-weight: 700;
-    overflow-wrap: anywhere;
-    text-align: center;
-    white-space: normal;
+  display: inline-flex;
+  align-items: center;
+  min-height: 29px;
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--lyr-text-soft);
+  background: rgba(255, 255, 255, 0.035);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
 }
 
 .inventory-tab-nav .purchase-tab-link:hover {
-    border-color: var(--lyr-border);
-    color: var(--lyr-text);
-    background: var(--lyr-surface-hover);
-    text-decoration: none;
+  border-color: var(--lyr-border);
+  color: var(--lyr-text);
+  background: var(--lyr-surface-hover);
+  text-decoration: none;
 }
 
 .inventory-tab-nav .purchase-tab-link.is-active {
-    border-color: rgba(98, 183, 255, 0.42);
-    color: #eef8ff;
-    background: var(--lyr-accent-soft);
-    text-decoration: none;
-    box-shadow: 0 0 0 1px rgba(98, 183, 255, 0.08) inset;
+  border-color: rgba(98, 183, 255, 0.42);
+  color: #eef8ff;
+  background: var(--lyr-accent-soft);
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(98, 183, 255, 0.08) inset;
 }
 
 .inventory-section-shell {
-    width: 100%;
-    margin: 0 auto;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .inventory-shell {
-    min-width: 0;
+  min-width: 0;
 }
 
 .inventory-status-note,
 .inventory-orb-note,
 .inventory-enchant-inline-note {
-    color: var(--lyr-text-soft);
-    font-size: 11px;
-    line-height: 1.45;
+  color: var(--lyr-text-soft);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .inventory-resource-divider {
-    margin: 4px 0;
-    background: var(--lyr-border);
+  margin: 4px 0;
+  background: var(--lyr-border);
 }
 
 .inventory-summary-grid {
-    grid-template-columns: repeat(auto-fit, minmax(min(155px, 100%), 1fr));
-    gap: 9px;
+  grid-template-columns: repeat(auto-fit, minmax(min(155px, 100%), 1fr));
+  gap: 9px;
 }
 
 .inventory-resource-grid {
-    grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
 }
 
 .inventory-jewellery-grid {
-    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
 }
 
 .inventory-potion-grid,
 .inventory-orb-grid,
 .inventory-enchant-card-grid {
-    gap: 10px;
+  gap: 10px;
 }
 
 .inventory-equipped-card,
 .inventory-consumable-card {
-    min-width: 0;
-    overflow: hidden;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .inventory-equipped-table,
@@ -1985,10 +2040,10 @@ div.chatline:hover {
 .inventory-consumable-table,
 .inventory-datatable,
 .inventory-datatable.dataTable {
-    width: 100% !important;
-    color: var(--lyr-text);
-    border-color: var(--lyr-border) !important;
-    background: transparent !important;
+  width: 100% !important;
+  color: var(--lyr-text);
+  border-color: var(--lyr-border) !important;
+  background: transparent !important;
 }
 
 .inventory-equipped-table td,
@@ -1999,753 +2054,916 @@ div.chatline:hover {
 .inventory-datatable tbody td,
 .inventory-datatable.dataTable thead th,
 .inventory-datatable.dataTable tbody td {
-    border-color: var(--theme-table-border-faint) !important;
-    background-color: transparent !important;
-    background-image: none !important;
+  border-color: var(--theme-table-border-faint) !important;
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
 .inventory-equipped-table tr:hover td,
 .inventory-consumable-table tr:hover td,
 .inventory-datatable tbody tr:hover td,
 .inventory-datatable.dataTable tbody tr:hover td {
-    background: rgba(98, 183, 255, 0.055) !important;
+  background: rgba(98, 183, 255, 0.055) !important;
 }
 
 .inventory-equipped-meta {
-    color: var(--lyr-text-soft);
+  color: var(--lyr-text-soft);
 }
 
 .inventory-loadout-card {
-    align-self: start;
+  align-self: start;
 }
 
 .inventory-sort-link,
 .inventory-enchant-sort-link {
-    color: inherit;
-    text-decoration: none;
+  color: inherit;
+  text-decoration: none;
 }
 
 .inventory-sort-link.is-active,
 .inventory-enchant-sort-link.is-active {
-    color: #dff1ff;
+  color: #dff1ff;
 }
 
 .inventory-jewel-toolbar,
 .inventory-enchant-toolbar {
-    gap: 10px;
+  gap: 10px;
 }
 
 .inventory-jewel-toolbar-count,
 .inventory-jewel-page-summary {
-    color: var(--lyr-text-soft);
-    font-size: 11px;
-    font-variant-numeric: tabular-nums;
+  color: var(--lyr-text-soft);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .inventory-jewel-pagination,
 .inventory-enchant-pagination {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 9px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
 }
 
 .inventory-jewel-toolbar-limit,
 .inventory-enchant-toolbar-meta,
 .inventory-jewel-pages,
 .inventory-filter-chip-row {
-    gap: 7px;
+  gap: 7px;
 }
 
 .inventory-filter-chip {
-    min-height: 31px;
-    padding: 5px 10px;
-    border-color: var(--lyr-border);
-    color: var(--lyr-text-soft);
-    background: rgba(255, 255, 255, 0.03);
-    font-size: 11px;
+  min-height: 31px;
+  padding: 5px 10px;
+  border-color: var(--lyr-border);
+  color: var(--lyr-text-soft);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 11px;
 }
 
 .inventory-filter-chip.is-active,
 .inventory-filter-chip:hover {
-    border-color: rgba(98, 183, 255, 0.42);
-    color: #fff;
-    background: var(--lyr-accent-soft);
+  border-color: rgba(98, 183, 255, 0.42);
+  color: #fff;
+  background: var(--lyr-accent-soft);
 }
 
 .inventory-page-link {
-    min-width: 32px;
-    min-height: 30px;
-    padding: 5px 8px;
-    border-color: var(--lyr-border);
-    color: var(--lyr-text-soft);
-    background: rgba(255, 255, 255, 0.025);
+  min-width: 32px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border-color: var(--lyr-border);
+  color: var(--lyr-text-soft);
+  background: rgba(255, 255, 255, 0.025);
 }
 
 .inventory-page-link.is-active,
 .inventory-page-link:hover {
-    border-color: rgba(98, 183, 255, 0.46);
-    color: #fff;
-    background: var(--lyr-accent-soft);
+  border-color: rgba(98, 183, 255, 0.46);
+  color: #fff;
+  background: var(--lyr-accent-soft);
 }
 
 .inventory-action-row {
-    padding-top: 11px;
-    border-top: 1px solid var(--lyr-border);
+  padding-top: 11px;
+  border-top: 1px solid var(--lyr-border);
 }
 
 .inventory-action-buttons {
-    gap: 7px;
+  gap: 7px;
 }
 
 .inventory-orb-card,
 .inventory-potion-card {
-    border-color: var(--lyr-border);
+  border-color: var(--lyr-border);
 }
 
 .inventory-orb-meta,
 .inventory-potion-meta {
-    color: var(--lyr-text-soft);
+  color: var(--lyr-text-soft);
 }
 
 .inventory-orb-quantity,
 .inventory-potion-quantity {
-    color: #eef7ff;
-    font-variant-numeric: tabular-nums;
+  color: #eef7ff;
+  font-variant-numeric: tabular-nums;
 }
 
 .inventory-orb-input,
 .inventory-consumable-input-small {
-    width: 72px;
-    text-align: center;
+  width: 72px;
+  text-align: center;
 }
 
 .inventory-consumable-actions-cell,
 .inventory-consumable-qty-column,
 .inventory-enchant-effect-column,
 .inventory-enchant-used-on-column {
-    font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums;
 }
 
 .inventory-consumable-actions,
 .inventory-consumable-form {
-    gap: 6px;
+  gap: 6px;
 }
 
 .inventory-consumable-inline-result:not(:empty) {
-    margin-bottom: 12px;
-    padding: 11px;
-    border: 1px solid var(--lyr-border-strong);
-    border-radius: 9px;
-    background: var(--lyr-accent-soft);
+  margin-bottom: 12px;
+  padding: 11px;
+  border: 1px solid var(--lyr-border-strong);
+  border-radius: 9px;
+  background: var(--lyr-accent-soft);
 }
 
 .inventory-enchant-utility-title {
-    color: #eaf5ff;
-    font-size: 14px;
-    font-weight: 750;
+  color: #eaf5ff;
+  font-size: 14px;
+  font-weight: 750;
 }
 
 .inventory-enchant-input-row {
-    justify-content: center;
+  justify-content: center;
 }
 
 .inventory-enchant-checkbox,
 .inventory-jewel-checkbox,
 .select_all {
-    vertical-align: middle;
+  vertical-align: middle;
 }
 
 .userFragments {
-    color: #c4ed8c;
+  color: #c4ed8c;
 }
 
 .inventory-orb-gear-row,
 .inventory-potion-item {
-    border-radius: 7px;
+  border-radius: 7px;
 }
 
 .inventory-enchant-actions-column a,
 .inventory-actions-column a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 25px;
-    min-height: 25px;
-    margin: 1px 2px;
-    border-radius: 5px;
-    background: rgba(98, 183, 255, 0.075);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 25px;
+  min-height: 25px;
+  margin: 1px 2px;
+  border-radius: 5px;
+  background: rgba(98, 183, 255, 0.075);
 }
 
 .inventory-enchant-actions-column a:hover,
 .inventory-actions-column a:hover {
-    background: rgba(98, 183, 255, 0.17);
-    text-decoration: none;
+  background: rgba(98, 183, 255, 0.17);
+  text-decoration: none;
 }
 
 .text-fail,
 a.text-fail {
-    color: var(--lyr-danger) !important;
+  color: var(--lyr-danger) !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-jewellery-grid {
-    grid-template-columns: 1fr;
+  grid-template-columns: 1fr;
 }
 
 #lyrania-chat-enhancements-inventory-dock .purchase-layout-two-column {
-    grid-template-columns: 1fr;
+  grid-template-columns: 1fr;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 #lyrania-chat-enhancements-inventory-dock .purchase-table-wrap {
-    width: 100%;
-    max-width: 100%;
-    overflow: visible;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
 }
 
 #lyrania-chat-enhancements-inventory-dock .dataTables_wrapper {
-    overflow: visible !important;
+  overflow: visible !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-jewel-toolbar {
-    display: flex;
-    flex-wrap: wrap;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-jewel-toolbar-search,
 #lyrania-chat-enhancements-inventory-dock .inventory-jewel-toolbar-meta {
-    width: 100%;
+  width: 100%;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-jewel-toolbar-meta,
 #lyrania-chat-enhancements-inventory-dock .inventory-jewel-pagination,
 #lyrania-chat-enhancements-inventory-dock .inventory-action-row-bottom {
-    justify-content: center;
+  justify-content: center;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-consumable-actions,
 #lyrania-chat-enhancements-inventory-dock .inventory-consumable-form {
-    flex-wrap: wrap;
+  flex-wrap: wrap;
 }
 
 /* Wide inventory tables become readable cards inside the fixed-width rail. */
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable {
-    display: block;
-    width: 100% !important;
-    max-width: 100%;
-    min-width: 0 !important;
-    table-layout: auto;
+  display: block;
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0 !important;
+  table-layout: auto;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable thead,
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody {
-    display: block;
-    width: 100%;
-    max-width: 100%;
+  display: block;
+  width: 100%;
+  max-width: 100%;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable thead {
-    margin-bottom: 5px;
+  margin-bottom: 5px;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable thead tr {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    width: 100%;
-    padding: 3px;
-    border: 1px solid var(--theme-table-border-faint);
-    border-radius: 7px;
-    background: rgba(98, 183, 255, 0.045) !important;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  width: 100%;
+  padding: 3px;
+  border: 1px solid var(--theme-table-border-faint);
+  border-radius: 7px;
+  background: rgba(98, 183, 255, 0.045) !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable thead th {
-    display: flex;
-    flex: 1 1 52px;
-    align-items: center;
-    justify-content: center;
-    width: auto !important;
-    max-width: 100%;
-    padding: 4px 5px !important;
-    overflow-wrap: anywhere;
-    border: 1px solid transparent !important;
-    border-radius: 5px;
-    background: rgba(255, 255, 255, 0.025) !important;
-    font-size: 9px;
-    line-height: 1.15;
-    text-align: center !important;
-    white-space: normal !important;
+  display: flex;
+  flex: 1 1 52px;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  max-width: 100%;
+  padding: 4px 5px !important;
+  overflow-wrap: anywhere;
+  border: 1px solid transparent !important;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.025) !important;
+  font-size: 9px;
+  line-height: 1.15;
+  text-align: center !important;
+  white-space: normal !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable thead th:first-child {
-    flex: 0 0 30px;
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-datatable
+  thead
+  th:first-child {
+  flex: 0 0 30px;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable thead th:hover {
-    border-color: var(--lyr-border) !important;
-    background: var(--lyr-accent-soft) !important;
+  border-color: var(--lyr-border) !important;
+  background: var(--lyr-accent-soft) !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody {
-    display: grid;
-    gap: 6px;
+  display: grid;
+  gap: 6px;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody tr {
-    width: 100%;
-    min-width: 0;
-    padding: 6px;
-    content-visibility: auto;
-    contain-intrinsic-size: auto 92px;
-    border: 1px solid var(--theme-table-border-soft);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.025) !important;
+  width: 100%;
+  min-width: 0;
+  padding: 6px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 92px;
+  border: 1px solid var(--theme-table-border-soft);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025) !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody td {
-    width: auto !important;
-    max-width: 100%;
-    min-width: 0;
-    padding: 3px 4px !important;
-    overflow-wrap: anywhere;
-    border: 0 !important;
-    background: transparent !important;
-    font-size: 10px;
-    line-height: 1.25;
-    text-align: left !important;
-    white-space: normal !important;
+  width: auto !important;
+  max-width: 100%;
+  min-width: 0;
+  padding: 3px 4px !important;
+  overflow-wrap: anywhere;
+  border: 0 !important;
+  background: transparent !important;
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: left !important;
+  white-space: normal !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody td::before {
-    display: block;
-    margin-bottom: 1px;
-    color: var(--lyr-text-faint);
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: 0.045em;
-    line-height: 1.1;
-    text-transform: uppercase;
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-datatable
+  tbody
+  td::before {
+  display: block;
+  margin-bottom: 1px;
+  color: var(--lyr-text-faint);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  line-height: 1.1;
+  text-transform: uppercase;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody tr:hover {
-    border-color: rgba(98, 183, 255, 0.3);
-    background: rgba(98, 183, 255, 0.055) !important;
+  border-color: rgba(98, 183, 255, 0.3);
+  background: rgba(98, 183, 255, 0.055) !important;
 }
 
 /* Jewellery: selection + name, six compact stats, then actions. */
 #lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody tr {
-    display: grid;
-    grid-template-columns: 30px repeat(3, minmax(0, 1fr));
-    gap: 3px;
+  display: grid;
+  grid-template-columns: 30px repeat(3, minmax(0, 1fr));
+  gap: 3px;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(1) {
-    grid-column: 1;
-    align-self: center;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(1) {
+  grid-column: 1;
+  align-self: center;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(2) {
-    grid-column: 2 / -1;
-    align-self: center;
-    color: #f4f8fc;
-    font-size: 11px;
-    font-weight: 750;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(2) {
+  grid-column: 2 / -1;
+  align-self: center;
+  color: #f4f8fc;
+  font-size: 11px;
+  font-weight: 750;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(n + 3):nth-child(-n + 8) {
-    padding: 4px !important;
-    border-radius: 5px !important;
-    background: rgba(0, 0, 0, 0.13) !important;
-    font-variant-numeric: tabular-nums;
-    text-align: right !important;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(n + 3):nth-child(-n + 8) {
+  padding: 4px !important;
+  border-radius: 5px !important;
+  background: rgba(0, 0, 0, 0.13) !important;
+  font-variant-numeric: tabular-nums;
+  text-align: right !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(3)::before {
-    content: "Health";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(3)::before {
+  content: "Health";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(4)::before {
-    content: "Attack";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(4)::before {
+  content: "Attack";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(5)::before {
-    content: "Defence";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(5)::before {
+  content: "Defence";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(6)::before {
-    content: "Accuracy";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(6)::before {
+  content: "Accuracy";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(7)::before {
-    content: "Evasion";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(7)::before {
+  content: "Evasion";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(8)::before {
-    content: "Total";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(8)::before {
+  content: "Total";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(9) {
-    grid-column: 1 / -1;
-    padding-top: 4px !important;
-    border-top: 1px solid var(--theme-table-border-faint) !important;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(9) {
+  grid-column: 1 / -1;
+  padding-top: 4px !important;
+  border-top: 1px solid var(--theme-table-border-faint) !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table tbody td:nth-child(9)::before {
-    content: "Actions";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  tbody
+  td:nth-child(9)::before {
+  content: "Actions";
 }
 
 /* Enchants: name, use location/effect pair, then actions. */
 #lyrania-chat-enhancements-inventory-dock #inventory_enchant_table tbody tr {
-    display: grid;
-    grid-template-columns: 30px minmax(0, 1fr) minmax(0, 0.7fr);
-    gap: 3px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) minmax(0, 0.7fr);
+  gap: 3px;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_enchant_table tbody td:nth-child(1) {
-    grid-column: 1;
-    align-self: center;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_enchant_table
+  tbody
+  td:nth-child(1) {
+  grid-column: 1;
+  align-self: center;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_enchant_table tbody td:nth-child(2) {
-    grid-column: 2 / -1;
-    align-self: center;
-    color: #f4f8fc;
-    font-size: 11px;
-    font-weight: 750;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_enchant_table
+  tbody
+  td:nth-child(2) {
+  grid-column: 2 / -1;
+  align-self: center;
+  color: #f4f8fc;
+  font-size: 11px;
+  font-weight: 750;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_enchant_table tbody td:nth-child(3) {
-    grid-column: 1 / 3;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_enchant_table
+  tbody
+  td:nth-child(3) {
+  grid-column: 1 / 3;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_enchant_table tbody td:nth-child(3)::before {
-    content: "Used on";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_enchant_table
+  tbody
+  td:nth-child(3)::before {
+  content: "Used on";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_enchant_table tbody td:nth-child(4)::before {
-    content: "Effect";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_enchant_table
+  tbody
+  td:nth-child(4)::before {
+  content: "Effect";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_enchant_table tbody td:nth-child(5) {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--theme-table-border-faint) !important;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_enchant_table
+  tbody
+  td:nth-child(5) {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--theme-table-border-faint) !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_enchant_table tbody td:nth-child(5)::before {
-    content: "Actions";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_enchant_table
+  tbody
+  td:nth-child(5)::before {
+  content: "Actions";
 }
 
 /* Maps: title and counts stay concise; use/trade controls get full rows. */
 #lyrania-chat-enhancements-inventory-dock #inventory_maps_table tbody tr {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 3px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_maps_table tbody td:nth-child(1),
-#lyrania-chat-enhancements-inventory-dock #inventory_maps_table tbody td:nth-child(4),
-#lyrania-chat-enhancements-inventory-dock #inventory_maps_table tbody td:nth-child(5) {
-    grid-column: 1 / -1;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_maps_table
+  tbody
+  td:nth-child(1),
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_maps_table
+  tbody
+  td:nth-child(4),
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_maps_table
+  tbody
+  td:nth-child(5) {
+  grid-column: 1 / -1;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_maps_table tbody td:nth-child(1) {
-    color: #f4f8fc;
-    font-size: 11px;
-    font-weight: 750;
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_maps_table
+  tbody
+  td:nth-child(1) {
+  color: #f4f8fc;
+  font-size: 11px;
+  font-weight: 750;
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_maps_table tbody td:nth-child(2)::before {
-    content: "Level";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_maps_table
+  tbody
+  td:nth-child(2)::before {
+  content: "Level";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_maps_table tbody td:nth-child(3)::before {
-    content: "Quantity";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_maps_table
+  tbody
+  td:nth-child(3)::before {
+  content: "Quantity";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_maps_table tbody td:nth-child(4)::before {
-    content: "Use";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_maps_table
+  tbody
+  td:nth-child(4)::before {
+  content: "Use";
 }
 
-#lyrania-chat-enhancements-inventory-dock #inventory_maps_table tbody td:nth-child(5)::before {
-    content: "Trade";
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_maps_table
+  tbody
+  td:nth-child(5)::before {
+  content: "Trade";
 }
 
 /* Consumables and misc: name, quantity, then a full-width action row. */
-#lyrania-chat-enhancements-inventory-dock :is(#inventory_consumables_table, #inventory_misc_table) tbody tr {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 3px;
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_consumables_table, #inventory_misc_table)
+  tbody
+  tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px;
 }
 
-#lyrania-chat-enhancements-inventory-dock :is(#inventory_consumables_table, #inventory_misc_table) tbody td:nth-child(1) {
-    color: #f4f8fc;
-    font-size: 11px;
-    font-weight: 750;
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_consumables_table, #inventory_misc_table)
+  tbody
+  td:nth-child(1) {
+  color: #f4f8fc;
+  font-size: 11px;
+  font-weight: 750;
 }
 
-#lyrania-chat-enhancements-inventory-dock :is(#inventory_consumables_table, #inventory_misc_table) tbody td:nth-child(2) {
-    min-width: 54px;
-    font-variant-numeric: tabular-nums;
-    text-align: right !important;
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_consumables_table, #inventory_misc_table)
+  tbody
+  td:nth-child(2) {
+  min-width: 54px;
+  font-variant-numeric: tabular-nums;
+  text-align: right !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock :is(#inventory_consumables_table, #inventory_misc_table) tbody td:nth-child(2)::before {
-    content: "Quantity";
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_consumables_table, #inventory_misc_table)
+  tbody
+  td:nth-child(2)::before {
+  content: "Quantity";
 }
 
-#lyrania-chat-enhancements-inventory-dock :is(#inventory_consumables_table, #inventory_misc_table) tbody td:nth-child(3) {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--theme-table-border-faint) !important;
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_consumables_table, #inventory_misc_table)
+  tbody
+  td:nth-child(3) {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--theme-table-border-faint) !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock :is(#inventory_consumables_table, #inventory_misc_table) tbody td:nth-child(3)::before {
-    content: "Actions";
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_consumables_table, #inventory_misc_table)
+  tbody
+  td:nth-child(3)::before {
+  content: "Actions";
 }
 
-#lyrania-chat-enhancements-inventory-dock :is(#inventory_consumables_table, #inventory_misc_table) tbody td:nth-child(3):empty {
-    display: none;
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_consumables_table, #inventory_misc_table)
+  tbody
+  td:nth-child(3):empty {
+  display: none;
 }
 
 /* Final inventory presentation: one compact list row per item. */
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable,
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable.dataTable {
-    display: block !important;
-    width: 100% !important;
-    table-layout: fixed;
+  display: block !important;
+  width: 100% !important;
+  table-layout: fixed;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable thead,
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 0 !important;
-    width: 100%;
-    margin: 0;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  width: 100%;
+  margin: 0;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable thead tr,
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody tr {
-    display: grid !important;
-    gap: 0 !important;
-    width: 100%;
-    min-width: 0;
-    padding: 0 !important;
-    content-visibility: auto;
-    contain-intrinsic-size: auto 34px;
-    border: 0;
-    border-bottom: 1px solid var(--theme-table-border-faint);
-    border-radius: 0;
-    background: transparent !important;
+  display: grid !important;
+  gap: 0 !important;
+  width: 100%;
+  min-width: 0;
+  padding: 0 !important;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 34px;
+  border: 0;
+  border-bottom: 1px solid var(--theme-table-border-faint);
+  border-radius: 0;
+  background: transparent !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody tr:nth-child(even) {
-    background: rgba(255, 255, 255, 0.018) !important;
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-datatable
+  tbody
+  tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.018) !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable thead th,
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody td {
-    display: block !important;
-    grid-column: auto !important;
-    grid-row: auto !important;
-    width: auto !important;
-    max-width: 100%;
-    min-width: 0;
-    min-height: 30px;
-    padding: 5px 3px !important;
-    overflow: hidden;
-    border: 0 !important;
-    border-right: 1px solid var(--theme-table-border-faint) !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    font-size: 9px;
-    line-height: 20px;
-    text-align: center !important;
-    text-overflow: ellipsis;
-    white-space: nowrap !important;
-}
-
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable thead th:last-child,
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody td:last-child {
-    border-right: 0 !important;
-}
-
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody td::before {
-    display: none !important;
-    content: none !important;
+  display: block !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: auto !important;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  padding: 5px 3px !important;
+  overflow: hidden;
+  border: 0 !important;
+  border-right: 1px solid var(--theme-table-border-faint) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-size: 9px;
+  line-height: 20px;
+  text-align: center !important;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock
-    :is(#inventory_jewel_table, #inventory_enchant_table) tbody td:nth-child(2),
+  .inventory-datatable
+  thead
+  th:last-child,
 #lyrania-chat-enhancements-inventory-dock
-    :is(#inventory_jewel_table, #inventory_enchant_table) tbody td:first-child {
-    align-self: stretch;
-}
-
-#lyrania-chat-enhancements-inventory-dock
-    :is(#inventory_jewel_table, #inventory_enchant_table) tbody td:first-child {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
+  .inventory-datatable
+  tbody
+  td:last-child {
+  border-right: 0 !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock
-    :is(#inventory_jewel_table, #inventory_enchant_table) tbody td:nth-child(2),
-#lyrania-chat-enhancements-inventory-dock
-    :is(#inventory_maps_table, #inventory_consumables_table, #inventory_misc_table) tbody td:first-child {
-    color: #f4f8fc;
-    font-size: 10px;
-    font-weight: 700;
-    text-align: left !important;
-}
-
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable .inventory-actions-column {
-    overflow: hidden;
-    text-align: right !important;
-    white-space: normal !important;
-}
-
-#lyrania-chat-enhancements-inventory-dock #inventory_jewel_table :is(thead, tbody) tr {
-    grid-template-columns:
-        26px minmax(72px, 2fr)
-        repeat(6, minmax(0, 0.62fr))
-        minmax(66px, 1.15fr) !important;
-}
-
-#lyrania-chat-enhancements-inventory-dock #inventory_enchant_table :is(thead, tbody) tr {
-    grid-template-columns:
-        26px minmax(120px, 2fr) minmax(56px, 0.8fr)
-        minmax(48px, 0.55fr) minmax(72px, 0.9fr) !important;
-}
-
-#lyrania-chat-enhancements-inventory-dock #inventory_maps_table :is(thead, tbody) tr {
-    grid-template-columns:
-        minmax(110px, 1.4fr) minmax(36px, 0.35fr) minmax(52px, 0.5fr)
-        minmax(52px, 0.65fr) minmax(110px, 1.2fr) !important;
+  .inventory-datatable
+  tbody
+  td::before {
+  display: none !important;
+  content: none !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock
-    :is(#inventory_consumables_table, #inventory_misc_table) :is(thead, tbody) tr {
-    grid-template-columns: minmax(110px, 1fr) minmax(52px, 0.2fr) minmax(130px, 1.4fr) !important;
+  :is(#inventory_jewel_table, #inventory_enchant_table)
+  tbody
+  td:nth-child(2),
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_jewel_table, #inventory_enchant_table)
+  tbody
+  td:first-child {
+  align-self: stretch;
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable .inventory-actions-column a {
-    min-width: 18px;
-    min-height: 20px;
-    margin: 0 1px;
-    padding: 1px 3px;
-    font-size: 9px;
-    line-height: 18px;
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_jewel_table, #inventory_enchant_table)
+  tbody
+  td:first-child {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable .inventory-consumable-actions {
-    justify-content: flex-end;
-    gap: 3px;
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_jewel_table, #inventory_enchant_table)
+  tbody
+  td:nth-child(2),
+#lyrania-chat-enhancements-inventory-dock
+  :is(
+    #inventory_maps_table,
+    #inventory_consumables_table,
+    #inventory_misc_table
+  )
+  tbody
+  td:first-child {
+  color: #f4f8fc;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: left !important;
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-datatable .inventory-consumable-actions > * {
-    flex: 0 1 auto;
-    min-width: 48px;
-    min-height: 26px;
-    padding: 3px 5px;
-    font-size: 9px;
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-datatable
+  .inventory-actions-column {
+  overflow: hidden;
+  text-align: right !important;
+  white-space: normal !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_jewel_table
+  :is(thead, tbody)
+  tr {
+  grid-template-columns:
+    26px minmax(72px, 2fr)
+    repeat(6, minmax(0, 0.62fr))
+    minmax(66px, 1.15fr) !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_enchant_table
+  :is(thead, tbody)
+  tr {
+  grid-template-columns:
+    26px minmax(120px, 2fr) minmax(56px, 0.8fr)
+    minmax(48px, 0.55fr) minmax(72px, 0.9fr) !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+  #inventory_maps_table
+  :is(thead, tbody)
+  tr {
+  grid-template-columns:
+    minmax(110px, 1.4fr) minmax(36px, 0.35fr) minmax(52px, 0.5fr)
+    minmax(52px, 0.65fr) minmax(110px, 1.2fr) !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+  :is(#inventory_consumables_table, #inventory_misc_table)
+  :is(thead, tbody)
+  tr {
+  grid-template-columns: minmax(110px, 1fr) minmax(52px, 0.2fr) minmax(
+      130px,
+      1.4fr
+    ) !important;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-datatable
+  .inventory-actions-column
+  a {
+  min-width: 18px;
+  min-height: 20px;
+  margin: 0 1px;
+  padding: 1px 3px;
+  font-size: 9px;
+  line-height: 18px;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-datatable
+  .inventory-consumable-actions {
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-datatable
+  .inventory-consumable-actions
+  > * {
+  flex: 0 1 auto;
+  min-width: 48px;
+  min-height: 26px;
+  padding: 3px 5px;
+  font-size: 9px;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-consumable-actions,
 #lyrania-chat-enhancements-inventory-dock .inventory-consumable-form,
 #lyrania-chat-enhancements-inventory-dock .inventory-action-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-consumable-actions > *,
 #lyrania-chat-enhancements-inventory-dock .inventory-consumable-form > *,
 #lyrania-chat-enhancements-inventory-dock .inventory-action-buttons > * {
-    flex: 1 1 82px;
-    width: auto;
-    max-width: 100%;
-    white-space: normal;
+  flex: 1 1 82px;
+  width: auto;
+  max-width: 100%;
+  white-space: normal;
 }
 
 /* The two small jewellery tables never need a wide table layout. */
-#lyrania-chat-enhancements-inventory-dock .inventory-equipped-table:not(.inventory-datatable) {
-    display: block;
-    width: 100% !important;
-    table-layout: auto;
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-equipped-table:not(.inventory-datatable) {
+  display: block;
+  width: 100% !important;
+  table-layout: auto;
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-equipped-table:not(.inventory-datatable) tbody {
-    display: grid;
-    gap: 3px;
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-equipped-table:not(.inventory-datatable)
+  tbody {
+  display: grid;
+  gap: 3px;
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-equipped-table:not(.inventory-datatable) tr {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 5px;
-    min-width: 0;
-    padding: 3px 2px;
-    border-bottom: 1px solid var(--theme-table-border-faint);
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-equipped-table:not(.inventory-datatable)
+  tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px;
+  min-width: 0;
+  padding: 3px 2px;
+  border-bottom: 1px solid var(--theme-table-border-faint);
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-equipped-table:not(.inventory-datatable) td {
-    width: auto !important;
-    min-width: 0;
-    padding: 3px !important;
-    overflow-wrap: anywhere;
-    border: 0 !important;
-    white-space: normal !important;
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-equipped-table:not(.inventory-datatable)
+  td {
+  width: auto !important;
+  min-width: 0;
+  padding: 3px !important;
+  overflow-wrap: anywhere;
+  border: 0 !important;
+  white-space: normal !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-equipped-meta {
-    align-self: center;
-    color: var(--lyr-text-faint);
-    font-size: 9px;
-    text-align: right;
+  align-self: center;
+  color: var(--lyr-text-faint);
+  font-size: 9px;
+  text-align: right;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-loadout-table {
-    width: 100% !important;
-    table-layout: fixed;
+  width: 100% !important;
+  table-layout: fixed;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-loadout-table td {
-    width: auto !important;
-    padding: 4px !important;
-    overflow-wrap: anywhere;
-    white-space: normal;
+  width: auto !important;
+  padding: 4px !important;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
-#lyrania-chat-enhancements-inventory-dock .inventory-loadout-table td:first-child:not([colspan]) {
-    width: 38% !important;
+#lyrania-chat-enhancements-inventory-dock
+  .inventory-loadout-table
+  td:first-child:not([colspan]) {
+  width: 38% !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-loadout-table select {
-    width: 100%;
+  width: 100%;
 }
 
 @container lyr-inventory (min-width: 620px) {
-    #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
+  #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 
-    #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody {
-        grid-template-columns: minmax(0, 1fr) !important;
-        align-items: start;
-    }
+  #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start;
+  }
 }
 
 @container lyr-inventory (min-width: 950px) {
-    #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid,
-    #lyrania-chat-enhancements-inventory-dock .inventory-resource-grid {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-
+  #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid,
+  #lyrania-chat-enhancements-inventory-dock .inventory-resource-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2753,99 +2971,100 @@ a.text-fail {
 /* ------------------------------------------------------------------------- */
 
 @media (min-width: 1440px) {
-    html,
-    body {
-        height: 100%;
-        min-height: 0;
-        overflow: hidden !important;
-        overscroll-behavior: none;
-    }
+  html,
+  body {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock {
-        grid-template-columns: minmax(820px, 2.25fr) minmax(440px, 1fr);
-        grid-template-rows: auto var(--lyr-workspace-height) minmax(0, 1fr);
-        grid-template-areas:
-            "header inventory"
-            "game inventory"
-            "chat inventory";
-        align-items: stretch;
-        width: calc(100% - 8px);
-        height: calc(100dvh - 8px);
-        min-height: 0;
-        margin: 4px auto;
-        overflow: hidden;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock {
+    grid-template-columns: minmax(820px, 2.25fr) minmax(440px, 1fr);
+    grid-template-rows: auto var(--lyr-workspace-height) minmax(0, 1fr);
+    grid-template-areas:
+      "header inventory"
+      "game inventory"
+      "chat inventory";
+    align-items: stretch;
+    width: calc(100% - 8px);
+    height: calc(100dvh - 8px);
+    min-height: 0;
+    margin: 4px auto;
+    overflow: hidden;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock
-        > #lyrania-chat-enhancements-inventory-dock {
-        position: sticky;
-        top: 4px;
-        height: 100%;
-        min-height: 0;
-        max-height: 100%;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock
+    > #lyrania-chat-enhancements-inventory-dock {
+    position: sticky;
+    top: 4px;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock > .lrow:first-child,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #header,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #middlesection,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #chat {
-        min-height: 0;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock > .lrow:first-child,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #header,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #middlesection,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chat {
+    min-height: 0;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock #middlesection,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row {
-        height: 100% !important;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock #middlesection,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row {
+    height: 100% !important;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row {
-        padding-bottom: 0;
-        overflow: hidden;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row {
+    padding-bottom: 0;
+    overflow: hidden;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock #chat {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock #chattabs {
-        flex: 1 1 auto;
-        height: auto !important;
-        min-height: 0;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chattabs {
+    flex: 1 1 auto;
+    height: auto !important;
+    min-height: 0;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock #chatpanes {
-        flex: 1 1 auto;
-        height: auto !important;
-        min-height: 0;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chatpanes {
+    flex: 1 1 auto;
+    height: auto !important;
+    min-height: 0;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock #chatresizehandle {
-        display: none;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chatresizehandle {
+    display: none;
+  }
 
-    #holder.lyrania-chat-enhancements-has-inventory-dock
-        > #lyrania-chat-enhancements-inventory-dock,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #main,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #side1,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #side2,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #chatwindow,
-    #holder.lyrania-chat-enhancements-has-inventory-dock #lyrania-chat-enhancements-loot-messages {
-        overscroll-behavior: contain;
-    }
+  #holder.lyrania-chat-enhancements-has-inventory-dock
+    > #lyrania-chat-enhancements-inventory-dock,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #main,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #side1,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #side2,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chatwindow,
+  #holder.lyrania-chat-enhancements-has-inventory-dock
+    #lyrania-chat-enhancements-loot-messages {
+    overscroll-behavior: contain;
+  }
 
-    #middlesection {
-        grid-template-columns:
-            clamp(158px, 9vw, 172px)
-            minmax(0, 1fr)
-            clamp(142px, 8vw, 154px);
-    }
+  #middlesection {
+    grid-template-columns:
+      clamp(158px, 9vw, 172px)
+      minmax(0, 1fr)
+      clamp(142px, 8vw, 154px);
+  }
 
-    #side2 {
-        min-height: 0 !important;
-        overflow-y: auto !important;
-    }
+  #side2 {
+    min-height: 0 !important;
+    overflow-y: auto !important;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2853,63 +3072,65 @@ a.text-fail {
 /* ------------------------------------------------------------------------- */
 
 @media (min-width: 800px) and (max-width: 1439px) {
-    :root {
-        --lyr-workspace-height: clamp(420px, 55dvh, 540px);
-    }
+  :root {
+    --lyr-workspace-height: clamp(420px, 55dvh, 540px);
+  }
 
-    #holder {
-        width: calc(100% - 8px);
-        margin-top: 4px;
-    }
+  #holder {
+    width: calc(100% - 8px);
+    margin-top: 4px;
+  }
 
-    #lyrania-chat-enhancements-inventory-dock {
-        position: relative;
-        min-height: 480px;
-        max-height: min(760px, 72vh);
-    }
+  #lyrania-chat-enhancements-inventory-dock {
+    position: relative;
+    min-height: 480px;
+    max-height: min(760px, 72vh);
+  }
 
-    #header > .lrow {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+  #header > .lrow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1100px) and (max-width: 1439px) {
-    #middlesection {
-        grid-template-columns: 164px minmax(0, 1fr) 148px;
-    }
+  #middlesection {
+    grid-template-columns: 164px minmax(0, 1fr) 148px;
+  }
 }
 
 @media (min-width: 800px) and (max-width: 1099px) {
-    #middlesection {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-areas:
-            "main main"
-            "side1 side2";
-        height: auto;
-    }
+  #middlesection {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "main main"
+      "side1 side2";
+    height: auto;
+  }
 
-    #main {
-        grid-area: main;
-        height: var(--lyr-workspace-height) !important;
-        min-height: var(--lyr-workspace-height);
-        max-height: var(--lyr-workspace-height);
-    }
+  #main {
+    grid-area: main;
+    height: var(--lyr-workspace-height) !important;
+    min-height: var(--lyr-workspace-height);
+    max-height: var(--lyr-workspace-height);
+  }
 
-    #side1 {
-        grid-area: side1;
-        height: auto !important;
-        min-height: 230px;
-    }
+  #side1 {
+    grid-area: side1;
+    height: auto !important;
+    min-height: 230px;
+  }
 
-    #side2 {
-        grid-area: side2;
-        height: auto !important;
-        min-height: 230px;
-    }
+  #side2 {
+    grid-area: side2;
+    height: auto !important;
+    min-height: 230px;
+    max-height: var(--lyr-workspace-height);
+    overflow-y: auto !important;
+  }
 
-    #header > .lrow {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  #header > .lrow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2917,322 +3138,334 @@ a.text-fail {
 /* ------------------------------------------------------------------------- */
 
 @media (max-width: 799px) {
-    :root {
-        --lyr-gap: 5px;
-        --lyr-control-height: 40px;
-        --lyr-workspace-height: clamp(420px, 62dvh, 520px);
-    }
+  :root {
+    --lyr-gap: 5px;
+    --lyr-control-height: 40px;
+    --lyr-workspace-height: clamp(420px, 62dvh, 520px);
+  }
 
-    body {
-        font-size: 13px;
-        background-attachment: scroll;
-    }
+  body {
+    font-size: 13px;
+    background-attachment: scroll;
+  }
 
-    #holder {
-        width: calc(100% - 6px);
-        margin: 3px auto 10px;
-    }
+  #holder {
+    width: calc(100% - 6px);
+    margin: 3px auto 10px;
+  }
 
-    #header > .lrow {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 5px;
-    }
+  #header > .lrow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
 
-    #header .headerbox {
-        min-height: 0;
-        padding: 8px 9px;
-        font-size: 11px;
-    }
+  #header .headerbox {
+    min-height: 0;
+    padding: 8px 9px;
+    font-size: 11px;
+  }
 
-    #middlesection {
-        display: flex;
-        flex-direction: column;
-        height: auto;
-    }
+  #middlesection {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
 
-    #main {
-        order: 1;
-        height: var(--lyr-workspace-height) !important;
-        min-height: var(--lyr-workspace-height);
-        max-height: var(--lyr-workspace-height);
-    }
+  #main {
+    order: 1;
+    height: var(--lyr-workspace-height) !important;
+    min-height: var(--lyr-workspace-height);
+    max-height: var(--lyr-workspace-height);
+  }
 
-    #side1 {
-        order: 2;
-        height: auto !important;
-        max-height: none;
-    }
+  #side1 {
+    order: 2;
+    height: auto !important;
+    max-height: none;
+  }
 
-    #side2 {
-        order: 3;
-        height: auto !important;
-        max-height: none;
-    }
+  #side2 {
+    order: 3;
+    height: auto !important;
+    max-height: min(var(--lyr-workspace-height), 70dvh);
+    overflow-y: auto !important;
+  }
 
-    #loadoutpotions {
-        align-items: stretch;
-    }
+  #loadoutpotions {
+    align-items: stretch;
+  }
 
-    #loadoutpotions > span {
-        flex: 1 1 160px;
-    }
+  #loadoutpotions > span {
+    flex: 1 1 160px;
+  }
 
-    #loadoutpotions select {
-        width: 100%;
-    }
+  #loadoutpotions select {
+    width: 100%;
+  }
 
-    #content {
-        padding: 6px 7px 9px;
-    }
+  #content {
+    padding: 6px 7px 9px;
+  }
 
-    #chat {
-        min-height: 420px;
-        padding: 8px;
-    }
+  #chat {
+    min-height: 420px;
+    padding: 8px;
+  }
 
-    #chat_row.lyrania-chat-enhancements-layout {
-        flex-direction: column;
-        gap: 7px;
-    }
+  #chat_row.lyrania-chat-enhancements-layout {
+    flex-direction: column;
+    gap: 7px;
+  }
 
-    #lyrania-chat-enhancements-channels {
-        width: 100% !important;
-        max-height: 190px;
-        margin-top: 0 !important;
-    }
+  #lyrania-chat-enhancements-channels {
+    width: 100% !important;
+    max-height: 190px;
+    margin-top: 0 !important;
+  }
 
-    #chattabs.lyrania-chat-enhancements-chat-loot-split > #chatpanes {
-        grid-template-columns: 1fr !important;
-        grid-template-rows: minmax(210px, 1fr) minmax(190px, 0.9fr);
-        overflow: visible !important;
-    }
+  #chattabs.lyrania-chat-enhancements-chat-loot-split > #chatpanes {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: minmax(210px, 1fr) minmax(190px, 0.9fr);
+    overflow: visible !important;
+  }
 
-    #lyrania-chat-enhancements-chat-composer {
-        padding-right: 0 !important;
-        padding-bottom: 8px;
-        border-right: 0 !important;
-        border-bottom: 1px solid var(--lyr-border);
-    }
+  #lyrania-chat-enhancements-chat-composer {
+    padding-right: 0 !important;
+    padding-bottom: 8px;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--lyr-border);
+  }
 
-    #chattabs.lyrania-chat-enhancements-chat-loot-split #chatwindow {
-        padding-right: 8px !important;
-        border-right: 0 !important;
-    }
+  #chattabs.lyrania-chat-enhancements-chat-loot-split #chatwindow {
+    padding-right: 8px !important;
+    border-right: 0 !important;
+  }
 
-    #lyrania-chat-enhancements-inventory-dock {
-        min-height: 520px;
-        max-height: none;
-    }
+  #lyrania-chat-enhancements-inventory-dock {
+    min-height: 520px;
+    max-height: none;
+  }
 
-    #lyrania-chat-enhancements-inventory-scroll {
-        max-height: none;
-        padding-inline: 7px;
-    }
+  #lyrania-chat-enhancements-inventory-scroll {
+    max-height: none;
+    padding-inline: 7px;
+  }
 
-    .inventory-header-shell {
-        padding-inline: 0;
-    }
+  .inventory-header-shell {
+    padding-inline: 0;
+  }
 
-    .inventory-tab-nav {
-        flex-wrap: wrap;
-        justify-content: center;
-        padding: 2px 1px 4px;
-        overflow: visible;
-    }
+  .inventory-tab-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 2px 1px 4px;
+    overflow: visible;
+  }
 
-    .inventory-tab-nav .purchase-tab-link {
-        flex: 1 1 105px;
-        min-height: 36px;
-    }
+  .inventory-tab-nav .purchase-tab-link {
+    flex: 1 1 105px;
+    min-height: 36px;
+  }
 
-    .purchase-layout-two-column,
-    .inventory-jewellery-grid,
-    .inventory-potion-grid,
-    .inventory-orb-grid,
-    .inventory-enchant-card-grid {
-        grid-template-columns: 1fr;
-    }
+  .purchase-layout-two-column,
+  .inventory-jewellery-grid,
+  .inventory-potion-grid,
+  .inventory-orb-grid,
+  .inventory-enchant-card-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .inventory-resource-grid,
-    #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .inventory-resource-grid,
+  #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-    .inventory-jewel-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-    }
+  .inventory-jewel-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+  }
 
-    .inventory-jewel-toolbar-search,
-    .inventory-jewel-toolbar-meta,
-    .inventory-jewel-search-row {
-        width: 100%;
-    }
+  .inventory-jewel-toolbar-search,
+  .inventory-jewel-toolbar-meta,
+  .inventory-jewel-search-row {
+    width: 100%;
+  }
 
-    .inventory-jewel-toolbar-meta,
-    .inventory-jewel-search-row,
-    .inventory-action-row,
-    .inventory-action-buttons,
-    .inventory-jewel-pagination {
-        flex-wrap: wrap;
-    }
+  .inventory-jewel-toolbar-meta,
+  .inventory-jewel-search-row,
+  .inventory-action-row,
+  .inventory-action-buttons,
+  .inventory-jewel-pagination {
+    flex-wrap: wrap;
+  }
 
-    .inventory-action-row-bottom,
-    .inventory-jewel-pagination {
-        justify-content: center;
-    }
+  .inventory-action-row-bottom,
+  .inventory-jewel-pagination {
+    justify-content: center;
+  }
 
-    .mapLayout {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: center;
-    }
+  .mapLayout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+  }
 
-    .mapInfoPanel {
-        flex: 0 0 150px;
-        width: 150px !important;
-        min-width: 150px;
-        max-width: 150px;
-        min-height: 265px;
-    }
+  .mapInfoPanel {
+    flex: 0 0 150px;
+    width: 150px !important;
+    min-width: 150px;
+    max-width: 150px;
+    min-height: 265px;
+  }
 
-    #rightinfo.mapInfoPanel {
-        min-height: 265px;
-    }
+  #rightinfo.mapInfoPanel {
+    min-height: 265px;
+  }
 
-    .mapContainer {
-        zoom: 1.2;
-    }
+  .mapContainer {
+    zoom: 1.2;
+  }
 
-    #popupholder {
-        width: calc(100vw - 12px);
-        height: calc(100dvh - 12px) !important;
-        margin: 6px auto 0;
-        border-radius: 12px;
-    }
+  #popupholder {
+    width: calc(100vw - 12px);
+    height: calc(100dvh - 12px) !important;
+    margin: 6px auto 0;
+    border-radius: 12px;
+  }
 
-    #popupresdisplay {
-        padding: 9px;
-    }
+  #popupresdisplay {
+    padding: 9px;
+  }
 }
 
 @media (max-width: 520px) {
-    #header > .lrow {
-        grid-template-columns: 1fr;
-    }
+  #header > .lrow {
+    grid-template-columns: 1fr;
+  }
 
-    #header .headerbox {
-        line-height: 1.6;
-    }
+  #header .headerbox {
+    line-height: 1.6;
+  }
 
-    #loadoutpotions {
-        flex-direction: column;
-    }
+  #loadoutpotions {
+    flex-direction: column;
+  }
 
-    #loadoutpotions > span {
-        flex-basis: auto;
-        width: 100%;
-    }
+  #loadoutpotions > span {
+    flex-basis: auto;
+    width: 100%;
+  }
 
-    #chatchannel,
-    #inputchat {
-        width: 100% !important;
-        margin-bottom: 6px;
-    }
+  #chatchannel,
+  #inputchat {
+    width: 100% !important;
+    margin-bottom: 6px;
+  }
 
-    #chatbutton {
-        width: 100%;
-    }
+  #chatbutton {
+    width: 100%;
+  }
 
-    #lyrania-chat-enhancements-inventory-bar {
-        padding-inline: 10px;
-    }
+  #lyrania-chat-enhancements-inventory-bar {
+    padding-inline: 10px;
+  }
 
-    #lyrania-chat-enhancements-inventory-scroll {
-        padding-inline: 5px;
-    }
+  #lyrania-chat-enhancements-inventory-scroll {
+    padding-inline: 5px;
+  }
 
-    #lyrania-chat-enhancements-inventory-dock #inventory_jewel_table :is(thead, tbody) tr {
-        grid-template-columns:
-            24px minmax(0, 2fr) repeat(6, minmax(0, 0.58fr))
-            minmax(0, 1.15fr) !important;
-    }
+  #lyrania-chat-enhancements-inventory-dock
+    #inventory_jewel_table
+    :is(thead, tbody)
+    tr {
+    grid-template-columns:
+      24px minmax(0, 2fr) repeat(6, minmax(0, 0.58fr))
+      minmax(0, 1.15fr) !important;
+  }
 
-    #lyrania-chat-enhancements-inventory-dock #inventory_enchant_table :is(thead, tbody) tr {
-        grid-template-columns:
-            24px minmax(0, 2fr) minmax(0, 0.9fr)
-            minmax(0, 0.7fr) minmax(0, 1fr) !important;
-    }
+  #lyrania-chat-enhancements-inventory-dock
+    #inventory_enchant_table
+    :is(thead, tbody)
+    tr {
+    grid-template-columns:
+      24px minmax(0, 2fr) minmax(0, 0.9fr)
+      minmax(0, 0.7fr) minmax(0, 1fr) !important;
+  }
 
-    #lyrania-chat-enhancements-inventory-dock #inventory_maps_table :is(thead, tbody) tr {
-        grid-template-columns:
-            minmax(0, 1.45fr) minmax(0, 0.42fr) minmax(0, 0.58fr)
-            minmax(0, 0.72fr) minmax(0, 1.25fr) !important;
-    }
+  #lyrania-chat-enhancements-inventory-dock
+    #inventory_maps_table
+    :is(thead, tbody)
+    tr {
+    grid-template-columns:
+      minmax(0, 1.45fr) minmax(0, 0.42fr) minmax(0, 0.58fr)
+      minmax(0, 0.72fr) minmax(0, 1.25fr) !important;
+  }
 
-    #lyrania-chat-enhancements-inventory-dock
-        :is(#inventory_consumables_table, #inventory_misc_table) :is(thead, tbody) tr {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 0.35fr) minmax(0, 1.25fr) !important;
-    }
+  #lyrania-chat-enhancements-inventory-dock
+    :is(#inventory_consumables_table, #inventory_misc_table)
+    :is(thead, tbody)
+    tr {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.35fr) minmax(0, 1.25fr) !important;
+  }
 
-    .inventory-resource-grid,
-    #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
-        grid-template-columns: 1fr;
-    }
+  .inventory-resource-grid,
+  #lyrania-chat-enhancements-inventory-dock .inventory-summary-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .inventory-potion-actions,
-    .inventory-orb-action-row,
-    .inventory-enchant-input-row {
-        flex-wrap: wrap;
-    }
+  .inventory-potion-actions,
+  .inventory-orb-action-row,
+  .inventory-enchant-input-row {
+    flex-wrap: wrap;
+  }
 
-    .inventory-loadout-table,
-    .inventory-loadout-table tbody,
-    .inventory-loadout-table tr,
-    .inventory-loadout-table td {
-        display: block;
-        width: 100%;
-    }
+  .inventory-loadout-table,
+  .inventory-loadout-table tbody,
+  .inventory-loadout-table tr,
+  .inventory-loadout-table td {
+    display: block;
+    width: 100%;
+  }
 
-    .inventory-loadout-table td {
-        padding: 4px 0;
-    }
+  .inventory-loadout-table td {
+    padding: 4px 0;
+  }
 
-    .inventory-loadout-label {
-        white-space: normal;
-    }
+  .inventory-loadout-label {
+    white-space: normal;
+  }
 
-    .mapLayout {
-        display: flex;
-        flex-direction: column;
-    }
+  .mapLayout {
+    display: flex;
+    flex-direction: column;
+  }
 
-    .mapInfoPanel {
-        flex-basis: auto;
-        width: min(100%, 260px) !important;
-        min-width: 0;
-        max-width: 260px;
-        min-height: 0;
-    }
+  .mapInfoPanel {
+    flex-basis: auto;
+    width: min(100%, 260px) !important;
+    min-width: 0;
+    max-width: 260px;
+    min-height: 0;
+  }
 
-    #rightinfo.mapInfoPanel {
-        min-height: 0;
-    }
+  #rightinfo.mapInfoPanel {
+    min-height: 0;
+  }
 
-    #popupnav {
-        width: min(58vw, 220px);
-        min-width: 0;
-    }
+  #popupnav {
+    width: min(58vw, 220px);
+    min-width: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        scroll-behavior: auto !important;
-        transition-duration: 0.01ms !important;
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-    }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
