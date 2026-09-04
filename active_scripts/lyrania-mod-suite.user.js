@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.13.1
+// @version      2.14.0
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -57,7 +57,7 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.13.1';
+    const SCRIPT_VERSION = '2.14.0';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -306,7 +306,7 @@
                 box-sizing: border-box;
                 min-width: 0;
                 height: 100%;
-                overflow: auto;
+                overflow: hidden auto;
             }
             #${SCRIPT_ID}-loot-summary {
                 height: auto;
@@ -331,19 +331,73 @@
             }
             #${SCRIPT_ID}-loot-summary button:hover { background: #444; }
             #${SCRIPT_ID}-loot-summary .lyrania-loot-total { margin-bottom: 6px; }
-            #${SCRIPT_ID}-loot-summary table {
-                width: 100%;
-                border-collapse: collapse;
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+                gap: 4px;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat {
+                min-width: 0;
+                border: 1px solid rgba(255, 255, 255, 0.14);
+                border-radius: 5px;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat[open] {
+                grid-column: 1 / -1;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat > summary {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 6px;
+                padding: 4px 6px;
+                list-style: none;
+                cursor: pointer;
                 font-size: 11px;
             }
-            #${SCRIPT_ID}-loot-summary th,
-            #${SCRIPT_ID}-loot-summary td {
-                padding: 2px 4px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-                text-align: right;
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat > summary::-webkit-details-marker {
+                display: none;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat > summary span {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            #${SCRIPT_ID}-loot-summary th:first-child { text-align: left; }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat-values {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 4px;
+                padding: 0 6px 5px;
+                text-align: right;
+            }
+            #${SCRIPT_ID}-loot-summary .lyrania-loot-stat-values small {
+                display: block;
+                opacity: 0.7;
+            }
+            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry > summary {
+                display: block;
+                position: relative;
+                padding-left: 16px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                list-style: none;
+                cursor: pointer;
+            }
+            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry > summary::-webkit-details-marker {
+                display: none;
+            }
+            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry > summary::before {
+                position: absolute;
+                left: 3px;
+                content: "›";
+            }
+            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry[open] > summary {
+                overflow: visible;
+                white-space: normal;
+            }
+            #${SCRIPT_ID}-loot-messages details.lyrania-loot-entry[open] > summary::before {
+                transform: rotate(90deg);
+            }
             #${SCRIPT_ID}-update-banner {
                 position: fixed;
                 right: 16px;
@@ -1574,17 +1628,25 @@
         const summary = document.getElementById(`${SCRIPT_ID}-loot-summary`);
         if (!summary) return;
 
-        const rows = Object.entries(LOOT_TYPES).map(([key, label]) => {
+        const expandedTypes = new Set(
+            Array.from(summary.querySelectorAll('.lyrania-loot-stat[open]'))
+                .map((item) => item.dataset.lootType)
+        );
+        const cards = Object.entries(LOOT_TYPES).map(([key, label]) => {
             const entry = state.loot[key];
             const formatter = key === 'gold' ? formatCurrency : (value) => value.toLocaleString();
             return `
-                <tr>
-                    <th scope="row">${label}</th>
-                    <td>${formatter(entry.total)}</td>
-                    <td>${formatter(entry.base)}</td>
-                    <td>${formatter(entry.bonus)}</td>
-                    <td>${entry.drops.toLocaleString()}</td>
-                </tr>`;
+                <details class="lyrania-loot-stat" data-loot-type="${key}"${expandedTypes.has(key) ? ' open' : ''}>
+                    <summary>
+                        <span>${label}</span>
+                        <strong>${formatter(entry.total)}</strong>
+                    </summary>
+                    <div class="lyrania-loot-stat-values">
+                        <span><small>Base</small><b>${formatter(entry.base)}</b></span>
+                        <span><small>Bonus</small><b>${formatter(entry.bonus)}</b></span>
+                        <span><small>Drops</small><b>${entry.drops.toLocaleString()}</b></span>
+                    </div>
+                </details>`;
         }).join('');
 
         summary.innerHTML = `
@@ -1593,10 +1655,7 @@
                 <button type="button" id="${SCRIPT_ID}-loot-reset">Reset</button>
             </div>
             <div class="lyrania-loot-total">Total tracked drops: ${state.totalDrops.toLocaleString()}</div>
-            <table>
-                <thead><tr><th>Type</th><th>Total</th><th>Base</th><th>Bonus</th><th>Drops</th></tr></thead>
-                <tbody>${rows}</tbody>
-            </table>`;
+            <div class="lyrania-loot-stat-grid">${cards}</div>`;
 
         document.getElementById(`${SCRIPT_ID}-loot-reset`)?.addEventListener('click', () => {
             if (!window.confirm('Reset all saved loot statistics for this account?')) return;
@@ -1605,6 +1664,32 @@
             saveLootState(state);
             renderLootStatistics(state);
         });
+    }
+
+    function foldLootMessage(message) {
+        if (!(message instanceof Element) || !message.classList.contains('lootlogitem')) {
+            return message;
+        }
+        if (message.matches('details.lyrania-loot-entry')) return message;
+
+        const folded = document.createElement('details');
+        Array.from(message.attributes).forEach(({ name, value }) => {
+            folded.setAttribute(name, value);
+        });
+        folded.classList.add('lyrania-loot-entry');
+
+        const label = document.createElement('summary');
+        label.className = 'lyrania-loot-entry-summary';
+        label.append(...message.childNodes);
+        folded.appendChild(label);
+        message.replaceWith(folded);
+        return folded;
+    }
+
+    function trimFoldedLootMessages(messages, maximum = 100) {
+        Array.from(messages.querySelectorAll(':scope > .lootlogitem'))
+            .slice(maximum)
+            .forEach((message) => message.remove());
     }
 
     function initializePersistentLootLog() {
@@ -1635,7 +1720,10 @@
         const messages = document.createElement('section');
         messages.id = `${SCRIPT_ID}-loot-messages`;
 
-        Array.from(lootLog.children).forEach((child) => messages.appendChild(child));
+        Array.from(lootLog.children).forEach((child) => {
+            messages.appendChild(foldLootMessage(child));
+        });
+        trimFoldedLootMessages(messages);
         lootLog.append(summary, messages);
 
         const state = loadLootState();
@@ -1645,7 +1733,10 @@
         const wrappedLootLog = function (line) {
             const result = originalLootLog.apply(this, arguments);
             const newMessage = lootLog.querySelector(':scope > .lootlogitem');
-            if (newMessage) messages.prepend(newMessage);
+            if (newMessage) {
+                messages.prepend(foldLootMessage(newMessage));
+                trimFoldedLootMessages(messages);
+            }
 
             if (parseLootLine(line, state)) {
                 saveLootState(state);
