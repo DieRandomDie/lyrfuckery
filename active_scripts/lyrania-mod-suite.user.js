@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.17.3
+// @version      2.17.4
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -42,7 +42,7 @@
         // Preserves action cooldowns across menus and queues the next action.
         actionTimerFix: true,
 
-        // Replaces browser alerts so a held Enter cannot dismiss them.
+        // Replaces browser alerts and ignores Enter while they are open.
         heldEnterAlertGuard: true,
 
         // Replaces Buffer XP percentage with projected level information.
@@ -66,7 +66,7 @@
 
     const SCRIPT_ID = 'lyrania-chat-enhancements';
     const SCRIPT_NAME = 'Lyrania Mod Suite';
-    const SCRIPT_VERSION = '2.17.3';
+    const SCRIPT_VERSION = '2.17.4';
     const SCRIPT_DOWNLOAD_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js';
     const REMOTE_THEME_URL = 'https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css';
     const REMOTE_THEME_CACHE_KEY = 'lyrania-mod-suite:remote-theme-cache';
@@ -1118,20 +1118,12 @@
 
         const nativeAlert = window.alert;
         const pendingAlerts = [];
-        let enterHeld = false;
         let activeAlert = null;
-        let keyboardArmed = false;
-        let armTimer = 0;
+        let okPointerArmed = false;
 
         const isEnter = (event) => event.key === 'Enter'
             || event.code === 'Enter'
             || event.code === 'NumpadEnter';
-
-        const clearArmTimer = () => {
-            if (!armTimer) return;
-            window.clearTimeout(armTimer);
-            armTimer = 0;
-        };
 
         function createAlertElements() {
             let overlay = document.getElementById(`${SCRIPT_ID}-alert-overlay`);
@@ -1173,19 +1165,10 @@
             return { overlay, dialog, message, okButton };
         }
 
-        function armAfterRelease() {
-            clearArmTimer();
-            armTimer = window.setTimeout(() => {
-                armTimer = 0;
-                if (activeAlert && !enterHeld) keyboardArmed = true;
-            }, 175);
-        }
-
         function showNextAlert() {
             if (activeAlert || !pendingAlerts.length || !document.body) return;
             const elements = createAlertElements();
             activeAlert = { ...pendingAlerts.shift(), ...elements };
-            keyboardArmed = !enterHeld;
             window.__lyraniaAlertOpen = true;
             activeAlert.message.textContent = activeAlert.text;
             activeAlert.overlay.hidden = false;
@@ -1201,23 +1184,20 @@
 
         function closeActiveAlert() {
             if (!activeAlert) return;
-            clearArmTimer();
+            okPointerArmed = false;
             activeAlert.overlay.hidden = true;
             activeAlert = null;
-            keyboardArmed = false;
             window.__lyraniaAlertOpen = false;
             document.dispatchEvent(new Event('lyrania-alert-closed'));
             window.setTimeout(showNextAlert, 0);
         }
 
         document.addEventListener('keydown', (event) => {
-            if (isEnter(event)) enterHeld = true;
             if (!activeAlert) return;
 
             if (isEnter(event)) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                if (!event.repeat && keyboardArmed) closeActiveAlert();
                 return;
             }
 
@@ -1230,39 +1210,45 @@
         }, true);
 
         document.addEventListener('keyup', (event) => {
-            if (!isEnter(event)) return;
-            enterHeld = false;
-            if (!activeAlert) return;
+            if (!activeAlert || !isEnter(event)) return;
             event.preventDefault();
             event.stopImmediatePropagation();
-            armAfterRelease();
         }, true);
 
-        // Block clicks through the overlay. A real pointer click on OK is the
-        // only click that can close the notice.
-        document.addEventListener('click', (event) => {
+        // Only a trusted mouse/touch press can arm OK. Keyboard activation can
+        // synthesize a click, so click metadata alone is not a reliable guard.
+        document.addEventListener('pointerdown', (event) => {
             if (!activeAlert) return;
-            if (event.target === activeAlert.okButton && event.detail > 0) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                closeActiveAlert();
-                return;
-            }
+            okPointerArmed = event.isTrusted
+                && event.button === 0
+                && event.target === activeAlert.okButton;
             if (!activeAlert.dialog.contains(event.target)) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
             }
         }, true);
+        document.addEventListener('pointercancel', () => {
+            okPointerArmed = false;
+        }, true);
 
-        window.addEventListener('blur', () => {
-            enterHeld = false;
+        // Block clicks through the overlay. OK closes only when the click was
+        // preceded by the trusted pointer press above.
+        document.addEventListener('click', (event) => {
             if (!activeAlert) return;
-            keyboardArmed = false;
-            clearArmTimer();
-        });
-        window.addEventListener('focus', () => {
-            if (activeAlert) armAfterRelease();
-        });
+            if (event.target === activeAlert.okButton) {
+                const allowClose = okPointerArmed;
+                okPointerArmed = false;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (allowClose) closeActiveAlert();
+                return;
+            }
+            okPointerArmed = false;
+            if (!activeAlert.dialog.contains(event.target)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
 
         const guardedAlert = function (message) {
             pendingAlerts.push({ text: String(message ?? '') });
