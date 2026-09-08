@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.20.0
+// @version      2.21.0
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -63,7 +63,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.20.0";
+  const SCRIPT_VERSION = "2.21.0";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -72,6 +72,8 @@
   const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
   const UPDATE_CHECK_STORAGE_KEY = "lyrania-mod-suite:update-check";
   const UPDATE_DISMISSED_STORAGE_KEY = "lyrania-mod-suite:update-dismissed";
+  const GAME_VERSION = detectGameVersion();
+  const GAME_MAJOR_VERSION = parseVersion(GAME_VERSION)?.[0] || 0;
   const LONDON_TIME_FORMATTER = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/London",
     year: "numeric",
@@ -123,6 +125,59 @@
     const button = document.createElement("button");
     Object.assign(button, { type: "button", className, textContent: label });
     return button;
+  }
+
+  function detectGameVersion() {
+    const titleVersion = document.title.match(
+      /(?:^|\s)Lyrania\s+(\d+(?:\.\d+)*)\b/i,
+    )?.[1];
+
+    for (const candidate of [window.lyrversion, titleVersion]) {
+      const parsed = parseVersion(candidate);
+      if (parsed) return parsed.join(".");
+    }
+    return "unknown";
+  }
+
+  function initializeGameVersionCompatibility() {
+    // Lyrania 4 moved the game and chat rows out of #holder for its native
+    // layouts. The mod's responsive grid intentionally retains the 3.1 shell,
+    // so restore that hierarchy before any other mod initializes. On 3.1 this
+    // branch is never entered and the original DOM is left untouched.
+    if (GAME_MAJOR_VERSION !== 4) return true;
+
+    document.documentElement.dataset.lyraniaGameVersion = GAME_VERSION;
+    document.documentElement.dataset.lyraniaGameMajor = String(
+      GAME_MAJOR_VERSION,
+    );
+
+    const holder = document.getElementById("holder");
+    const gameRow = document.getElementById("middlesection");
+    const chatRow = document.getElementById("chat_row");
+    if (!holder || !gameRow || !chatRow) return false;
+
+    if (gameRow.parentElement !== holder) holder.appendChild(gameRow);
+    if (chatRow.parentElement !== holder) holder.appendChild(chatRow);
+
+    // The theme keeps the centered 3.1 popup geometry, so prevent 4.0's
+    // top-bar drag handler from writing a conflicting inline position.
+    const popupTopbar = document.getElementById("popuptopbar");
+    if (popupTopbar && !popupTopbar.dataset.lyraniaFixedPopup) {
+      popupTopbar.dataset.lyraniaFixedPopup = "true";
+      popupTopbar.addEventListener(
+        "pointerdown",
+        (event) => {
+          if (
+            event.target.closest?.("a, button, input, select, option, label")
+          ) {
+            return;
+          }
+          event.stopImmediatePropagation();
+        },
+        true,
+      );
+    }
+    return true;
   }
 
   function plainText(value) {
@@ -2545,6 +2600,19 @@
     initializeDungeonMapSummary,
     initializeActionTimerFix,
   ];
+
+  try {
+    if (!initializeGameVersionCompatibility()) {
+      console.warn(
+        `[${SCRIPT_ID}] Lyrania ${GAME_VERSION} compatibility could not initialize.`,
+      );
+    }
+  } catch (error) {
+    console.error(
+      `[${SCRIPT_ID}] Lyrania ${GAME_VERSION} compatibility failed to initialize.`,
+      error,
+    );
+  }
 
   loadRemoteTheme();
   initializers.forEach((initializeMod) => {
