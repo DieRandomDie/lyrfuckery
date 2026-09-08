@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.22.0
+// @version      2.22.2
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -66,11 +66,11 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.22.0";
+  const SCRIPT_VERSION = "2.22.2";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.7.0";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.7.1";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const CHAT_SETTINGS_STORAGE_KEY =
     "lyrania-mod-suite:chat-channel-settings";
@@ -367,6 +367,58 @@
       });
     }
 
+    const serverTime = document.getElementById("serverTime");
+    const serverSection = [...statusPanel.children].find((section) =>
+      section.contains(serverTime),
+    );
+    const jobsSection = document.getElementById("tstimers");
+    const accountSection = document.getElementById("usersmartinfo");
+    const bonusSection = document.getElementById("bonusdisplays");
+    const countSection = document.getElementById("sidecounter");
+    const questSection = document.getElementById("questtracker");
+    const weeklyGdp = document.getElementById("weeklygdpword");
+    if (
+      !serverSection ||
+      !jobsSection ||
+      !bonusSection ||
+      !countSection ||
+      !questSection
+    ) {
+      return false;
+    }
+
+    const compactQuest = () => {
+      const questLink = questSection.querySelector("a");
+      const progress = questSection.querySelector("#questupdateid");
+      const questNumber = questLink?.textContent.match(
+        /quest\s+number\s*:\s*([\d,]+)/i,
+      )?.[1];
+      if (!questLink || !progress || !questNumber) return;
+      if (questLink.dataset.lyraniaCompactQuest === questNumber) return;
+
+      questLink.dataset.lyraniaCompactQuest = questNumber;
+      questLink.replaceChildren(
+        document.createTextNode(`Quest Number: ${questNumber}`),
+        document.createElement("br"),
+        document.createTextNode("Progress: "),
+        progress,
+      );
+    };
+    compactQuest();
+    new MutationObserver(compactQuest).observe(questSection, {
+      childList: true,
+      subtree: true,
+    });
+
+    if (accountSection) serverSection.appendChild(accountSection);
+    serverSection.appendChild(questSection);
+    if (weeklyGdp) countSection.insertBefore(weeklyGdp, countSection.firstChild);
+
+    serverSection.classList.add(`${SCRIPT_ID}-status-server`);
+    jobsSection.classList.add(`${SCRIPT_ID}-status-jobs`);
+    bonusSection.classList.add(`${SCRIPT_ID}-status-bonuses`);
+    countSection.classList.add(`${SCRIPT_ID}-status-counts`);
+
     visibleInfoBoxes[0].classList.add(`${SCRIPT_ID}-header-character`);
     visibleInfoBoxes[1].classList.add(`${SCRIPT_ID}-header-resources`);
     gemBox.classList.add(`${SCRIPT_ID}-header-removed`);
@@ -533,6 +585,18 @@
     }
 
     const text = line.textContent.replace(/\s+/g, " ").trim();
+    const isGreenSystemNotice = line.querySelector(
+      '[style*="color:#00FF00" i]',
+    );
+    const lowerText = text.toLowerCase();
+    if (
+      isGreenSystemNotice &&
+      (lowerText.includes("your mechanical cartography tools") ||
+        lowerText.includes("auto battle was inactive"))
+    ) {
+      return true;
+    }
+
     if (
       /\bmessage\s+of\s+the\s+day\s*:/i.test(text) ||
       /(?:^|\s)g?motd\s*:/i.test(text) ||
