@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.21.4
+// @version      2.22.0
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -24,6 +24,9 @@
   // Change a setting to false to disable that mod, or true to enable it.
   // ========================================================================
   const MODS = Object.freeze({
+    // Moves status information into the header and folds its navigation menu.
+    compactHeader: true,
+
     // Adds the channel-selection sidebar and All-view visibility controls.
     chatChannelSidebar: true,
 
@@ -63,12 +66,14 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.21.4";
+  const SCRIPT_VERSION = "2.22.0";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.6.7";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.7.0";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
+  const CHAT_SETTINGS_STORAGE_KEY =
+    "lyrania-mod-suite:chat-channel-settings";
   const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
   const UPDATE_CHECK_STORAGE_KEY = "lyrania-mod-suite:update-check";
   const UPDATE_DISMISSED_STORAGE_KEY = "lyrania-mod-suite:update-dismissed";
@@ -237,6 +242,144 @@
     return true;
   }
 
+  function initializeCompactHeader() {
+    if (!MODS.compactHeader) return true;
+    if (
+      document.documentElement.classList.contains(
+        `${SCRIPT_ID}-compact-header`,
+      )
+    )
+      return true;
+
+    const header = document.getElementById("header");
+    const headerRow = header?.querySelector(":scope > .lrow");
+    const middleSection = document.getElementById("middlesection");
+    const statusPanel = document.getElementById("side1");
+    const menuBox = headerRow?.querySelector(".headernav");
+    const gemBox = document
+      .getElementById("diamondsli2")
+      ?.closest(".headerbox");
+    const statBox = document.getElementById("Healthli")?.closest(".headerbox");
+    if (
+      !header ||
+      !headerRow ||
+      !middleSection ||
+      !statusPanel ||
+      !menuBox ||
+      !gemBox ||
+      !statBox
+    ) {
+      return false;
+    }
+
+    const visibleInfoBoxes = [...headerRow.children].filter(
+      (element) =>
+        element.matches?.(".headerbox") &&
+        element !== gemBox &&
+        element !== statBox &&
+        element !== menuBox,
+    );
+    if (visibleInfoBoxes.length < 2) return false;
+
+    const links = [...menuBox.querySelectorAll("a")];
+    const usedLinks = new Set();
+    const takeLink = ([label, hrefNeedle = "", id = ""]) => {
+      const expectedText = label.toLowerCase();
+      const link = links.find((candidate) => {
+        if (usedLinks.has(candidate)) return false;
+        const text = candidate.textContent
+          .replace(/\s+/g, " ")
+          .trim()
+          .toLowerCase();
+        const href = (candidate.getAttribute("href") || "").toLowerCase();
+        return (
+          (id && candidate.id === id) ||
+          text === expectedText ||
+          text.startsWith(`${expectedText}:`) ||
+          (hrefNeedle && href.includes(hrefNeedle))
+        );
+      });
+      if (link) usedLinks.add(link);
+      return link || null;
+    };
+
+    const menuLayout = [
+      ["Stats", [["Players Online", "openpage(1,0"], ["Rankings", "rankings("]]],
+      ["Community", [["Official Wiki"], ["Discord", "discord"]]],
+      ["Game", [["Token Shop", "purchase("], ["Updates", "openpage(3,0"]]],
+      ["Chat", [["Commands", "openpage(5,0"], ["Rules", "openpage(4,0"]]],
+      ["Info", [["FAQ", "faq("], ["Polls", "polls(", "polls"]]],
+      ["Account", [["Problem?!", "openpage(11"], ["Logout", "index.php"]]],
+    ];
+    const menuGroups = menuLayout.map(([label, entries]) => ({
+      label,
+      links: entries.map(takeLink),
+    }));
+
+    const remainingLinks = links.filter((link) => !usedLinks.has(link));
+    if (remainingLinks.length) {
+      menuGroups.push({ label: "More", links: remainingLinks });
+    }
+
+    const details = document.createElement("details");
+    details.id = `${SCRIPT_ID}-header-menu-details`;
+    const summary = document.createElement("summary");
+    summary.textContent = "Menu";
+    const panel = document.createElement("div");
+    panel.id = `${SCRIPT_ID}-header-menu-panel`;
+    panel.setAttribute("aria-label", "Game menu");
+
+    menuGroups.forEach(({ label, links: groupLinks }) => {
+      const availableLinks = groupLinks.filter(Boolean);
+      if (!availableLinks.length) return;
+
+      const group = document.createElement("span");
+      group.className = "cc-nav-group";
+      const groupLabel = document.createElement("span");
+      groupLabel.className = "cc-nav-group-label";
+      groupLabel.textContent = `${label}:`;
+      group.append(groupLabel, document.createTextNode(" "));
+      availableLinks.forEach((link, index) => {
+        if (index) {
+          const divider = document.createElement("span");
+          divider.className = "cc-nav-divider";
+          divider.textContent = " | ";
+          group.appendChild(divider);
+        }
+        group.appendChild(link);
+      });
+      panel.appendChild(group);
+    });
+
+    details.append(summary, panel);
+    menuBox.replaceChildren(details);
+    menuBox.addEventListener("click", (event) => {
+      if (event.target.closest?.("a")) details.open = false;
+    });
+
+    if (!document.documentElement.dataset.lyraniaHeaderMenuCloser) {
+      document.documentElement.dataset.lyraniaHeaderMenuCloser = "installed";
+      document.addEventListener("pointerdown", (event) => {
+        const openMenu = document.querySelector(
+          `#${SCRIPT_ID}-header-menu-details[open]`,
+        );
+        if (openMenu && !openMenu.contains(event.target)) openMenu.open = false;
+      });
+    }
+
+    visibleInfoBoxes[0].classList.add(`${SCRIPT_ID}-header-character`);
+    visibleInfoBoxes[1].classList.add(`${SCRIPT_ID}-header-resources`);
+    gemBox.classList.add(`${SCRIPT_ID}-header-removed`);
+    statBox.classList.add(`${SCRIPT_ID}-header-removed`);
+    statusPanel.classList.add(`${SCRIPT_ID}-header-status`);
+    menuBox.classList.add(`${SCRIPT_ID}-header-menu`);
+    headerRow.classList.add(`${SCRIPT_ID}-compact-header-row`);
+    middleSection.classList.add(`${SCRIPT_ID}-without-side-info`);
+    headerRow.insertBefore(statusPanel, menuBox);
+    document.documentElement.classList.add(`${SCRIPT_ID}-compact-header`);
+    return true;
+  }
+
   function plainText(value) {
     const source = String(value ?? "");
     return source.includes("<")
@@ -302,6 +445,41 @@
   function normalizeChannelLabel(label) {
     const trimmed = label.trim();
     return CHANNEL_LABELS[trimmed] || trimmed;
+  }
+
+  function readChatChannelSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CHAT_SETTINGS_STORAGE_KEY));
+      if (!saved || saved.version !== 1) return null;
+      return {
+        selectedChannel:
+          typeof saved.selectedChannel === "string"
+            ? saved.selectedChannel
+            : "all",
+        enabledChannels: Array.isArray(saved.enabledChannels)
+          ? saved.enabledChannels.map(String)
+          : [],
+        showGlobalChat: saved.showGlobalChat !== false,
+      };
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function saveChatChannelSettings() {
+    try {
+      localStorage.setItem(
+        CHAT_SETTINGS_STORAGE_KEY,
+        JSON.stringify({
+          version: 1,
+          selectedChannel,
+          enabledChannels: [...enabledAllChannels].sort(),
+          showGlobalChat,
+        }),
+      );
+    } catch (_error) {
+      // The chat controls still work for this page when storage is unavailable.
+    }
   }
 
   function setSelectedButton(sidebar) {
@@ -465,6 +643,22 @@
       marker,
     }));
 
+    const savedSettings = readChatChannelSettings();
+    const savedEnabledChannels = new Set(savedSettings?.enabledChannels || []);
+    enabledAllChannels.clear();
+    showGlobalChat = savedSettings?.showGlobalChat ?? true;
+    const availableChannels = new Set([
+      "all",
+      "global",
+      "w",
+      ...channels.map(({ value }) => value),
+    ]);
+    selectedChannel = availableChannels.has(savedSettings?.selectedChannel)
+      ? savedSettings.selectedChannel
+      : "all";
+    const initialChannelState = (value, fallback) =>
+      savedSettings ? savedEnabledChannels.has(value) : fallback;
+
     const allButton = createButton(
       "All",
       "lyrania-chat-filter lyrania-channel-select",
@@ -475,6 +669,7 @@
       channelSelect.value = "0";
       setSelectedButton(sidebar);
       filterChat();
+      saveChatChannelSettings();
     });
     sidebar.appendChild(allButton);
 
@@ -501,6 +696,7 @@
         channelSelect.value = value === "global" ? "0" : value;
         setSelectedButton(sidebar);
         filterChat();
+        saveChatChannelSettings();
       });
 
       row.appendChild(selectButton);
@@ -523,6 +719,7 @@
         if (value === "global") showGlobalChat = nextEnabled;
         updateChannelToggle(toggleButton, nextEnabled);
         filterChat();
+        saveChatChannelSettings();
       });
 
       row.appendChild(toggleButton);
@@ -537,20 +734,21 @@
     );
 
     standardChannels.forEach(({ value, label }) => {
-      const enabled = NATIVE_CHAT_CONTROLS[value]
+      const nativeDefault = NATIVE_CHAT_CONTROLS[value]
         ? isNativeChatEnabled(value)
         : true;
+      const enabled = initialChannelState(value, nativeDefault);
+      if (enabled) ensureNativeChatEnabled(value);
       addChannelRow(value, label, enabled);
     });
 
     numberedChannels.forEach(({ value, label }) => {
-      addChannelRow(value, label, true);
+      addChannelRow(value, label, initialChannelState(value, true));
     });
 
     addChannelRow("w", "Whispers", true, "lyrania-special-row", false);
     ensureNativeChatEnabled("global");
-    showGlobalChat = true;
-    addChannelRow("global", "Global Chat", true);
+    addChannelRow("global", "Global Chat", showGlobalChat);
 
     chatRow.classList.add(`${SCRIPT_ID}-layout`);
     chatRow.insertBefore(sidebar, chatRow.firstChild);
@@ -569,7 +767,17 @@
       constrainSidebarHeight();
       new ResizeObserver(constrainSidebarHeight).observe(chat);
     }
+    channelSelect.value = ["all", "global"].includes(selectedChannel)
+      ? "0"
+      : selectedChannel;
+    if (!channelSelect.value) {
+      selectedChannel = "all";
+      channelSelect.value = "0";
+    } else if (!["all", "global"].includes(selectedChannel)) {
+      ensureNativeChatEnabled(selectedChannel);
+    }
     setSelectedButton(sidebar);
+    saveChatChannelSettings();
   }
 
   function setChatCommand(command, playerName) {
@@ -2665,6 +2873,7 @@
   }
 
   const initializers = [
+    initializeCompactHeader,
     initializeChatMods,
     initializeTripleDpHour,
     initializeKillsPerHour,
