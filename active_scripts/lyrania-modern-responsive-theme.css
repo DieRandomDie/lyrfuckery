@@ -1,6 +1,6 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.6.3
+ * Version: 1.6.4
  *
  * Plain custom CSS: load this after Lyrania's own styles.
  * This revision adds Lyrania 4.0 compatibility while preserving the 3.1 layout.
@@ -1722,7 +1722,15 @@ html[data-lyrania-game-major="4"] #popupholder {
 }
 
 html[data-lyrania-game-major="4"] #popuptopbar {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
   cursor: default !important;
+}
+
+html[data-lyrania-game-major="4"] #popupclosetextcontainer {
+  right: 9px !important;
+  left: auto !important;
 }
 
 html[data-lyrania-game-major="4"] #popupresizehandle {
@@ -3032,6 +3040,30 @@ a.text-fail {
     min-height: 0;
     margin: 4px auto;
     overflow: hidden;
+  }
+
+  /* Lyrania 4 popups are top-level viewport children. Match the popup
+     overlay's columns to the modded workspace so menu pages cannot extend
+     underneath the permanent inventory rail. */
+  html[data-lyrania-game-major="4"].lyrania-chat-enhancements-persistent-inventory
+    #popupcontainer {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(820px, 2.25fr) minmax(440px, 1fr);
+    gap: var(--lyr-gap);
+    padding-inline: 4px;
+  }
+
+  html[data-lyrania-game-major="4"].lyrania-chat-enhancements-persistent-inventory
+    #popupholder {
+    grid-column: 1;
+    width: min(1040px, calc(100% - 32px)) !important;
+    justify-self: center;
+  }
+
+  html[data-lyrania-game-major="4"].lyrania-chat-enhancements-persistent-inventory
+    #popupholder:has(#dungeonmapcontainer) {
+    width: min(1180px, calc(100% - 8px)) !important;
   }
 
   #holder.lyrania-chat-enhancements-has-inventory-dock
