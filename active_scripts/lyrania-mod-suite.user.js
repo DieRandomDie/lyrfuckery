@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.23.1
+// @version      2.23.3
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -69,7 +69,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.23.1";
+  const SCRIPT_VERSION = "2.23.3";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -790,10 +790,24 @@
     menu.appendChild(button);
   }
 
+  function getQuickMenuPlayerName(chatName) {
+    const whisperLink = chatName.closest("a[href]");
+    const whisperTarget = (whisperLink?.getAttribute("href") || "").match(
+      /whisper\s*\(\s*["']([^"']+)["']\s*\)/i,
+    )?.[1];
+    if (whisperTarget?.trim()) return whisperTarget.trim();
+
+    return chatName.textContent
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/^(?:(?:owner|mod|community|admin)\s+)+/i, "")
+      .trim();
+  }
+
   function openQuickMenu(chatName) {
     closeQuickMenu();
 
-    const playerName = chatName.textContent.trim();
+    const playerName = getQuickMenuPlayerName(chatName);
     if (!playerName) return;
 
     const menu = document.createElement("div");
@@ -817,7 +831,9 @@
       setChatCommand("wireitem", playerName),
     );
 
-    document.body.appendChild(menu);
+    const menuHost =
+      chatName.closest("#chat_row") || document.getElementById("chat_row");
+    (menuHost || document.body).appendChild(menu);
     quickMenu = menu;
 
     const nameRect = chatName.getBoundingClientRect();
