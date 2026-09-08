@@ -1,6 +1,6 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.8.1
+ * Version: 1.8.2
  *
  * Plain custom CSS: load this after Lyrania's own styles.
  * This revision keeps the menu workspace stable and gives maps more room.
@@ -1463,8 +1463,24 @@ input[type="radio"] {
   -webkit-text-stroke: 0 !important;
 }
 
-.mapLayout .mapContainer .dungeon_room_status_description,
-.mapLayout .mapContainer .dungeon_room_status_description > a {
+/* Guild maps put the mob link inside the status span. Personal maps can put
+   an empty status wrapper and the real mob link beside it. Only expand the
+   actual mob-link branch so the empty personal-map link cannot cover it. */
+.mapLayout
+  .mapContainer
+  .map_room_moblist_grid
+  > a:has(> .dungeon_room_status_description:empty) {
+  pointer-events: none;
+}
+
+.mapLayout
+  .mapContainer
+  .map_room_moblist_grid
+  > .dungeon_room_status_description,
+.mapLayout
+  .mapContainer
+  .map_room_moblist_grid
+  > a:not(:has(> .dungeon_room_status_description)) {
   display: flex;
   box-sizing: border-box;
   width: 100%;
@@ -1473,15 +1489,40 @@ input[type="radio"] {
   justify-content: center;
 }
 
-.mapLayout .mapContainer .dungeon_room_status_description > a {
+.mapLayout
+  .mapContainer
+  .map_room_moblist_grid
+  > .dungeon_room_status_description
+  > a,
+.mapLayout
+  .mapContainer
+  .map_room_moblist_grid
+  > a:not(:has(> .dungeon_room_status_description)) {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  align-items: flex-end;
+  justify-content: center;
   gap: 2px;
   padding: 3px 2px 4px;
   color: var(--lyr-room-count, #f5f8fb) !important;
   font-weight: 800;
+  pointer-events: auto;
   text-decoration: none !important;
 }
 
-.mapLayout .mapContainer .dungeon_room_status_description > a::before {
+.mapLayout
+  .mapContainer
+  .map_room_moblist_grid
+  > .dungeon_room_status_description
+  > a::before,
+.mapLayout
+  .mapContainer
+  .map_room_moblist_grid
+  > a:not(:has(> .dungeon_room_status_description))::before {
   content: "M";
   color: var(--lyr-room-label, #aebdca);
   font-size: 8px;
