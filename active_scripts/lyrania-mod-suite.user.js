@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.22.2
+// @version      2.22.3
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -24,7 +24,7 @@
   // Change a setting to false to disable that mod, or true to enable it.
   // ========================================================================
   const MODS = Object.freeze({
-    // Moves status information into the header and folds its navigation menu.
+    // Moves status information into the header and groups its navigation.
     compactHeader: true,
 
     // Adds the channel-selection sidebar and All-view visibility controls.
@@ -66,11 +66,11 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.22.2";
+  const SCRIPT_VERSION = "2.22.3";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.7.1";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.7.2";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const CHAT_SETTINGS_STORAGE_KEY =
     "lyrania-mod-suite:chat-channel-settings";
@@ -321,10 +321,6 @@
       menuGroups.push({ label: "More", links: remainingLinks });
     }
 
-    const details = document.createElement("details");
-    details.id = `${SCRIPT_ID}-header-menu-details`;
-    const summary = document.createElement("summary");
-    summary.textContent = "Menu";
     const panel = document.createElement("div");
     panel.id = `${SCRIPT_ID}-header-menu-panel`;
     panel.setAttribute("aria-label", "Game menu");
@@ -351,21 +347,7 @@
       panel.appendChild(group);
     });
 
-    details.append(summary, panel);
-    menuBox.replaceChildren(details);
-    menuBox.addEventListener("click", (event) => {
-      if (event.target.closest?.("a")) details.open = false;
-    });
-
-    if (!document.documentElement.dataset.lyraniaHeaderMenuCloser) {
-      document.documentElement.dataset.lyraniaHeaderMenuCloser = "installed";
-      document.addEventListener("pointerdown", (event) => {
-        const openMenu = document.querySelector(
-          `#${SCRIPT_ID}-header-menu-details[open]`,
-        );
-        if (openMenu && !openMenu.contains(event.target)) openMenu.open = false;
-      });
-    }
+    menuBox.replaceChildren(panel);
 
     const serverTime = document.getElementById("serverTime");
     const serverSection = [...statusPanel.children].find((section) =>
