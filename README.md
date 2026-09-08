@@ -6,16 +6,16 @@ The Lyrania Mod Suite is a configurable userscript and responsive theme for Lyra
 
 | Component | Version | Purpose |
 | --- | ---: | --- |
-| `lyrania-mod-suite.user.js` | 2.23.5 | Userscript behavior and compatibility layer |
-| `lyrania-modern-responsive-theme.css` | 1.8.1 | Shared styling and responsive layout |
+| `lyrania-mod-suite.user.js` | 2.23.6 | Userscript behavior and compatibility layer |
+| `lyrania-modern-responsive-theme.css` | 1.8.2 | Shared styling and responsive layout |
+
+The userscript loads the matching theme automatically. Both files are intentionally kept readable and are not minified.
 
 ## Installation
 
 Install the userscript from its raw GitHub URL:
 
 <https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js>
-
-Tampermonkey and compatible userscript managers use the script's `@updateURL` and `@downloadURL` headers to update it from the `main` branch.
 
 ## Configuration
 
@@ -343,6 +343,7 @@ Simplifies the dungeon map while preserving room navigation.
 - Writes those four totals into the native room-type summary labels.
 - Hides non-chest images by making them transparent rather than removing the room elements.
 - Leaves chest and open-chest icons visible.
+- Supports both guild maps, which nest the mob link inside the room-status span, and personal maps, which may place the mob link beside an empty status wrapper.
 - Wraps the game's native dungeon-map function and waits for asynchronously rendered map markup.
 - Stops waiting after 15 seconds if no valid map appears.
 
@@ -415,7 +416,7 @@ There are two update paths:
 
 The in-game checker bypasses HTTP caching, reads the published `@version`, and compares numeric dot-separated version parts. When a newer version exists, it shows an `Install update` banner with a `Later` button. `Later` suppresses only that specific version. If the page is hidden and browser notification permission was already granted, the suite may also send a native notification; it does not request permission itself.
 
-Published versions must contain only numeric dot-separated parts, such as `2.23.5` or `2.24.0`.
+Published versions must contain only numeric dot-separated parts, such as `2.23.6` or `2.24.0`.
 
 ## Network activity
 
