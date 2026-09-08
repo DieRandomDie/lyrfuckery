@@ -1,9 +1,9 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.7.2
+ * Version: 1.7.3
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision restores the shared grouped menu as a static header panel.
+ * This revision simplifies dungeon rooms and makes their counts easier to read.
  * Lyrania Mod Suite 2.21.0+ uses this as its single stylesheet.
  *
  * Layouts
@@ -1357,6 +1357,121 @@ input[type="radio"] {
   font-size: 11px;
   font-weight: 750;
   text-shadow: 0 1px 2px #000;
+}
+
+/* Keep dungeon-room navigation intact while replacing the noisy thumbnails. */
+.mapLayout .mapContainer > div {
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #101923;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.mapLayout .mapContainer img[src*="images/dungeons/"] {
+  visibility: hidden;
+  opacity: 0 !important;
+}
+
+.mapLayout .mapContainer .map_room_moblist_grid {
+  inset: 0 !important;
+  z-index: 2;
+  display: block;
+  box-sizing: border-box;
+  font-size: 12px !important;
+  line-height: 1;
+  background: var(--lyr-room-bg, rgba(30, 43, 56, 0.94));
+  text-shadow: none;
+  -webkit-text-stroke: 0 !important;
+}
+
+.mapLayout .mapContainer .dungeon_room_status_description,
+.mapLayout .mapContainer .dungeon_room_status_description > a {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.mapLayout .mapContainer .dungeon_room_status_description > a {
+  gap: 2px;
+  padding: 3px 2px 4px;
+  color: var(--lyr-room-count, #f5f8fb) !important;
+  font-weight: 800;
+  text-decoration: none !important;
+}
+
+.mapLayout .mapContainer .dungeon_room_status_description > a::before {
+  content: "M";
+  color: var(--lyr-room-label, #aebdca);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.mapLayout .mapContainer .maproom_regular_room {
+  --lyr-room-bg: rgba(104, 73, 18, 0.92);
+  --lyr-room-label: #ffe08a;
+}
+
+.mapLayout .mapContainer .maproom_looted_room {
+  --lyr-room-bg: rgba(37, 59, 53, 0.92);
+  --lyr-room-count: #b8c8c2;
+  --lyr-room-label: #7da797;
+}
+
+.mapLayout .mapContainer .maproom_challenge_room {
+  --lyr-room-bg: rgba(104, 37, 43, 0.94);
+  --lyr-room-label: #ff9ca3;
+}
+
+.mapLayout .mapContainer .maproom_current_location {
+  --lyr-room-bg: rgba(20, 89, 128, 0.96);
+  --lyr-room-label: #bcecff;
+  box-shadow: 0 0 0 2px #79d7ff inset;
+}
+
+.mapLayout .mapContainer :is(.players_in_room, .no_players_in_room) {
+  position: absolute !important;
+  top: 2px !important;
+  right: 2px !important;
+  z-index: 3;
+  display: inline-flex;
+  box-sizing: border-box;
+  min-width: 18px;
+  height: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 1px solid rgba(174, 189, 202, 0.45);
+  border-radius: 3px;
+  color: #aebdca !important;
+  background: rgba(7, 12, 18, 0.88);
+  font-family: var(--lyr-font);
+  font-size: 8px !important;
+  font-weight: 750;
+  line-height: 10px;
+  text-shadow: none;
+  -webkit-text-stroke: 0 !important;
+}
+
+.mapLayout .mapContainer .players_in_room {
+  border-color: rgba(97, 214, 155, 0.8);
+  color: #e6fff3 !important;
+  background: rgba(18, 72, 56, 0.96);
+}
+
+.mapLayout .mapContainer :is(.players_in_room, .no_players_in_room)::before {
+  content: "P";
+  margin-right: 1px;
+  color: #7f93a5;
+  font-size: 7px;
+}
+
+.mapLayout .mapContainer .players_in_room::before {
+  color: #83e8b9;
 }
 
 .dungeonmapRoomType {
