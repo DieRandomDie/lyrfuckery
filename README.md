@@ -9,8 +9,6 @@ The Lyrania Mod Suite is a configurable userscript and responsive theme for Lyra
 | `lyrania-mod-suite.user.js` | 2.23.5 | Userscript behavior and compatibility layer |
 | `lyrania-modern-responsive-theme.css` | 1.8.1 | Shared styling and responsive layout |
 
-The userscript loads the matching theme automatically. Both files are intentionally kept readable and are not minified.
-
 ## Installation
 
 Install the userscript from its raw GitHub URL:
@@ -18,8 +16,6 @@ Install the userscript from its raw GitHub URL:
 <https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js>
 
 Tampermonkey and compatible userscript managers use the script's `@updateURL` and `@downloadURL` headers to update it from the `main` branch.
-
-If you have the suite as a `.txt` file instead, create a new Tampermonkey script, replace the generated contents with the complete text, and save it. Keep the metadata block at the top intact so automatic update checks continue to work.
 
 ## Configuration
 
