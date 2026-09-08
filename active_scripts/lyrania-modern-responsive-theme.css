@@ -1,9 +1,9 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.8.0
+ * Version: 1.8.1
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision compacts battles and docks menu content beside Equipment.
+ * This revision keeps the menu workspace stable and gives maps more room.
  * Lyrania Mod Suite 2.21.0+ uses this as its single stylesheet.
  *
  * Layouts
@@ -1884,11 +1884,8 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   display: none !important;
 }
 
-#lyrania-chat-enhancements-popup-dock[hidden] {
-  display: none !important;
-}
-
 #lyrania-chat-enhancements-popup-dock {
+  position: relative;
   grid-area: popup;
   min-width: 0;
   min-height: 0;
@@ -1899,6 +1896,17 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   color: var(--lyr-text);
   background: var(--lyr-surface-strong);
   box-shadow: var(--lyr-shadow-soft);
+}
+
+#lyrania-chat-enhancements-popup-dock.lyrania-chat-enhancements-popup-dock-empty::before {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 38px;
+  border-bottom: 1px solid var(--lyr-border);
+  background: rgba(18, 29, 42, 0.98);
+  content: "";
+  pointer-events: none;
 }
 
 #lyrania-chat-enhancements-popup-dock #popupholder {
@@ -3946,6 +3954,37 @@ html.lyrania-chat-enhancements-compact-header
     grid-area: popup;
     height: 100%;
     min-height: 0;
+  }
+}
+
+@media (min-width: 1000px) {
+  html.lyrania-chat-enhancements-compact-header
+    #middlesection:has(#main .mapLayout) {
+    grid-template-columns:
+      clamp(670px, 44vw, 720px)
+      clamp(136px, 8vw, 154px)
+      minmax(160px, 1fr);
+  }
+
+  html.lyrania-chat-enhancements-compact-header
+    #middlesection
+    #main:has(.mapLayout)
+    #content {
+    overflow-x: auto;
+  }
+}
+
+@media (min-width: 800px) and (max-width: 999px) {
+  html.lyrania-chat-enhancements-compact-header
+    #middlesection:has(#main .mapLayout) {
+    grid-template-columns: clamp(136px, 18vw, 154px) minmax(0, 1fr);
+    grid-template-areas:
+      "main main"
+      "side2 popup";
+    grid-template-rows:
+      var(--lyr-workspace-height)
+      minmax(420px, var(--lyr-workspace-height));
+    height: auto !important;
   }
 }
 
