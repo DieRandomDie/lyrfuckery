@@ -1,9 +1,9 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.6.7
+ * Version: 1.7.0
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision fixes Lyrania 4.0 popup stacking while preserving the 3.1 layout.
+ * This revision gives 3.1 and 4.0 the same compact header and font metrics.
  * Lyrania Mod Suite 2.21.0+ uses this as its single stylesheet.
  *
  * Layouts
@@ -455,8 +455,8 @@ html[data-lyrania-game-major="4"]
   --lyr-control-height: 36px;
   --lyr-workspace-height: clamp(330px, 55dvh, 540px);
   --lyr-font:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
   --theme-table-border-strong: rgba(120, 190, 255, 0.25);
   --theme-table-border-soft: rgba(160, 190, 220, 0.14);
   --theme-table-border-faint: rgba(160, 190, 220, 0.09);
@@ -1709,6 +1709,7 @@ div.chatline:hover {
   background: rgba(11, 18, 27, 0.985);
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
   backdrop-filter: blur(16px);
+  font-family: var(--lyr-font);
 }
 
 /* Lyrania 4 can restore a draggable popup's saved inline position and size.
@@ -3540,6 +3541,247 @@ a.text-fail {
   #popupnav {
     width: min(58vw, 220px);
     min-width: 0;
+  }
+}
+
+/* ------------------------------------------------------------------------- */
+/* Shared compact header                                                     */
+/* ------------------------------------------------------------------------- */
+
+html.lyrania-chat-enhancements-compact-header #header {
+  position: relative;
+  z-index: 100;
+}
+
+html.lyrania-chat-enhancements-compact-header
+  #header
+  > .lyrania-chat-enhancements-compact-header-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "character resources"
+    "status status"
+    "menu menu";
+  align-items: stretch;
+}
+
+#header .lyrania-chat-enhancements-header-character {
+  grid-area: character;
+}
+
+#header .lyrania-chat-enhancements-header-resources {
+  grid-area: resources;
+}
+
+#header .lyrania-chat-enhancements-header-removed {
+  display: none !important;
+}
+
+#header #side1.lyrania-chat-enhancements-header-status {
+  grid-area: status;
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(118px, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  width: 100% !important;
+  height: 118px !important;
+  min-height: 118px;
+  max-height: 118px;
+  padding: 7px;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+#header #side1.lyrania-chat-enhancements-header-status > div {
+  min-width: 0;
+  height: 100%;
+  margin: 0 !important;
+  padding: 0 7px !important;
+  overflow: hidden auto;
+  border: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  scrollbar-gutter: auto;
+}
+
+#header #side1.lyrania-chat-enhancements-header-status > div + div {
+  border-left: 1px solid var(--lyr-border) !important;
+}
+
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  :is(#tstimer, #usersmartinfo, #bonusdisplays, #sidecounter, #questtracker) {
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+
+#header #side1.lyrania-chat-enhancements-header-status #tstimer {
+  margin-top: 0 !important;
+}
+
+#header #side1.lyrania-chat-enhancements-header-status #questtracker a {
+  padding: 3px 4px;
+}
+
+#header .lyrania-chat-enhancements-header-menu {
+  position: relative;
+  z-index: 110;
+  grid-area: menu;
+  min-height: 44px;
+  padding: 5px 6px;
+  overflow: visible;
+}
+
+#lyrania-chat-enhancements-header-menu-details {
+  position: relative;
+  width: 100%;
+}
+
+#lyrania-chat-enhancements-header-menu-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid var(--lyr-border-strong);
+  border-radius: var(--lyr-radius-sm);
+  color: var(--lyr-text);
+  background: var(--lyr-surface-soft);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+#lyrania-chat-enhancements-header-menu-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+#lyrania-chat-enhancements-header-menu-details > summary::after {
+  content: "▾";
+  margin-left: 10px;
+  color: var(--lyr-text-soft);
+  transition: transform 140ms ease;
+}
+
+#lyrania-chat-enhancements-header-menu-details[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+#lyrania-chat-enhancements-header-menu-details > summary:hover {
+  border-color: var(--lyr-accent);
+  background: var(--lyr-surface-hover);
+}
+
+#lyrania-chat-enhancements-header-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 120;
+  width: min(330px, calc(100vw - 20px));
+  padding: 9px 11px;
+  border: 1px solid var(--lyr-border-strong);
+  border-radius: var(--lyr-radius);
+  background: rgba(11, 18, 27, 0.995);
+  box-shadow: var(--lyr-shadow);
+  font-size: 12px;
+  line-height: 1.65;
+  text-align: left;
+}
+
+#header
+  .lyrania-chat-enhancements-header-menu
+  #lyrania-chat-enhancements-header-menu-panel
+  .cc-nav-group {
+  display: block;
+  white-space: nowrap;
+}
+
+#header
+  .lyrania-chat-enhancements-header-menu
+  #lyrania-chat-enhancements-header-menu-panel
+  .cc-nav-group-label {
+  color: var(--lyr-text-soft);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+#header
+  .lyrania-chat-enhancements-header-menu
+  #lyrania-chat-enhancements-header-menu-panel
+  .cc-nav-divider {
+  color: var(--lyr-text-faint);
+}
+
+@media (min-width: 800px) {
+  html.lyrania-chat-enhancements-compact-header #middlesection {
+    grid-template-columns: minmax(0, 1fr) clamp(142px, 8vw, 154px);
+    grid-template-areas: "main side2";
+    height: var(--lyr-workspace-height) !important;
+  }
+
+  html.lyrania-chat-enhancements-compact-header #middlesection #main {
+    grid-area: main;
+    height: 100% !important;
+    min-height: 0;
+    max-height: 100%;
+  }
+
+  html.lyrania-chat-enhancements-compact-header #middlesection #side2 {
+    grid-area: side2;
+    height: 100% !important;
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto !important;
+  }
+}
+
+@media (min-width: 1100px) {
+  html.lyrania-chat-enhancements-compact-header
+    #header
+    > .lyrania-chat-enhancements-compact-header-row {
+    grid-template-columns:
+      minmax(190px, 0.95fr)
+      minmax(200px, 1.05fr)
+      minmax(0, 3fr)
+      minmax(96px, 0.5fr);
+    grid-template-areas: "character resources status menu";
+    grid-template-rows: 118px;
+  }
+
+  html.lyrania-chat-enhancements-compact-header
+    #header
+    :is(
+      .lyrania-chat-enhancements-header-character,
+      .lyrania-chat-enhancements-header-resources,
+      .lyrania-chat-enhancements-header-menu
+    ) {
+    height: 118px;
+    min-height: 118px;
+    max-height: 118px;
+    overflow-y: auto;
+  }
+
+  html.lyrania-chat-enhancements-compact-header
+    #header
+    .lyrania-chat-enhancements-header-menu {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 520px) {
+  html.lyrania-chat-enhancements-compact-header
+    #header
+    > .lyrania-chat-enhancements-compact-header-row {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "character"
+      "resources"
+      "status"
+      "menu";
   }
 }
 
