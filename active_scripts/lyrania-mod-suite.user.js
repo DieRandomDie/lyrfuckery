@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.21.2
+// @version      2.21.3
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -63,11 +63,11 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.21.2";
+  const SCRIPT_VERSION = "2.21.3";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.6.5";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.6.6";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
   const UPDATE_CHECK_STORAGE_KEY = "lyrania-mod-suite:update-check";
@@ -158,6 +158,28 @@
 
     if (gameRow.parentElement !== holder) holder.appendChild(gameRow);
     if (chatRow.parentElement !== holder) holder.appendChild(chatRow);
+
+    // Keep the original popup geometry, but place its top-level containers
+    // after the game shell so 4.0's newer stacking contexts cannot paint over
+    // them. Reordering existing body children does not change their layout.
+    const popupContainer = document.getElementById("popupcontainer");
+    const popupCloser = document.getElementById("popupcloser");
+    if (popupContainer?.parentElement === document.body) {
+      if (popupCloser?.parentElement === document.body) {
+        document.body.appendChild(popupCloser);
+      }
+      document.body.appendChild(popupContainer);
+    }
+    popupContainer?.style.setProperty(
+      "z-index",
+      "2147483000",
+      "important",
+    );
+    popupCloser?.style.setProperty(
+      "z-index",
+      "2147482999",
+      "important",
+    );
 
     // The theme keeps the centered 3.1 popup geometry, so prevent 4.0's
     // top-bar drag handler from writing a conflicting inline position.
