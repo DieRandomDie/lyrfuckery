@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.22.4
+// @version      2.23.0
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -57,8 +57,11 @@
     // Gives inventory its own request so it cannot interrupt battle actions.
     isolatedInventoryRequests: true,
 
-    // Closes genuine game popups when a click starts and ends outside them.
-    popupOutsideClose: true,
+    // Condenses battle results without removing live counters or controls.
+    compactBattleResults: true,
+
+    // Places menu content beside Equipment instead of over the game.
+    inlinePopupDock: true,
 
     // Summarizes dungeon rooms and hides non-chest map icons.
     dungeonMapSummary: true,
@@ -66,11 +69,11 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.22.4";
+  const SCRIPT_VERSION = "2.23.0";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.7.3";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.8.0";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const CHAT_SETTINGS_STORAGE_KEY =
     "lyrania-mod-suite:chat-channel-settings";
@@ -164,81 +167,6 @@
     if (gameRow.parentElement !== holder) holder.appendChild(gameRow);
     if (chatRow.parentElement !== holder) holder.appendChild(chatRow);
 
-    // Keep the original popup geometry, but place its top-level containers
-    // after the game shell so 4.0's newer stacking contexts cannot paint over
-    // them. Reordering existing body children does not change their layout.
-    const popupContainer = document.getElementById("popupcontainer");
-    const popupCloser = document.getElementById("popupcloser");
-    if (popupContainer?.parentElement === document.body) {
-      if (popupCloser?.parentElement === document.body) {
-        document.body.appendChild(popupCloser);
-      }
-      document.body.appendChild(popupContainer);
-    }
-    popupContainer?.style.setProperty(
-      "z-index",
-      "2147483000",
-      "important",
-    );
-    popupCloser?.style.setProperty(
-      "z-index",
-      "2147482999",
-      "important",
-    );
-
-    // Lyrania 4's draggable popup can be composited below the mod's sticky
-    // inventory column even when the popup shell has the larger z-index.
-    // A manual popover places the existing shell in the browser top layer;
-    // the theme resets the popover defaults to the shell's original geometry.
-    if (typeof popupContainer?.showPopover === "function") {
-      Object.assign(popupContainer.style, {
-        position: "fixed",
-        inset: "0px",
-        boxSizing: "border-box",
-        width: "100%",
-        height: "100dvh",
-        maxWidth: "none",
-        maxHeight: "none",
-        margin: "0px",
-        padding: "0px",
-        overflow: "hidden",
-        border: "0px",
-        color: "inherit",
-        background: "transparent",
-        pointerEvents: "none",
-      });
-      popupContainer.setAttribute("popover", "manual");
-      try {
-        if (!popupContainer.matches(":popover-open")) {
-          popupContainer.showPopover();
-        }
-      } catch (error) {
-        popupContainer.removeAttribute("popover");
-        console.warn(
-          `[${SCRIPT_ID}] Could not promote the Lyrania 4 popup to the top layer.`,
-          error,
-        );
-      }
-    }
-
-    // The theme keeps the centered 3.1 popup geometry, so prevent 4.0's
-    // top-bar drag handler from writing a conflicting inline position.
-    const popupTopbar = document.getElementById("popuptopbar");
-    if (popupTopbar && !popupTopbar.dataset.lyraniaFixedPopup) {
-      popupTopbar.dataset.lyraniaFixedPopup = "true";
-      popupTopbar.addEventListener(
-        "pointerdown",
-        (event) => {
-          if (
-            event.target.closest?.("a, button, input, select, option, label")
-          ) {
-            return;
-          }
-          event.stopImmediatePropagation();
-        },
-        true,
-      );
-    }
     return true;
   }
 
@@ -2628,95 +2556,217 @@
     return true;
   }
 
-  function initializePopupOutsideClose() {
-    if (!MODS.popupOutsideClose) return true;
-    const handlerAttribute = "data-lyrania-popup-outside-close-version";
-    if (
-      document.documentElement.getAttribute(handlerAttribute) === SCRIPT_VERSION
-    )
-      return true;
+  function compactBattleResults() {
+    const content = document.getElementById("content");
+    if (!content) return false;
 
-    let pointerStartedOutside = false;
+    const battle = content.querySelector(".battleContainer");
+    content.classList.toggle(
+      `${SCRIPT_ID}-compact-battle-results`,
+      Boolean(battle),
+    );
+    if (!battle) return false;
 
-    const getVisiblePopup = () => {
-      const holder = document.getElementById("popupholder");
-      if (!holder || getComputedStyle(holder).visibility !== "visible")
-        return null;
+    content.querySelectorAll("strong").forEach((label) => {
+      const text = label.textContent.trim().toLowerCase();
+      if (text === "dealt") label.textContent = "Dmg";
+      if (text === "taken") label.textContent = "Took";
+    });
 
-      const hasPopupContent = ["popup", "popupresponse"].some((id) => {
+    const lines = content.querySelectorAll(
+      ".flex-content > .text-center, .flex-content > .strong.text-center, .treausry_payout",
+    );
+    lines.forEach((line) => {
+      const text = line.textContent.replace(/\s+/g, " ").trim();
+      const setCompactText = (value) => {
+        const details = [...line.querySelectorAll("[title]")]
+          .map((element) => element.title.trim())
+          .filter(Boolean);
+        line.title = details.join(" · ") || text;
+        line.textContent = value;
+      };
+      let match;
+
+      const autos = line.querySelector("#autosLeft");
+      const mobs = line.querySelector("#mobsLeft");
+      if (autos && mobs) {
+        if (!text.startsWith("Auto ·")) {
+          line.replaceChildren("Auto · ", autos, " fights · ", mobs, " mobs");
+        }
+        return;
+      }
+
+      const bonus = line.querySelector(".bonus");
+      if (bonus && text.startsWith("***")) {
+        const time = text.match(/\(([^)]+?)(?:\s+left)?\)/i)?.[1];
+        line.replaceChildren(bonus, time ? ` · ${time}` : "");
+        return;
+      }
+
+      const dpProc = line.querySelector(".pet_proc");
+      if (dpProc && /dungeon points active/i.test(text)) {
+        const multiplier =
+          text.match(/\b(double|triple|quad(?:ruple)?|decuple)\b/i)?.[1] ||
+          "Bonus";
+        const multiplierLabels = {
+          double: "2×",
+          triple: "3×",
+          quad: "4×",
+          quadruple: "4×",
+          decuple: "10×",
+        };
+        const time = text.match(/\(([^)]+?)(?:\s+left)?\)/i)?.[1];
+        dpProc.textContent = `${multiplierLabels[multiplier.toLowerCase()] || multiplier} DP`;
+        line.replaceChildren(dpProc, time ? ` · ${time}` : "");
+        return;
+      }
+
+      match = text.match(/^You defeated .+ after ([\d,]+) rounds?\.?$/i);
+      if (match) {
+        setCompactText(`Win · ${match[1]} rounds`);
+        return;
+      }
+
+      match = text.match(
+        /^Guild Money:\s*(.*?)\s*-\s*Guild Exp:\s*(.*?)$/i,
+      );
+      if (match) {
+        setCompactText(`Guild · ${match[1]} · ${match[2]} XP`);
+        return;
+      }
+
+      match = text.match(/^Guild Statue Drops:\s*(.*)$/i);
+      if (match) {
+        setCompactText(`Drops · ${match[1]}`);
+        return;
+      }
+
+      match = text.match(/^Total DP per Kill:\s*(.*)$/i);
+      if (match) {
+        setCompactText(`DP/Kill · ${match[1]}`);
+        return;
+      }
+
+      match = text.match(
+        /^You have received\s+(.+?)\s+from the Dungeon Treasury\.?$/i,
+      );
+      if (match) setCompactText(`Treasury · ${match[1]}`);
+    });
+    return true;
+  }
+
+  function initializeCompactBattleResults() {
+    if (!MODS.compactBattleResults) return true;
+    const content = document.getElementById("content");
+    if (!content) return false;
+
+    let scheduled = false;
+    const update = () => {
+      scheduled = false;
+      compactBattleResults();
+    };
+    const schedule = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(update);
+    };
+
+    new MutationObserver(schedule).observe(content, {
+      childList: true,
+      subtree: true,
+    });
+    document.addEventListener("battleContentLoaded", schedule);
+    schedule();
+    return true;
+  }
+
+  function initializeInlinePopupDock() {
+    if (!MODS.inlinePopupDock) return true;
+    const middleSection = document.getElementById("middlesection");
+    const popupHolder = document.getElementById("popupholder");
+    if (!middleSection || !popupHolder) return false;
+
+    let dock = document.getElementById(`${SCRIPT_ID}-popup-dock`);
+    if (!dock) {
+      dock = document.createElement("section");
+      dock.id = `${SCRIPT_ID}-popup-dock`;
+      dock.setAttribute("aria-label", "Menu content");
+      dock.hidden = true;
+      middleSection.appendChild(dock);
+    }
+
+    const popupContainer = document.getElementById("popupcontainer");
+    try {
+      if (popupContainer?.matches?.(":popover-open")) {
+        popupContainer.hidePopover();
+      }
+    } catch {
+      // Older browsers do not expose the popover pseudo-class.
+    }
+    if (popupContainer) {
+      popupContainer.removeAttribute("popover");
+    }
+    document.getElementById("popupcloser")?.setAttribute("aria-hidden", "true");
+    dock.appendChild(popupHolder);
+    document.documentElement.classList.add(`${SCRIPT_ID}-inline-popup`);
+
+    const popupTopbar = document.getElementById("popuptopbar");
+    if (popupTopbar && !popupTopbar.dataset.lyraniaInlinePopup) {
+      popupTopbar.dataset.lyraniaInlinePopup = SCRIPT_VERSION;
+      popupTopbar.addEventListener(
+        "pointerdown",
+        (event) => {
+          if (
+            event.target.closest?.("a, button, input, select, option, label")
+          ) {
+            return;
+          }
+          event.stopImmediatePropagation();
+        },
+        true,
+      );
+    }
+
+    let scheduled = false;
+    const sync = () => {
+      scheduled = false;
+      const hasContent = ["popup", "popupresponse"].some((id) => {
         const node = document.getElementById(id);
         return node && (node.childElementCount > 0 || node.textContent.trim());
       });
-      return hasPopupContent ? holder : null;
+      const isOpen =
+        hasContent &&
+        popupHolder.style.visibility !== "hidden" &&
+        getComputedStyle(popupHolder).visibility !== "hidden";
+      dock.hidden = !isOpen;
+      dock.setAttribute("aria-hidden", String(!isOpen));
+      middleSection.classList.toggle(
+        `${SCRIPT_ID}-inline-popup-open`,
+        isOpen,
+      );
+    };
+    const schedule = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(sync);
     };
 
-    const isInventoryDockTarget = (target) =>
-      target instanceof Element &&
-      Boolean(target.closest(`#${SCRIPT_ID}-inventory-dock`));
-
-    const closeVisiblePopup = () => {
-      const holder = getVisiblePopup();
-      if (!holder) return false;
-      if (typeof window.closepage === "function") {
-        window.closepage();
-      } else {
-        holder.style.visibility = "hidden";
-      }
-      return true;
-    };
-
-    document.addEventListener(
-      "pointerdown",
-      (event) => {
-        const holder = getVisiblePopup();
-        pointerStartedOutside = Boolean(
-          holder &&
-          event.button === 0 &&
-          !holder.contains(event.target) &&
-          !isInventoryDockTarget(event.target),
-        );
-      },
-      true,
-    );
-
-    document.addEventListener(
-      "pointercancel",
-      () => {
-        pointerStartedOutside = false;
-      },
-      true,
-    );
-
-    document.addEventListener(
-      "click",
-      (event) => {
-        const holder = getVisiblePopup();
-        const shouldClose =
-          pointerStartedOutside &&
-          holder &&
-          !holder.contains(event.target) &&
-          !isInventoryDockTarget(event.target);
-        pointerStartedOutside = false;
-        if (!shouldClose) return;
-
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        closeVisiblePopup();
-      },
-      true,
-    );
-
+    new MutationObserver(schedule).observe(popupHolder, {
+      attributes: true,
+      attributeFilter: ["style"],
+      childList: true,
+      subtree: true,
+    });
     document.addEventListener(
       "keydown",
       (event) => {
-        if (event.key !== "Escape" || !getVisiblePopup()) return;
+        if (event.key !== "Escape" || dock.hidden) return;
         event.preventDefault();
-        closeVisiblePopup();
+        if (typeof window.closepage === "function") window.closepage();
       },
       true,
     );
-
-    document.documentElement.setAttribute(handlerAttribute, SCRIPT_VERSION);
+    schedule();
     return true;
   }
 
@@ -2928,7 +2978,8 @@
     initializePersistentLootLog,
     wrapIsolatedInventoryRequests,
     initializePersistentInventory,
-    initializePopupOutsideClose,
+    initializeCompactBattleResults,
+    initializeInlinePopupDock,
     initializeDungeonMapSummary,
     initializeActionTimerFix,
   ];
