@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.21.3
+// @version      2.21.4
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -63,11 +63,11 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.21.3";
+  const SCRIPT_VERSION = "2.21.4";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.6.6";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.6.7";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
   const UPDATE_CHECK_STORAGE_KEY = "lyrania-mod-suite:update-check";
@@ -180,6 +180,41 @@
       "2147482999",
       "important",
     );
+
+    // Lyrania 4's draggable popup can be composited below the mod's sticky
+    // inventory column even when the popup shell has the larger z-index.
+    // A manual popover places the existing shell in the browser top layer;
+    // the theme resets the popover defaults to the shell's original geometry.
+    if (typeof popupContainer?.showPopover === "function") {
+      Object.assign(popupContainer.style, {
+        position: "fixed",
+        inset: "0px",
+        boxSizing: "border-box",
+        width: "100%",
+        height: "100dvh",
+        maxWidth: "none",
+        maxHeight: "none",
+        margin: "0px",
+        padding: "0px",
+        overflow: "hidden",
+        border: "0px",
+        color: "inherit",
+        background: "transparent",
+        pointerEvents: "none",
+      });
+      popupContainer.setAttribute("popover", "manual");
+      try {
+        if (!popupContainer.matches(":popover-open")) {
+          popupContainer.showPopover();
+        }
+      } catch (error) {
+        popupContainer.removeAttribute("popover");
+        console.warn(
+          `[${SCRIPT_ID}] Could not promote the Lyrania 4 popup to the top layer.`,
+          error,
+        );
+      }
+    }
 
     // The theme keeps the centered 3.1 popup geometry, so prevent 4.0's
     // top-bar drag handler from writing a conflicting inline position.
