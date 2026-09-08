@@ -1,9 +1,9 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.7.3
+ * Version: 1.8.0
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision simplifies dungeon rooms and makes their counts easier to read.
+ * This revision compacts battles and docks menu content beside Equipment.
  * Lyrania Mod Suite 2.21.0+ uses this as its single stylesheet.
  *
  * Layouts
@@ -660,8 +660,10 @@ hr {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  font-size: 14px;
+  font-size: 11px;
+  line-height: 1.3;
   isolation: isolate;
+  --lyr-control-height: 30px;
 }
 
 #side1,
@@ -913,9 +915,9 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 5px;
+  gap: 4px;
   width: auto !important;
-  padding: 6px 8px !important;
+  padding: 4px 6px !important;
   border-bottom: 1px solid var(--lyr-border);
   background: rgba(255, 255, 255, 0.025);
 }
@@ -924,9 +926,14 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
   float: none !important;
 }
 
+#loadoutpotions select {
+  padding: 3px 6px;
+  font-size: 10.5px;
+}
+
 #timer {
-  min-height: 35px;
-  padding: 7px 8px 3px;
+  min-height: 26px;
+  padding: 4px 6px 2px;
   color: var(--lyr-text-soft);
   font-weight: 700;
   text-align: center;
@@ -937,14 +944,15 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
 }
 
 #main > div:has(> #mainnav) {
-  padding: 2px 8px 6px;
+  padding: 1px 6px 4px;
 }
 
 #mainnav {
   position: static !important;
   top: auto !important;
   z-index: auto !important;
-  min-width: min(240px, 100%);
+  min-width: min(180px, 100%);
+  font-size: 10.5px;
 }
 
 #content {
@@ -952,18 +960,88 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
   min-width: 0;
   min-height: 0;
   max-width: 100%;
-  padding: 7px 8px 10px;
+  padding: 5px 6px 7px;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
 }
 
 #content hr {
-  margin-block: 5px;
+  margin-block: 3px;
 }
 
 #content:empty {
   padding: 0;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results {
+  font-size: 10.5px;
+  line-height: 1.25;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results .battleContainer {
+  gap: 6px;
+  margin-bottom: 3px !important;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results
+  .battleContainer
+  > .flex {
+  min-width: 0;
+  padding-inline: 3px;
+  overflow-wrap: anywhere;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results
+  > .lrow
+  > .flex:empty {
+  display: none;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results
+  > .lrow
+  > .flex-content {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results
+  .flex-content
+  > div:first-child {
+  gap: 2px !important;
+  margin-bottom: 3px !important;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results
+  .flex-content
+  > div:first-child
+  > div {
+  gap: 2px 8px !important;
+  font-size: 9.5px;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results
+  .flex-content
+  > :is(.text-center, .treausry_payout) {
+  margin-block: 1px;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results
+  .flex-content
+  > br {
+  display: none;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results
+  :is(#stopauto, #stopauto input) {
+  min-height: 25px;
+}
+
+#content.lyrania-chat-enhancements-compact-battle-results #stopauto input {
+  padding: 3px 8px;
+  font-size: 10px;
 }
 
 #content
@@ -1798,158 +1876,140 @@ div.chatline:hover {
 }
 
 /* ------------------------------------------------------------------------- */
-/* Standard popups                                                           */
+/* Inline menu workspace                                                     */
 /* ------------------------------------------------------------------------- */
 
-#popupcontainer,
-#popupcloser {
-  width: 100%;
-  height: 100dvh;
+html.lyrania-chat-enhancements-inline-popup #popupcontainer,
+html.lyrania-chat-enhancements-inline-popup #popupcloser {
+  display: none !important;
 }
 
-#popupcontainer {
-  z-index: 5000;
+#lyrania-chat-enhancements-popup-dock[hidden] {
+  display: none !important;
 }
 
-#popupholder {
-  width: min(1040px, calc(100vw - 32px));
-  height: min(760px, calc(100dvh - 48px)) !important;
-  max-width: none;
-  max-height: none;
-  margin: 24px auto 0;
+#lyrania-chat-enhancements-popup-dock {
+  grid-area: popup;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   overflow: hidden;
   border: 1px solid var(--lyr-border-strong);
   border-radius: var(--lyr-radius-lg);
   color: var(--lyr-text);
-  background: rgba(11, 18, 27, 0.985);
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
-  backdrop-filter: blur(16px);
-  font-family: var(--lyr-font);
+  background: var(--lyr-surface-strong);
+  box-shadow: var(--lyr-shadow-soft);
 }
 
-/* Lyrania 4 can restore a draggable popup's saved inline position and size.
-   The mod keeps the centered 3.1 popup presentation and ignores those inline
-   layout values while active. */
-html[data-lyrania-game-major="4"] #popupholder {
-  position: relative !important;
+#lyrania-chat-enhancements-popup-dock #popupholder {
+  position: static !important;
   inset: auto !important;
-  width: min(1040px, calc(100vw - 32px)) !important;
-  margin: 24px auto 0 !important;
-}
-
-html[data-lyrania-game-major="4"] #popupcontainer {
-  z-index: 2147483000 !important;
-  isolation: isolate;
-}
-
-/* Lyrania 4 turns #popupholder into a draggable fixed layer. Promoting its
-   unchanged outer shell to the browser top layer prevents the persistent
-   Inventory column from painting over it. These declarations only neutralize
-   the browser's default popover box styles; #popupholder keeps its geometry. */
-html[data-lyrania-game-major="4"] #popupcontainer[popover] {
-  position: fixed !important;
-  inset: 0 !important;
-  box-sizing: border-box !important;
+  box-sizing: border-box;
   width: 100% !important;
-  height: 100dvh !important;
+  height: 100% !important;
   max-width: none !important;
   max-height: none !important;
   margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  border: 0 !important;
-  color: inherit !important;
-  background: transparent !important;
-  pointer-events: none !important;
+  overflow: hidden;
+  border: 0;
+  border-radius: inherit;
+  color: var(--lyr-text);
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--lyr-font);
+  font-size: 11.5px;
+  pointer-events: auto;
 }
 
-html[data-lyrania-game-major="4"] #popupcontainer[popover]::backdrop {
-  display: none;
+#lyrania-chat-enhancements-popup-dock #popupholder > div,
+#lyrania-chat-enhancements-popup-dock #popupholder > div > div {
+  height: 100% !important;
+  min-height: 0;
 }
 
-html[data-lyrania-game-major="4"] #popupcloser {
-  z-index: 2147482999 !important;
+#lyrania-chat-enhancements-popup-dock #popupholder > div > div {
+  position: relative !important;
+  display: flex;
+  flex-direction: column;
 }
 
-html[data-lyrania-game-major="4"]
-  #lyrania-chat-enhancements-inventory-dock {
-  z-index: 0 !important;
-}
-
-html[data-lyrania-game-major="4"] #popuptopbar {
+#lyrania-chat-enhancements-popup-dock #popuptopbar {
+  position: relative;
+  flex: 0 0 38px;
+  height: 38px;
+  border-bottom: 1px solid var(--lyr-border);
+  background: rgba(18, 29, 42, 0.98);
   cursor: default !important;
 }
 
-html[data-lyrania-game-major="4"] #popupresizehandle {
-  display: none !important;
+#lyrania-chat-enhancements-popup-dock #popuptopbar > div:first-child {
+  margin: 3px 0 0 4px !important;
 }
 
-/* The dungeon map is a popup, so give it most of the viewport without
-   increasing the normal battle action area's compact height. */
-#popupholder:has(#dungeonmapcontainer) {
-  width: min(1180px, calc(100vw - 8px));
-  height: calc(100dvh - 8px) !important;
-  margin-top: 4px;
+#lyrania-chat-enhancements-popup-dock #popupnav {
+  min-width: 145px;
+  max-width: calc(100% - 68px);
+  min-height: 30px;
+  font-size: 10.5px;
 }
 
-html[data-lyrania-game-major="4"]
-  #popupholder:has(#dungeonmapcontainer) {
-  width: min(1180px, calc(100vw - 8px)) !important;
-  margin-top: 4px !important;
+#lyrania-chat-enhancements-popup-dock #popupclosetextcontainer {
+  right: 4px;
+  margin-top: 3px;
+  font-size: 10px;
 }
 
-#popuptopbar {
-  height: 44px;
-  border-bottom: 1px solid var(--lyr-border);
-  background: rgba(18, 29, 42, 0.98);
-}
-
-#popuptopbar > div:first-child {
-  margin: 4px 0 0 6px !important;
-}
-
-#popupnav {
-  min-width: 190px;
-}
-
-#popupclosetextcontainer {
-  right: 9px;
-  margin-top: 5px;
-}
-
-#popupclosetextcontainer a {
+#lyrania-chat-enhancements-popup-dock #popupclosetextcontainer a {
   display: block;
-  min-height: 34px;
-  padding: 7px 10px;
+  min-height: 30px;
+  padding: 5px 7px;
   border: 1px solid var(--lyr-border);
-  border-radius: 7px;
+  border-radius: 6px;
   color: var(--lyr-text);
   background: rgba(255, 255, 255, 0.035);
   line-height: 18px;
 }
 
-#popupclosetextcontainer font {
+#lyrania-chat-enhancements-popup-dock #popupclosetextcontainer font {
   color: inherit !important;
 }
 
-#popuprescontainer {
-  top: 44px;
+#lyrania-chat-enhancements-popup-dock #popuprescontainer {
+  position: relative !important;
+  inset: auto !important;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
-#popupresdisplay {
-  padding: 14px;
-  overflow-x: hidden !important;
+#lyrania-chat-enhancements-popup-dock #popupresdisplay {
+  position: absolute;
+  inset: 0;
+  padding: 8px;
+  overflow: auto !important;
+  overscroll-behavior: contain;
   background: transparent;
 }
 
-#popup,
-#popupresponse {
+#lyrania-chat-enhancements-popup-dock :is(#popup, #popupresponse) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  overflow-x: hidden;
+  overflow: visible;
   color: var(--lyr-text);
   background: transparent;
+}
+
+#lyrania-chat-enhancements-popup-dock #popupresizehandle {
+  display: none !important;
+}
+
+#lyrania-chat-enhancements-popup-dock .mapLayout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .glt-elm,
@@ -3522,20 +3582,15 @@ a.text-fail {
     zoom: 1.2;
   }
 
-  #popupholder {
-    width: calc(100vw - 12px);
-    height: calc(100dvh - 12px) !important;
-    margin: 6px auto 0;
-    border-radius: 12px;
+  #lyrania-chat-enhancements-popup-dock {
+    order: 4;
+    width: 100%;
+    height: min(620px, 72dvh);
+    min-height: 420px;
   }
 
-  html[data-lyrania-game-major="4"] #popupholder {
-    width: calc(100vw - 12px) !important;
-    margin: 6px auto 0 !important;
-  }
-
-  #popupresdisplay {
-    padding: 9px;
+  #lyrania-chat-enhancements-popup-dock #popupresdisplay {
+    padding: 6px;
   }
 }
 
@@ -3862,8 +3917,11 @@ html.lyrania-chat-enhancements-compact-header
 
 @media (min-width: 800px) {
   html.lyrania-chat-enhancements-compact-header #middlesection {
-    grid-template-columns: minmax(0, 1fr) clamp(142px, 8vw, 154px);
-    grid-template-areas: "main side2";
+    grid-template-columns:
+      clamp(380px, 29vw, 560px)
+      clamp(136px, 8vw, 154px)
+      minmax(260px, 1fr);
+    grid-template-areas: "main side2 popup";
     height: var(--lyr-workspace-height) !important;
   }
 
@@ -3880,6 +3938,14 @@ html.lyrania-chat-enhancements-compact-header
     min-height: 0;
     max-height: 100%;
     overflow-y: auto !important;
+  }
+
+  html.lyrania-chat-enhancements-compact-header
+    #middlesection
+    #lyrania-chat-enhancements-popup-dock {
+    grid-area: popup;
+    height: 100%;
+    min-height: 0;
   }
 }
 
