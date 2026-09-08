@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.21.0
+// @version      2.21.1
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -63,7 +63,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.21.0";
+  const SCRIPT_VERSION = "2.21.1";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -849,6 +849,7 @@
     let manualCombatPendingContinue = false;
     let allowNextMoblistCooldown = false;
     let navigationAcceptsRequestedCooldown = false;
+    let centralMenuPreservesAuto = false;
 
     function currentDeadline() {
       try {
@@ -1168,12 +1169,31 @@
     );
 
     wrap("performnav", (original, context, args) => {
+      const menuItem = Number(args[0]);
       clearManualCombatCycle();
-      beginNavigation(true, false);
-      return original.apply(context, args);
+      if (menuItem === 8 || menuItem === 9) {
+        beginNavigation(true, false);
+        return original.apply(context, args);
+      }
+
+      if (
+        menuItem === 1 &&
+        typeof window.saveAutoBattleResumeState === "function"
+      ) {
+        window.saveAutoBattleResumeState();
+      }
+
+      centralMenuPreservesAuto = true;
+      try {
+        return original.apply(context, args);
+      } finally {
+        centralMenuPreservesAuto = false;
+      }
     });
     ["moblist", "improvedmoblist"].forEach((name) =>
       wrap(name, (original, context, args) => {
+        if (centralMenuPreservesAuto) return original.apply(context, args);
+
         const acceptRequestedCooldown = allowNextMoblistCooldown;
         clearManualCombatCycle();
         beginNavigation(false, acceptRequestedCooldown);
