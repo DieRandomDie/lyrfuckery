@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.23.3
+// @version      2.23.5
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -69,7 +69,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.23.3";
+  const SCRIPT_VERSION = "2.23.5";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -2346,6 +2346,10 @@
 
     dock = document.createElement("aside");
     dock.id = `${SCRIPT_ID}-inventory-dock`;
+    // Lyrania exempts .lrow descendants from its outside-popup close handler.
+    // Marking the dock as part of that workspace keeps inventory clicks from
+    // clearing the independently retained menu pane.
+    dock.classList.add("lrow");
     dock.setAttribute("aria-labelledby", `${SCRIPT_ID}-inventory-title`);
     dock.setAttribute("aria-busy", "true");
     dock.innerHTML = `
@@ -2864,26 +2868,89 @@
       true,
     );
 
-    let retainedMenuRequested = false;
-    const openRetainedMenu = () => {
+    const retainedMenuHasLoaded = () => {
+      const retainedValue = dock.dataset.retainedMenuValue;
+      const hasContent = ["popup", "popupresponse"].some((id) => {
+        const node = document.getElementById(id);
+        return node && (node.childElementCount > 0 || node.textContent.trim());
+      });
+      return (
+        hasContent &&
+        popupHolder.style.visibility !== "hidden" &&
+        getComputedStyle(popupHolder).visibility !== "hidden" &&
+        popupNav?.value === retainedValue
+      );
+    };
+    const nativePageRequestIsBusy = () => {
+      const request = window.xmlhttp;
+      return Boolean(
+        request &&
+          request.readyState > XMLHttpRequest.UNSENT &&
+          request.readyState < XMLHttpRequest.DONE,
+      );
+    };
+
+    let retainedMenuLoadStarted = false;
+    let retainedMenuLoadFinished = false;
+    let retainedMenuLoadAttempts = 0;
+    let retainedMenuLoadTimer = 0;
+    const maximumRetainedMenuLoadAttempts = 4;
+
+    const verifyRetainedMenuLoad = () => {
+      retainedMenuLoadTimer = 0;
+      if (menuChangedByUser || retainedMenuLoadFinished) return;
+      if (retainedMenuHasLoaded()) {
+        retainedMenuLoadFinished = true;
+        return;
+      }
+      if (nativePageRequestIsBusy()) {
+        retainedMenuLoadTimer = window.setTimeout(
+          verifyRetainedMenuLoad,
+          250,
+        );
+        return;
+      }
+      if (retainedMenuLoadAttempts >= maximumRetainedMenuLoadAttempts) return;
+      retainedMenuLoadTimer = window.setTimeout(openRetainedMenu, 1250);
+    };
+
+    function openRetainedMenu() {
+      retainedMenuLoadTimer = 0;
       if (
-        retainedMenuRequested ||
         menuChangedByUser ||
+        retainedMenuLoadFinished ||
         typeof window.performnav !== "function"
       ) {
         return;
       }
-      retainedMenuRequested = true;
+      if (retainedMenuHasLoaded()) {
+        retainedMenuLoadFinished = true;
+        return;
+      }
+      if (nativePageRequestIsBusy()) {
+        retainedMenuLoadTimer = window.setTimeout(openRetainedMenu, 250);
+        return;
+      }
+      if (retainedMenuLoadAttempts >= maximumRetainedMenuLoadAttempts) return;
+
+      retainedMenuLoadAttempts += 1;
       window.performnav(
         Number.parseInt(dock.dataset.retainedMenuValue, 10),
       );
+      retainedMenuLoadTimer = window.setTimeout(verifyRetainedMenuLoad, 250);
+    }
+
+    const startRetainedMenuLoad = () => {
+      if (retainedMenuLoadStarted || menuChangedByUser) return;
+      retainedMenuLoadStarted = true;
+      openRetainedMenu();
     };
     document.addEventListener(
       "battleContentLoaded",
-      () => window.setTimeout(openRetainedMenu, 0),
+      () => window.setTimeout(startRetainedMenuLoad, 1800),
       { once: true },
     );
-    window.setTimeout(openRetainedMenu, 1200);
+    window.setTimeout(startRetainedMenuLoad, 4500);
     schedule();
     return true;
   }
