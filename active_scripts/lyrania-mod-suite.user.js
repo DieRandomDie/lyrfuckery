@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.23.0
+// @version      2.23.1
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -69,14 +69,16 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.23.0";
+  const SCRIPT_VERSION = "2.23.1";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.8.0";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.8.1";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const CHAT_SETTINGS_STORAGE_KEY =
     "lyrania-mod-suite:chat-channel-settings";
+  const MENU_SELECTION_STORAGE_KEY =
+    "lyrania-mod-suite:last-menu-selection";
   const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
   const UPDATE_CHECK_STORAGE_KEY = "lyrania-mod-suite:update-check";
   const UPDATE_DISMISSED_STORAGE_KEY = "lyrania-mod-suite:update-dismissed";
@@ -2080,7 +2082,6 @@
   const INITIAL_INVENTORY_FALLBACK_DELAY_MS = 8000;
   const INITIAL_INVENTORY_RETRY_DELAY_MS = 2500;
   let pendingInventoryScroll = null;
-  let pendingInventoryPopupClose = false;
   let inventoryLoadWatchdog = 0;
   let initialInventoryRequestPending = false;
   let initialInventoryRetryUsed = false;
@@ -2292,7 +2293,6 @@
     window.clearTimeout(inventoryLoadWatchdog);
     if (!busy) return;
     inventoryLoadWatchdog = window.setTimeout(() => {
-      pendingInventoryPopupClose = false;
       pendingInventoryScroll = null;
       const current = getPersistentInventoryElements();
 
@@ -2410,8 +2410,7 @@
 
     const mainNav = document.getElementById("mainnav");
     if (mainNav) mainNav.value = "1";
-    hideInventoryPopupShell(shellWasInPopup || pendingInventoryPopupClose);
-    pendingInventoryPopupClose = false;
+    hideInventoryPopupShell(shellWasInPopup);
 
     requestAnimationFrame(() => {
       restorePersistentInventoryScroll(scroll, content, nextTab, restoreScroll);
@@ -2477,9 +2476,6 @@
       const { scroll } = getPersistentInventoryElements();
       const currentTab = getPersistentInventoryTab();
       const requestedTab = normalizeInventoryTab(args[0], currentTab);
-      pendingInventoryPopupClose = ["mainnav", "popupnav"].includes(
-        document.activeElement?.id,
-      );
       pendingInventoryScroll = {
         tab: requestedTab === currentTab ? currentTab : null,
         top: scroll?.scrollTop || 0,
@@ -2496,7 +2492,6 @@
       try {
         return originalInventorySimple.apply(this, args);
       } catch (error) {
-        pendingInventoryPopupClose = false;
         pendingInventoryScroll = null;
         setPersistentInventoryStatus(
           "Inventory could not be loaded. Use Refresh to try again.",
@@ -2691,9 +2686,10 @@
       dock = document.createElement("section");
       dock.id = `${SCRIPT_ID}-popup-dock`;
       dock.setAttribute("aria-label", "Menu content");
-      dock.hidden = true;
       middleSection.appendChild(dock);
     }
+    dock.hidden = false;
+    dock.setAttribute("aria-hidden", "false");
 
     const popupContainer = document.getElementById("popupcontainer");
     try {
@@ -2727,6 +2723,85 @@
       );
     }
 
+    const popupNav = document.getElementById("popupnav");
+    const mainNav = document.getElementById("mainnav");
+    const actionOnlyMenuValues = new Set(["1", "5", "8", "9"]);
+    const menuValueIsAvailable = (value) =>
+      !actionOnlyMenuValues.has(value) &&
+      Boolean(
+        popupNav &&
+          [...popupNav.options].some((option) => option.value === value),
+      );
+    const readRetainedMenuValue = () => {
+      try {
+        const storedValue = window.localStorage.getItem(
+          MENU_SELECTION_STORAGE_KEY,
+        );
+        if (storedValue && menuValueIsAvailable(storedValue)) {
+          return storedValue;
+        }
+      } catch (_error) {
+        // Storage may be unavailable in a restricted browser context.
+      }
+      return "3";
+    };
+    const retainMenuValue = (value) => {
+      const menuValue = Number.parseInt(value, 10);
+      const normalizedValue = String(menuValue);
+      if (
+        Number.isFinite(menuValue) &&
+        menuValueIsAvailable(normalizedValue)
+      ) {
+        dock.dataset.retainedMenuValue = normalizedValue;
+      }
+    };
+    const saveRetainedMenuValue = () => {
+      const retainedValue = dock.dataset.retainedMenuValue;
+      if (!menuValueIsAvailable(retainedValue)) return;
+      try {
+        window.localStorage.setItem(
+          MENU_SELECTION_STORAGE_KEY,
+          retainedValue,
+        );
+      } catch (_error) {
+        // The current pane still works when storage is unavailable.
+      }
+    };
+    dock.dataset.retainedMenuValue = readRetainedMenuValue();
+
+    const originalPerformNav = window.performnav;
+    if (
+      typeof originalPerformNav === "function" &&
+      !originalPerformNav.lyraniaInlinePopupNavVersion
+    ) {
+      const wrappedPerformNav = function (...args) {
+        const menuItem = Number.parseInt(args[0], 10);
+        if (menuItem === 5 && MODS.persistentInventory) {
+          if (popupNav) {
+            popupNav.value = dock.dataset.retainedMenuValue || "3";
+          }
+          if (mainNav) mainNav.value = "1";
+          if (typeof window.inventorySimple === "function") {
+            return window.inventorySimple(getPersistentInventoryTab());
+          }
+          return undefined;
+        }
+
+        retainMenuValue(menuItem);
+        return originalPerformNav.apply(this, args);
+      };
+      wrappedPerformNav.lyraniaInlinePopupNavVersion = SCRIPT_VERSION;
+      wrappedPerformNav.lyraniaOriginalPerformNav = originalPerformNav;
+      window.performnav = wrappedPerformNav;
+    }
+
+    let menuChangedByUser = false;
+    [mainNav, popupNav].forEach((control) => {
+      control?.addEventListener("change", (event) => {
+        if (event.isTrusted) menuChangedByUser = true;
+      });
+    });
+
     let scheduled = false;
     const sync = () => {
       scheduled = false;
@@ -2738,8 +2813,14 @@
         hasContent &&
         popupHolder.style.visibility !== "hidden" &&
         getComputedStyle(popupHolder).visibility !== "hidden";
-      dock.hidden = !isOpen;
-      dock.setAttribute("aria-hidden", String(!isOpen));
+      dock.hidden = false;
+      dock.setAttribute("aria-hidden", "false");
+      dock.classList.toggle(`${SCRIPT_ID}-popup-dock-empty`, !isOpen);
+      dock.dataset.state = isOpen ? "open" : "empty";
+      if (isOpen) {
+        retainMenuValue(popupNav?.value);
+        saveRetainedMenuValue();
+      }
       middleSection.classList.toggle(
         `${SCRIPT_ID}-inline-popup-open`,
         isOpen,
@@ -2760,12 +2841,33 @@
     document.addEventListener(
       "keydown",
       (event) => {
-        if (event.key !== "Escape" || dock.hidden) return;
+        if (event.key !== "Escape" || dock.dataset.state !== "open") return;
         event.preventDefault();
         if (typeof window.closepage === "function") window.closepage();
       },
       true,
     );
+
+    let retainedMenuRequested = false;
+    const openRetainedMenu = () => {
+      if (
+        retainedMenuRequested ||
+        menuChangedByUser ||
+        typeof window.performnav !== "function"
+      ) {
+        return;
+      }
+      retainedMenuRequested = true;
+      window.performnav(
+        Number.parseInt(dock.dataset.retainedMenuValue, 10),
+      );
+    };
+    document.addEventListener(
+      "battleContentLoaded",
+      () => window.setTimeout(openRetainedMenu, 0),
+      { once: true },
+    );
+    window.setTimeout(openRetainedMenu, 1200);
     schedule();
     return true;
   }
