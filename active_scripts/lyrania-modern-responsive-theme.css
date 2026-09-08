@@ -1,10 +1,10 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.6.2
+ * Version: 1.6.3
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision consolidates all mod-suite styling here and fixes equipment scrolling.
- * Lyrania Mod Suite 2.20.0+ uses this as its single stylesheet.
+ * This revision adds Lyrania 4.0 compatibility while preserving the 3.1 layout.
+ * Lyrania Mod Suite 2.21.0+ uses this as its single stylesheet.
  *
  * Layouts
  *   Full width : 1440px and wider — game workspace + sticky inventory rail
@@ -96,7 +96,11 @@
   border-top: 1px solid rgba(255, 255, 255, 0.25);
   padding-top: 5px;
 }
-#chat_row.lyrania-chat-enhancements-layout #chat > .chatToggleButton {
+#chat_row.lyrania-chat-enhancements-layout #chat > .chatToggleButton,
+html[data-lyrania-game-major="4"]
+  #chat_row.lyrania-chat-enhancements-layout
+  #chat
+  .chatToggleButton {
   display: none !important;
 }
 #chat_row.lyrania-chat-enhancements-layout > #chat {
@@ -722,6 +726,18 @@ hr {
 #header .headernav a {
   display: inline-block;
   padding-block: 1px;
+}
+
+html[data-lyrania-game-major="4"] #header .cc-nav-group-label {
+  color: var(--lyr-text-soft);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+html[data-lyrania-game-major="4"] #header .cc-nav-divider {
+  color: var(--lyr-text-faint);
 }
 
 #schemediv1:empty {
@@ -1695,12 +1711,36 @@ div.chatline:hover {
   backdrop-filter: blur(16px);
 }
 
+/* Lyrania 4 can restore a draggable popup's saved inline position and size.
+   The mod keeps the centered 3.1 popup presentation and ignores those inline
+   layout values while active. */
+html[data-lyrania-game-major="4"] #popupholder {
+  position: relative !important;
+  inset: auto !important;
+  width: min(1040px, calc(100vw - 32px)) !important;
+  margin: 24px auto 0 !important;
+}
+
+html[data-lyrania-game-major="4"] #popuptopbar {
+  cursor: default !important;
+}
+
+html[data-lyrania-game-major="4"] #popupresizehandle {
+  display: none !important;
+}
+
 /* The dungeon map is a popup, so give it most of the viewport without
    increasing the normal battle action area's compact height. */
 #popupholder:has(#dungeonmapcontainer) {
   width: min(1180px, calc(100vw - 8px));
   height: calc(100dvh - 8px) !important;
   margin-top: 4px;
+}
+
+html[data-lyrania-game-major="4"]
+  #popupholder:has(#dungeonmapcontainer) {
+  width: min(1180px, calc(100vw - 8px)) !important;
+  margin-top: 4px !important;
 }
 
 #popuptopbar {
@@ -3332,6 +3372,11 @@ a.text-fail {
     height: calc(100dvh - 12px) !important;
     margin: 6px auto 0;
     border-radius: 12px;
+  }
+
+  html[data-lyrania-game-major="4"] #popupholder {
+    width: calc(100vw - 12px) !important;
+    margin: 6px auto 0 !important;
   }
 
   #popupresdisplay {
