@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.23.6
+// @version      2.23.7
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -69,7 +69,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.23.6";
+  const SCRIPT_VERSION = "2.23.7";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -2789,6 +2789,53 @@
     };
     dock.dataset.retainedMenuValue = readRetainedMenuValue();
 
+    let nativeMenuCloseSuppressionDepth = 0;
+    const originalClosePage = window.closepage;
+    if (
+      typeof originalClosePage === "function" &&
+      !originalClosePage.lyraniaInlinePopupCloseVersion
+    ) {
+      const wrappedClosePage = function (...args) {
+        if (nativeMenuCloseSuppressionDepth > 0) return undefined;
+        return originalClosePage.apply(this, args);
+      };
+      wrappedClosePage.lyraniaInlinePopupCloseVersion = SCRIPT_VERSION;
+      wrappedClosePage.lyraniaOriginalClosePage = originalClosePage;
+      window.closepage = wrappedClosePage;
+    }
+
+    const preserveMenuDuring = (callback) => {
+      nativeMenuCloseSuppressionDepth += 1;
+      try {
+        return callback();
+      } finally {
+        nativeMenuCloseSuppressionDepth = Math.max(
+          0,
+          nativeMenuCloseSuppressionDepth - 1,
+        );
+      }
+    };
+
+    const preserveMenuDuringSharedRequest = (callback) => {
+      const result = callback();
+      const request = window.xmlhttp;
+      const readyStateChange = request?.onreadystatechange;
+      if (
+        typeof readyStateChange === "function" &&
+        !readyStateChange.lyraniaInlinePopupPreserveVersion
+      ) {
+        const wrappedReadyStateChange = function (...args) {
+          return preserveMenuDuring(() =>
+            readyStateChange.apply(this, args),
+          );
+        };
+        wrappedReadyStateChange.lyraniaInlinePopupPreserveVersion =
+          SCRIPT_VERSION;
+        request.onreadystatechange = wrappedReadyStateChange;
+      }
+      return result;
+    };
+
     const originalPerformNav = window.performnav;
     if (
       typeof originalPerformNav === "function" &&
@@ -2807,12 +2854,43 @@
           return undefined;
         }
 
+        if ([1, 8, 9].includes(menuItem)) {
+          try {
+            return preserveMenuDuring(() =>
+              originalPerformNav.apply(this, args),
+            );
+          } finally {
+            if (popupNav) {
+              popupNav.value = dock.dataset.retainedMenuValue || "3";
+            }
+          }
+        }
+
         retainMenuValue(menuItem);
         return originalPerformNav.apply(this, args);
       };
       wrappedPerformNav.lyraniaInlinePopupNavVersion = SCRIPT_VERSION;
       wrappedPerformNav.lyraniaOriginalPerformNav = originalPerformNav;
       window.performnav = wrappedPerformNav;
+    }
+
+    const originalGuildPage = window.guildpage;
+    if (
+      typeof originalGuildPage === "function" &&
+      !originalGuildPage.lyraniaInlinePopupNavVersion
+    ) {
+      const wrappedGuildPage = function (...args) {
+        const guildPage = Number.parseInt(args[0], 10);
+        if (![11, 12, 13].includes(guildPage)) {
+          return originalGuildPage.apply(this, args);
+        }
+        return preserveMenuDuringSharedRequest(() =>
+          originalGuildPage.apply(this, args),
+        );
+      };
+      wrappedGuildPage.lyraniaInlinePopupNavVersion = SCRIPT_VERSION;
+      wrappedGuildPage.lyraniaOriginalGuildPage = originalGuildPage;
+      window.guildpage = wrappedGuildPage;
     }
 
     let menuChangedByUser = false;
