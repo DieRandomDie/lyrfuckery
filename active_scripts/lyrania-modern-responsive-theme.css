@@ -1,9 +1,9 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.7.1
+ * Version: 1.7.2
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision reorganizes and resizes the shared compact header.
+ * This revision restores the shared grouped menu as a static header panel.
  * Lyrania Mod Suite 2.21.0+ uses this as its single stylesheet.
  *
  * Layouts
@@ -3549,8 +3549,6 @@ a.text-fail {
 /* ------------------------------------------------------------------------- */
 
 html.lyrania-chat-enhancements-compact-header #header {
-  position: relative;
-  z-index: 100;
   container-name: lyr-header;
   container-type: inline-size;
 }
@@ -3595,7 +3593,7 @@ html.lyrania-chat-enhancements-compact-header
   display: grid !important;
   grid-template-columns:
     minmax(215px, 1.35fr)
-    minmax(220px, 1.45fr)
+    minmax(185px, 1.2fr)
     minmax(155px, 1fr)
     minmax(135px, 0.9fr);
   grid-template-areas: "server jobs bonuses counts";
@@ -3638,7 +3636,7 @@ html.lyrania-chat-enhancements-compact-header
   #side1.lyrania-chat-enhancements-header-status
   > .lyrania-chat-enhancements-status-jobs {
   grid-area: jobs;
-  min-width: 220px;
+  min-width: 185px;
 }
 
 #header
@@ -3709,68 +3707,15 @@ html.lyrania-chat-enhancements-compact-header
 }
 
 #header .lyrania-chat-enhancements-header-menu {
-  position: relative;
-  z-index: 110;
   grid-area: menu;
-  min-height: 44px;
-  padding: 5px 6px;
-  overflow: visible;
-}
-
-#lyrania-chat-enhancements-header-menu-details {
-  position: relative;
-  width: 100%;
-}
-
-#lyrania-chat-enhancements-header-menu-details > summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 32px;
-  padding: 6px 9px;
-  border: 1px solid var(--lyr-border-strong);
-  border-radius: var(--lyr-radius-sm);
-  color: var(--lyr-text);
-  background: var(--lyr-surface-soft);
-  font-weight: 700;
-  list-style: none;
-  cursor: pointer;
-  user-select: none;
-}
-
-#lyrania-chat-enhancements-header-menu-details > summary::-webkit-details-marker {
-  display: none;
-}
-
-#lyrania-chat-enhancements-header-menu-details > summary::after {
-  content: "▾";
-  margin-left: 10px;
-  color: var(--lyr-text-soft);
-  transition: transform 140ms ease;
-}
-
-#lyrania-chat-enhancements-header-menu-details[open] > summary::after {
-  transform: rotate(180deg);
-}
-
-#lyrania-chat-enhancements-header-menu-details > summary:hover {
-  border-color: var(--lyr-accent);
-  background: var(--lyr-surface-hover);
+  min-height: 136px;
+  padding: 9px 10px;
 }
 
 #lyrania-chat-enhancements-header-menu-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 120;
-  width: min(330px, calc(100vw - 20px));
-  padding: 9px 11px;
-  border: 1px solid var(--lyr-border-strong);
-  border-radius: var(--lyr-radius);
-  background: rgba(11, 18, 27, 0.995);
-  box-shadow: var(--lyr-shadow);
-  font-size: 12px;
-  line-height: 1.65;
+  width: 100%;
+  font-size: 11px;
+  line-height: 1.55;
   text-align: left;
 }
 
@@ -3828,9 +3773,9 @@ html.lyrania-chat-enhancements-compact-header
     #header
     > .lyrania-chat-enhancements-compact-header-row {
     grid-template-columns:
-      minmax(0, 1fr)
-      minmax(0, 1fr)
-      minmax(90px, 0.42fr);
+      minmax(240px, 1fr)
+      minmax(195px, 0.82fr)
+      minmax(225px, 0.94fr);
     grid-template-areas:
       "character resources menu"
       "status status status";
@@ -3844,9 +3789,9 @@ html.lyrania-chat-enhancements-compact-header
     > .lyrania-chat-enhancements-compact-header-row {
     grid-template-columns:
       minmax(240px, 1fr)
-      minmax(240px, 1fr)
-      minmax(0, 3.4fr)
-      minmax(90px, 0.42fr);
+      minmax(195px, 0.82fr)
+      minmax(0, 3fr)
+      minmax(225px, 0.94fr);
     grid-template-areas: "character resources status menu";
     grid-template-rows: minmax(136px, auto);
   }
