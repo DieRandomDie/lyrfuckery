@@ -1,6 +1,6 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.6.6
+ * Version: 1.6.7
  *
  * Plain custom CSS: load this after Lyrania's own styles.
  * This revision fixes Lyrania 4.0 popup stacking while preserving the 3.1 layout.
@@ -1724,6 +1724,31 @@ html[data-lyrania-game-major="4"] #popupholder {
 html[data-lyrania-game-major="4"] #popupcontainer {
   z-index: 2147483000 !important;
   isolation: isolate;
+}
+
+/* Lyrania 4 turns #popupholder into a draggable fixed layer. Promoting its
+   unchanged outer shell to the browser top layer prevents the persistent
+   Inventory column from painting over it. These declarations only neutralize
+   the browser's default popover box styles; #popupholder keeps its geometry. */
+html[data-lyrania-game-major="4"] #popupcontainer[popover] {
+  position: fixed !important;
+  inset: 0 !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  color: inherit !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+
+html[data-lyrania-game-major="4"] #popupcontainer[popover]::backdrop {
+  display: none;
 }
 
 html[data-lyrania-game-major="4"] #popupcloser {
