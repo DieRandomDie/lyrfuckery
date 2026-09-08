@@ -1,9 +1,9 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.7.0
+ * Version: 1.7.1
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision gives 3.1 and 4.0 the same compact header and font metrics.
+ * This revision reorganizes and resizes the shared compact header.
  * Lyrania Mod Suite 2.21.0+ uses this as its single stylesheet.
  *
  * Layouts
@@ -3551,6 +3551,8 @@ a.text-fail {
 html.lyrania-chat-enhancements-compact-header #header {
   position: relative;
   z-index: 100;
+  container-name: lyr-header;
+  container-type: inline-size;
 }
 
 html.lyrania-chat-enhancements-compact-header
@@ -3572,6 +3574,18 @@ html.lyrania-chat-enhancements-compact-header
   grid-area: resources;
 }
 
+#header
+  :is(
+    .lyrania-chat-enhancements-header-character,
+    .lyrania-chat-enhancements-header-resources
+  ) {
+  height: auto;
+  min-height: 136px;
+  max-height: none;
+  overflow: visible;
+  line-height: 1.55;
+}
+
 #header .lyrania-chat-enhancements-header-removed {
   display: none !important;
 }
@@ -3579,13 +3593,18 @@ html.lyrania-chat-enhancements-compact-header
 #header #side1.lyrania-chat-enhancements-header-status {
   grid-area: status;
   display: grid !important;
-  grid-template-columns: repeat(6, minmax(118px, 1fr));
+  grid-template-columns:
+    minmax(215px, 1.35fr)
+    minmax(220px, 1.45fr)
+    minmax(155px, 1fr)
+    minmax(135px, 0.9fr);
+  grid-template-areas: "server jobs bonuses counts";
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
   width: 100% !important;
-  height: 118px !important;
-  min-height: 118px;
-  max-height: 118px;
+  height: 136px !important;
+  min-height: 136px;
+  max-height: 136px;
   padding: 7px;
   overflow-x: auto !important;
   overflow-y: hidden !important;
@@ -3611,6 +3630,31 @@ html.lyrania-chat-enhancements-compact-header
 
 #header
   #side1.lyrania-chat-enhancements-header-status
+  > .lyrania-chat-enhancements-status-server {
+  grid-area: server;
+}
+
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  > .lyrania-chat-enhancements-status-jobs {
+  grid-area: jobs;
+  min-width: 220px;
+}
+
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  > .lyrania-chat-enhancements-status-bonuses {
+  grid-area: bonuses;
+}
+
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  > .lyrania-chat-enhancements-status-counts {
+  grid-area: counts;
+}
+
+#header
+  #side1.lyrania-chat-enhancements-header-status
   :is(#tstimer, #usersmartinfo, #bonusdisplays, #sidecounter, #questtracker) {
   font-size: 11px !important;
   line-height: 1.35 !important;
@@ -3620,8 +3664,48 @@ html.lyrania-chat-enhancements-compact-header
   margin-top: 0 !important;
 }
 
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  > .lyrania-chat-enhancements-status-jobs,
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  > .lyrania-chat-enhancements-status-jobs * {
+  white-space: nowrap;
+}
+
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  > :is(
+    .lyrania-chat-enhancements-status-server,
+    .lyrania-chat-enhancements-status-bonuses,
+    .lyrania-chat-enhancements-status-counts
+  ) {
+  white-space: nowrap;
+}
+
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  .lyrania-chat-enhancements-status-server
+  #usersmartinfo {
+  margin-top: 2px;
+}
+
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  .lyrania-chat-enhancements-status-server
+  #usersmartinfo,
+#header
+  #side1.lyrania-chat-enhancements-header-status
+  .lyrania-chat-enhancements-status-server
+  #usersmartinfo
+  * {
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+
 #header #side1.lyrania-chat-enhancements-header-status #questtracker a {
-  padding: 3px 4px;
+  margin-top: 3px;
+  padding: 2px 4px;
 }
 
 #header .lyrania-chat-enhancements-header-menu {
@@ -3739,36 +3823,57 @@ html.lyrania-chat-enhancements-compact-header
   }
 }
 
-@media (min-width: 1100px) {
+@container lyr-header (min-width: 900px) {
   html.lyrania-chat-enhancements-compact-header
     #header
     > .lyrania-chat-enhancements-compact-header-row {
     grid-template-columns:
-      minmax(190px, 0.95fr)
-      minmax(200px, 1.05fr)
-      minmax(0, 3fr)
-      minmax(96px, 0.5fr);
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      minmax(90px, 0.42fr);
+    grid-template-areas:
+      "character resources menu"
+      "status status status";
+    grid-template-rows: minmax(136px, auto) 136px;
+  }
+}
+
+@container lyr-header (min-width: 1350px) {
+  html.lyrania-chat-enhancements-compact-header
+    #header
+    > .lyrania-chat-enhancements-compact-header-row {
+    grid-template-columns:
+      minmax(240px, 1fr)
+      minmax(240px, 1fr)
+      minmax(0, 3.4fr)
+      minmax(90px, 0.42fr);
     grid-template-areas: "character resources status menu";
-    grid-template-rows: 118px;
+    grid-template-rows: minmax(136px, auto);
+  }
+}
+
+@media (max-width: 799px) {
+  html.lyrania-chat-enhancements-compact-header
+    #header
+    #side1.lyrania-chat-enhancements-header-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "server counts"
+      "jobs jobs"
+      "bonuses bonuses";
+    grid-template-rows: auto;
+    height: auto !important;
+    max-height: none;
+    overflow: visible !important;
   }
 
   html.lyrania-chat-enhancements-compact-header
     #header
-    :is(
-      .lyrania-chat-enhancements-header-character,
-      .lyrania-chat-enhancements-header-resources,
-      .lyrania-chat-enhancements-header-menu
-    ) {
-    height: 118px;
-    min-height: 118px;
-    max-height: 118px;
-    overflow-y: auto;
-  }
-
-  html.lyrania-chat-enhancements-compact-header
-    #header
-    .lyrania-chat-enhancements-header-menu {
-    overflow: visible;
+    #side1.lyrania-chat-enhancements-header-status
+    > div {
+    height: auto;
+    min-height: 88px;
+    overflow: visible auto;
   }
 }
 
@@ -3782,6 +3887,17 @@ html.lyrania-chat-enhancements-compact-header
       "resources"
       "status"
       "menu";
+  }
+
+  html.lyrania-chat-enhancements-compact-header
+    #header
+    #side1.lyrania-chat-enhancements-header-status {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "server"
+      "jobs"
+      "bonuses"
+      "counts";
   }
 }
 
