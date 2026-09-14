@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.23.8
+// @version      2.23.9
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -69,7 +69,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.23.8";
+  const SCRIPT_VERSION = "2.23.9";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -2416,6 +2416,17 @@
     const { dock, status, refresh, scroll, content } =
       getPersistentInventoryElements();
     if (!dock || !scroll || !content || !shell) return false;
+
+    // Settings also uses id="misc". Namespace the persistent inventory copy
+    // so its always-mounted tab cannot capture Settings' Misc controls.
+    const miscTab = shell.querySelector("#misc");
+    if (miscTab) {
+      const miscTabId = `${SCRIPT_ID}-inventory-misc-tab`;
+      miscTab.id = miscTabId;
+      shell.querySelectorAll('label[for="misc"]').forEach((label) => {
+        label.htmlFor = miscTabId;
+      });
+    }
 
     const shellWasInPopup = Boolean(
       document.getElementById("popup")?.contains(shell),
