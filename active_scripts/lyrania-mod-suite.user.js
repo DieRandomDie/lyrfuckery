@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.23.10
+// @version      2.23.11
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -69,7 +69,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.23.10";
+  const SCRIPT_VERSION = "2.23.11";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -2151,6 +2151,11 @@
     const readChecked = (id) => Boolean(document.getElementById(id)?.checked);
 
     const wrappedInventorySimple = function (...args) {
+      const requestedTab = String(args[0] || "").toLowerCase();
+      // Inventory tabs are name-based. Numeric values belong to Settings'
+      // sidebar menu IDs and must never be converted into inventory refreshes.
+      if (!INVENTORY_TABS.includes(requestedTab)) return undefined;
+
       const action = String(args[1] || "");
       const actionCode = Number.parseInt(args[2], 10);
       const popupScroll = document.getElementById("popupresdisplay");
@@ -2499,9 +2504,12 @@
     if (typeof originalInventorySimple !== "function") return false;
 
     const wrappedInventorySimple = function (...args) {
+      const requestedTabName = String(args[0] || "").toLowerCase();
+      if (!INVENTORY_TABS.includes(requestedTabName)) return undefined;
+
       const { scroll } = getPersistentInventoryElements();
       const currentTab = getPersistentInventoryTab();
-      const requestedTab = normalizeInventoryTab(args[0], currentTab);
+      const requestedTab = normalizeInventoryTab(requestedTabName, currentTab);
       pendingInventoryScroll = {
         tab: requestedTab === currentTab ? currentTab : null,
         top: scroll?.scrollTop || 0,
@@ -2849,15 +2857,6 @@
     ) {
       const wrappedPerformNav = function (...args) {
         const menuItem = Number.parseInt(args[0], 10);
-        const activeControl = document.activeElement;
-        const settingsControlInvokedMenuId = Boolean(
-          menuItem === 5 &&
-            activeControl &&
-            document.getElementById("content")?.contains(activeControl) &&
-            (mainNav?.value === "11" || popupNav?.value === "11"),
-        );
-        if (settingsControlInvokedMenuId) return undefined;
-
         if (menuItem === 5 && MODS.persistentInventory) {
           if (popupNav) {
             popupNav.value = dock.dataset.retainedMenuValue || "3";
