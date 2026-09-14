@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.23.11
+// @version      2.23.12
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -69,7 +69,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.23.11";
+  const SCRIPT_VERSION = "2.23.12";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -2151,11 +2151,6 @@
     const readChecked = (id) => Boolean(document.getElementById(id)?.checked);
 
     const wrappedInventorySimple = function (...args) {
-      const requestedTab = String(args[0] || "").toLowerCase();
-      // Inventory tabs are name-based. Numeric values belong to Settings'
-      // sidebar menu IDs and must never be converted into inventory refreshes.
-      if (!INVENTORY_TABS.includes(requestedTab)) return undefined;
-
       const action = String(args[1] || "");
       const actionCode = Number.parseInt(args[2], 10);
       const popupScroll = document.getElementById("popupresdisplay");
@@ -2504,12 +2499,9 @@
     if (typeof originalInventorySimple !== "function") return false;
 
     const wrappedInventorySimple = function (...args) {
-      const requestedTabName = String(args[0] || "").toLowerCase();
-      if (!INVENTORY_TABS.includes(requestedTabName)) return undefined;
-
       const { scroll } = getPersistentInventoryElements();
       const currentTab = getPersistentInventoryTab();
-      const requestedTab = normalizeInventoryTab(requestedTabName, currentTab);
+      const requestedTab = normalizeInventoryTab(args[0], currentTab);
       pendingInventoryScroll = {
         tab: requestedTab === currentTab ? currentTab : null,
         top: scroll?.scrollTop || 0,
@@ -2849,6 +2841,52 @@
       }
       return result;
     };
+
+    const originalInventDiv = window.inventdiv;
+    if (
+      typeof originalInventDiv === "function" &&
+      !originalInventDiv.lyraniaScopedSettingsVersion
+    ) {
+      const wrappedInventDiv = function (menuId, ...args) {
+        const settingsScope = [
+          ...document.querySelectorAll("#popup #response, #content #response"),
+        ].find((scope) => scope.querySelector(".settingsform"));
+        if (!settingsScope) {
+          return originalInventDiv.call(this, menuId, ...args);
+        }
+
+        for (let index = 1; index < 20; index += 1) {
+          const panel = settingsScope.querySelector(
+            `[id="inventdiv${index}"]`,
+          );
+          const menuItem = settingsScope.querySelector(
+            `[id="inventli${index}"]`,
+          );
+          if (panel && panel.style.display !== "none") {
+            panel.style.display = "none";
+          }
+          if (menuItem?.style.fontWeight === "bold") {
+            menuItem.style.fontWeight = "normal";
+          }
+        }
+
+        const selectedPanel = settingsScope.querySelector(
+          `[id="inventdiv${menuId}"]`,
+        );
+        const selectedMenuItem = settingsScope.querySelector(
+          `[id="inventli${menuId}"]`,
+        );
+        if (!selectedPanel) {
+          return originalInventDiv.call(this, menuId, ...args);
+        }
+        selectedPanel.style.display = "block";
+        if (selectedMenuItem) selectedMenuItem.style.fontWeight = "bold";
+        return undefined;
+      };
+      wrappedInventDiv.lyraniaScopedSettingsVersion = SCRIPT_VERSION;
+      wrappedInventDiv.lyraniaOriginalInventDiv = originalInventDiv;
+      window.inventdiv = wrappedInventDiv;
+    }
 
     const originalPerformNav = window.performnav;
     if (
