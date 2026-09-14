@@ -2,7 +2,7 @@
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
 // @namespace    https://dev.lyrania.co.uk/
-// @version      2.23.7
+// @version      2.23.8
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -69,7 +69,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.23.7";
+  const SCRIPT_VERSION = "2.23.8";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -2198,6 +2198,12 @@
           body.set(`extrainfo${index - 1}`, String(args[index]));
         }
       }
+      body.set(
+        "csrf_token",
+        typeof window.lyrCsrfToken !== "undefined"
+          ? String(window.lyrCsrfToken)
+          : "",
+      );
 
       inventoryRequestSequence += 1;
       const requestSequence = inventoryRequestSequence;
