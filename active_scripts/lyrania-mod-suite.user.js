@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.24.2
+// @version      2.24.3
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -65,12 +65,12 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.24.2";
+  const SCRIPT_VERSION = "2.24.3";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.9.1";
-  const REQUIRED_THEME_VERSION = "1.9.1";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.9.2";
+  const REQUIRED_THEME_VERSION = "1.9.2";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const CHAT_SETTINGS_STORAGE_KEY =
     "lyrania-mod-suite:chat-channel-settings";
@@ -2863,17 +2863,26 @@
 
 
   function initializeHousingPanelScroll() {
+    let generation = 0;
+    const isHousingRoot = (root) => {
+      if (!root) return false;
+      return [...root.querySelectorAll("a[href], [onclick]")].some((control) =>
+        [control.getAttribute("href"), control.getAttribute("onclick")].some((value) =>
+          /\b(?:build|house)\s*\(/i.test(value || "")));
+    };
     const scrollHousingPanel = () => {
-      const panel = window.popupui === 1
-        ? document.getElementById("popupresdisplay")
-        : document.getElementById("content");
-      if (!panel || !panel.getClientRects().length) return;
+      const root = [document.getElementById("popup"), document.getElementById("content")]
+        .find((element) => isHousingRoot(element) && element.getClientRects().length &&
+          getComputedStyle(element).visibility === "visible");
+      if (!root) return;
+      const panel = root.closest("#popupresdisplay") || root;
       const panelBounds = panel.getBoundingClientRect();
-      const controls = panel.querySelectorAll("a[href], [onclick]");
+      const controls = root.querySelectorAll("a[href], [onclick]");
       const hourglassVisible = [...controls].some((control) => {
-        const command = (control.getAttribute("href") || control.getAttribute("onclick") || "")
-          .replace(/\s+/g, "").replace(/^javascript:/i, "");
-        if (!/^build\(['"]use_housingtimer_hourglass['"],['"]all['"],1\);?$/i.test(command)) return false;
+        const matches = [control.getAttribute("href"), control.getAttribute("onclick")]
+          .some((value) => /\bbuild\(['"]use_housingtimer_hourglass['"],['"]all['"],1\)/i
+            .test((value || "").replace(/\s+/g, "")));
+        if (!matches) return false;
         const style = getComputedStyle(control);
         if (!control.getClientRects().length || style.visibility !== "visible" || Number(style.opacity) === 0)
           return false;
@@ -2883,35 +2892,38 @@
           bounds.right > Math.max(panelBounds.left, 0) &&
           bounds.left < Math.min(panelBounds.right, window.innerWidth);
       });
-      if (!hourglassVisible) panel.scrollTop = panel.scrollHeight;
-    };
-    for (const name of ["house", "build"]) {
-      const original = window[name];
-      if (typeof original !== "function") continue;
-      if (original.lyraniaHousingScroll) continue;
-      const wrapped = function (...args) {
-        const result = original.apply(this, args);
-        const request = window.xmlhttp;
-        const onReady = request?.onreadystatechange;
-        if (typeof onReady === "function") {
-          request.onreadystatechange = function (...eventArgs) {
-            const value = onReady.apply(this, eventArgs);
-            if (request.readyState === 4 && request.status === 200) {
-              // Let response markup and its scripts finish layout before scrolling.
-              requestAnimationFrame(() => requestAnimationFrame(() => {
-                if (window.xmlhttp === request && request.readyState === 4 &&
-                    request.onreadystatechange === housingReady) scrollHousingPanel();
-              }));
-            }
-            return value;
-          };
-          const housingReady = request.onreadystatechange;
+      if (!hourglassVisible) {
+        // Scroll the actual overflow containers, including native nested panels.
+        const containers = [panel, root, ...root.querySelectorAll("*")];
+        for (const container of new Set(containers)) {
+          if (container.scrollHeight <= container.clientHeight) continue;
+          if (!/(?:auto|scroll)/.test(getComputedStyle(container).overflowY)) continue;
+          container.scrollTo({ top: container.scrollHeight, behavior: "instant" });
         }
-        return result;
-      };
-      wrapped.lyraniaHousingScroll = true;
-      window[name] = wrapped;
+      }
+    };
+    const schedule = () => {
+      const current = ++generation;
+      const run = () => { if (current === generation) scrollHousingPanel(); };
+      requestAnimationFrame(() => requestAnimationFrame(run));
+      // Account for delayed native layout/scroll restoration after rendering.
+      window.setTimeout(run, 150);
+      window.setTimeout(run, 500);
+    };
+    for (const id of ["popup", "content"]) {
+      const root = document.getElementById(id);
+      if (!root) continue;
+      new MutationObserver((records) => {
+        // Ignore ticking text counters; react to panel replacement/control updates.
+        if (records.some((record) => record.type === "attributes" || record.target === root ||
+            [...record.addedNodes].some((node) => node.nodeType === 1))) schedule();
+      }).observe(root, { childList: true, subtree: true, attributes: true,
+        attributeFilter: ["hidden", "class", "style"] });
     }
+    // Do not fight deliberate scrolling while a delayed correction is pending.
+    for (const event of ["wheel", "touchstart", "pointerdown", "keydown"])
+      document.addEventListener(event, () => { generation += 1; }, { passive: true, capture: true });
+    schedule();
     return true;
   }
 
