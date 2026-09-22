@@ -1,6 +1,6 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.9.0
+ * Version: 1.9.1
  *
  * Plain custom CSS: load this after Lyrania's own styles.
  * Lyrania 4 Classic: readable black/gray theme.
@@ -4223,4 +4223,81 @@ html.lyrania-chat-enhancements-compact-header #header
 }
 @media (max-width: 799px) {
   #lyrania-chat-enhancements-channels { height: auto; max-height: 190px; }
+}
+
+/* 1.9.1: independent chat scrolling across browser zoom breakpoints. */
+:root { --lyr-chat-panel-height: clamp(360px, 48dvh, 600px); }
+html, body { height: auto !important; overflow-y: auto !important; }
+#holder.lyrania-chat-enhancements-has-inventory-dock {
+  height: auto !important;
+  overflow: visible;
+}
+#holder #chat_row {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none;
+  align-self: start;
+}
+#holder #chat_row #chat {
+  display: flex !important;
+  flex-direction: column;
+  height: var(--lyr-chat-panel-height) !important;
+  min-height: 0 !important;
+  max-height: var(--lyr-chat-panel-height) !important;
+  min-width: 0;
+  overflow: hidden !important;
+}
+#holder #chatresizehandle { display: none !important; }
+#holder #chat #chattabs {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  height: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+#holder #chattabs.lyrania-chat-enhancements-chat-loot-split > #chatpanes {
+  display: grid !important;
+  flex: 1 1 0;
+  height: 100% !important;
+  min-height: 0 !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  overflow: hidden !important;
+}
+#holder #lyrania-chat-enhancements-chat-column {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+#holder #chattabs.lyrania-chat-enhancements-chat-loot-split #chatwindow {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior-y: auto;
+}
+#holder #lootlog.lyrania-chat-enhancements-loot-layout {
+  height: 100% !important;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) minmax(90px, 1fr) !important;
+  overflow: hidden !important;
+}
+#holder #lyrania-chat-enhancements-loot-summary,
+#holder #lyrania-chat-enhancements-loot-messages {
+  min-height: 0;
+  overflow-y: auto !important;
+}
+@media (min-width: 1440px) {
+  #holder.lyrania-chat-enhancements-has-inventory-dock {
+    grid-template-rows: auto var(--lyr-workspace-height) auto;
+  }
+}
+@media (max-width: 799px) {
+  :root { --lyr-chat-panel-height: 760px; }
+  #holder #chattabs.lyrania-chat-enhancements-chat-loot-split > #chatpanes {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
 }
