@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.25.0
+// @version      2.25.3
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -65,12 +65,12 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.25.0";
+  const SCRIPT_VERSION = "2.25.3";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.10.0";
-  const REQUIRED_THEME_VERSION = "1.10.0";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.10.2";
+  const REQUIRED_THEME_VERSION = "1.10.2";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const CHAT_SETTINGS_STORAGE_KEY =
     "lyrania-mod-suite:chat-channel-settings";
@@ -394,7 +394,7 @@
       });
       if (!response.ok) throw new Error("Theme HTTP " + response.status);
       const css = await response.text();
-      if (!isMatchingTheme(css)) throw new Error("Please publish theme " + REQUIRED_THEME_VERSION + " at REMOTE_THEME_URL.");
+      if (!isMatchingTheme(css)) throw new Error("Expected CSS " + REQUIRED_THEME_VERSION + "; received " + (css.match(/Version:\s*([^\s*]+)/)?.[1] || "an unrecognized stylesheet") + ".");
       if (!installRemoteTheme(css)) throw new Error("Invalid theme stylesheet.");
       try {
         localStorage.setItem(REMOTE_THEME_CACHE_KEY, JSON.stringify({url: REMOTE_THEME_URL, css}));
@@ -405,10 +405,27 @@
       console.warn("[" + SCRIPT_ID + "] Theme could not load; native layout retained.", error);
       const notice = document.createElement("div");
       notice.setAttribute("role", "alert");
-      notice.textContent = "Lyrania Mod Suite: theme " + REQUIRED_THEME_VERSION +
-        " is unavailable. Upload the matching CSS to the configured theme URL, then reload.";
+      notice.textContent = "Lyrania Mod Suite requires CSS " + REQUIRED_THEME_VERSION + ". " +
+        (error?.message || String(error)) + " You can load the matching separate CSS file below. ";
       notice.style.cssText = "position:fixed;bottom:12px;left:12px;right:12px;z-index:2147483647;padding:14px;background:#111;color:#fff;border:1px solid #aaa;font:16px/1.5 sans-serif";
-      notice.addEventListener("click", () => notice.remove());
+      const localFile = document.createElement("input");
+      localFile.type = "file";
+      localFile.accept = ".css,text/css";
+      localFile.setAttribute("aria-label", "Load local CSS");
+      const fileStatus = document.createElement("span");
+      localFile.addEventListener("change", async () => {
+        try {
+          const file = localFile.files[0];
+          if (!file) return;
+          const css = await file.text();
+          if (!isMatchingTheme(css)) throw new Error("Select theme " + REQUIRED_THEME_VERSION + ".");
+          localStorage.setItem(REMOTE_THEME_CACHE_KEY, JSON.stringify({url: REMOTE_THEME_URL, css}));
+          location.reload();
+        } catch (failure) {
+          fileStatus.textContent = " Local CSS could not be saved: " + failure.message;
+        }
+      });
+      notice.append(localFile, fileStatus);
       document.body.appendChild(notice);
       return false;
     }
@@ -2940,6 +2957,15 @@
       const reviewed = !!popup.querySelector('.trade-shell, #jade_temple_ui, #guildname, #shop_gdp, #glogbox, #dungeontresdonate') ||
         /Quest \d+:|Welcome to the Lyrania Wishing Well|Guild Inventory|Current Ranks|Back to Guild/.test(text);
       popup.toggleAttribute('data-lyrania-reviewed', reviewed);
+      if (popup.querySelector('#guildname')) {
+        for (const group of popup.querySelectorAll('div')) {
+          const cells = [...group.children];
+          if (cells.length < 2 || cells.length % 2 || !cells.every((cell, i) =>
+            cell.tagName === 'DIV' && cell.style.width === (i % 2 ? '70%' : '30%'))) continue;
+          group.classList.add('lyr-guild-stats');
+          cells.forEach((cell, i) => cell.classList.add(i % 2 ? 'lyr-guild-value' : 'lyr-guild-label'));
+        }
+      }
       if (reviewed) {
         for (const el of popup.querySelectorAll('[style]')) {
           if (el.style.float && el.style.float !== 'none') el.classList.add('lyr-flow-column');
@@ -2951,6 +2977,13 @@
           const head = rows[0];
           if (!head) continue;
           const hasHeader = head.querySelector('th') || table.matches('.trade-table') || popup.querySelector('#glogbox');
+          const guildLog = !!popup.querySelector('a[href="javascript:guildpage(0);"]') &&
+            (popup.querySelector('#glogbox, a[href^="javascript:guildpage(303,"]') ||
+              (!hasHeader && head.cells.length === 2 && /^\d{1,2}\/\d{1,2}\s+\d{1,2}:/.test(head.cells[0].textContent.trim())));
+          if (guildLog) {
+            table.classList.add('lyr-log-table');
+            if (!hasHeader) rows.forEach(row => row.classList.add('lyr-log-event'));
+          }
           table.classList.add(hasHeader ? 'lyr-record-table' : 'lyr-event-table');
           if (!hasHeader) continue;
           head.classList.add('lyr-table-heading');
@@ -2967,6 +3000,24 @@
     };
     const observer = new MutationObserver(annotate);
     annotate();
+
+    const content = document.getElementById('content');
+    if (content) {
+      const formatShrine = () => {
+        const shrine = /The shrine room is a huge open hall/.test(content.textContent) &&
+          !!content.querySelector('a[href="javascript:guildpage(11);"]');
+        content.toggleAttribute('data-lyr-shrine', shrine);
+        if (!shrine) return;
+        for (const el of content.querySelectorAll('div[style]')) {
+          if (el.style.float === 'left') el.classList.add('lyr-shrine-section');
+          if (el.style.width === '55%' || el.style.width === '45%') el.classList.add('lyr-shrine-damage');
+          if (el.style.border && el.querySelector('input[onclick^="reofferShrine("]'))
+            el.classList.add('lyr-shrine-boss');
+        }
+      };
+      new MutationObserver(formatShrine).observe(content, { childList: true, subtree: true, characterData: true });
+      formatShrine();
+    }
 
     const button = document.createElement('button');
     button.type = 'button';
