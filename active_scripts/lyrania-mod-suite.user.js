@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.24.4
+// @version      2.25.0
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -65,12 +65,12 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.24.4";
+  const SCRIPT_VERSION = "2.25.0";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.9.2";
-  const REQUIRED_THEME_VERSION = "1.9.2";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.10.0";
+  const REQUIRED_THEME_VERSION = "1.10.0";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const CHAT_SETTINGS_STORAGE_KEY =
     "lyrania-mod-suite:chat-channel-settings";
@@ -2931,7 +2931,130 @@
     return true;
   }
 
+  function initializeMenuSupport() {
+    const popup = document.getElementById('popup');
+    if (!popup) return false;
+    const annotate = () => {
+      observer.disconnect();
+      const text = popup.textContent;
+      const reviewed = !!popup.querySelector('.trade-shell, #jade_temple_ui, #guildname, #shop_gdp, #glogbox, #dungeontresdonate') ||
+        /Quest \d+:|Welcome to the Lyrania Wishing Well|Guild Inventory|Current Ranks|Back to Guild/.test(text);
+      popup.toggleAttribute('data-lyrania-reviewed', reviewed);
+      if (reviewed) {
+        for (const el of popup.querySelectorAll('[style]')) {
+          if (el.style.float && el.style.float !== 'none') el.classList.add('lyr-flow-column');
+          if (parseFloat(el.style.paddingLeft) >= 50) el.classList.add('lyr-reset-indent');
+        }
+        for (const table of popup.querySelectorAll('table')) {
+          if (table.parentElement.closest('table')) continue;
+          const rows = [...table.rows];
+          const head = rows[0];
+          if (!head) continue;
+          const hasHeader = head.querySelector('th') || table.matches('.trade-table') || popup.querySelector('#glogbox');
+          table.classList.add(hasHeader ? 'lyr-record-table' : 'lyr-event-table');
+          if (!hasHeader) continue;
+          head.classList.add('lyr-table-heading');
+          const labels = [...head.cells].map(cell => cell.textContent.replace(/[▲▼↑↓]/g, '').trim());
+          table.classList.toggle('lyr-wide-table', labels.length > 7);
+          for (const row of rows.slice(1)) {
+            if (row.closest('table') !== table || row.cells.length !== labels.length || [...row.cells].some(c => c.colSpan > 1)) continue;
+            row.classList.add('lyr-record');
+            [...row.cells].forEach((cell, i) => cell.dataset.lyrLabel = labels[i]);
+          }
+        }
+      }
+      observer.observe(popup, { childList: true, subtree: true });
+    };
+    const observer = new MutationObserver(annotate);
+    annotate();
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'lyr-support-capture';
+    button.textContent = 'Capture for support';
+    (document.getElementById('tour-headernav') || document.getElementById('header')).append(button);
+    button.addEventListener('click', () => {
+      if (document.getElementById('lyr-capture-dialog')) return;
+      const dialog = document.createElement('dialog');
+      dialog.id = 'lyr-capture-dialog';
+      const explanation = document.createElement('p');
+      explanation.textContent = 'Save menu HTML and screen details for a support request. Screenshot capture opens your browser’s sharing picker: select the game tab or window. Files may contain visible chat, names, and account information. Review them before attaching; nothing is uploaded automatically.';
+      const status = document.createElement('p');
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const download = (blob, suffix) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'lyrania-support-' + stamp + suffix;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      };
+      const htmlButton = document.createElement('button');
+      htmlButton.textContent = 'Save HTML + screen details';
+      htmlButton.onclick = () => {
+        const nav = document.getElementById('popupnav');
+        const ids = ['popupholder', 'content', 'header', 'side1'];
+        const panels = {};
+        for (const id of ids) {
+          const element = document.getElementById(id);
+          if (!element) continue;
+          const copy = element.cloneNode(true);
+          copy.querySelectorAll('input[type="password"], input[type="hidden"], script').forEach(node => node.remove());
+          const rect = element.getBoundingClientRect();
+          panels[id] = { outerHTML: copy.outerHTML, width: rect.width, height: rect.height,
+            scrollWidth: element.scrollWidth, scrollHeight: element.scrollHeight, scrollTop: element.scrollTop,
+            display: getComputedStyle(element).display, visibility: getComputedStyle(element).visibility };
+        }
+        const report = { capturedAt: new Date().toISOString(), menu: nav?.selectedOptions[0]?.textContent,
+          viewport: { width: innerWidth, height: innerHeight, devicePixelRatio,
+            visualScale: window.visualViewport?.scale, screenWidth: screen.width, screenHeight: screen.height },
+          userAgent: navigator.userAgent, panels };
+        download(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }), '.json');
+        status.textContent = 'HTML and screen details saved. You can also save a screenshot.';
+      };
+      const screenshotButton = document.createElement('button');
+      screenshotButton.textContent = 'Save screenshot';
+      screenshotButton.disabled = !navigator.mediaDevices?.getDisplayMedia;
+      screenshotButton.onclick = async () => {
+        let stream;
+        screenshotButton.disabled = true;
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+          dialog.close();
+          const video = document.createElement('video');
+          video.muted = true;
+          video.srcObject = stream;
+          await video.play();
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          canvas.getContext('2d').drawImage(video, 0, 0);
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+          if (!blob) throw new Error('Screenshot could not be created.');
+          download(blob, '.png');
+          status.textContent = 'Screenshot saved. Attach the PNG and JSON to your request.';
+        } catch (error) {
+          status.textContent = 'Screenshot not saved: ' + error.message + ' You can still save the HTML details.';
+        } finally {
+          stream?.getTracks().forEach(track => track.stop());
+          screenshotButton.disabled = false;
+          if (dialog.isConnected && !dialog.open) dialog.showModal();
+        }
+      };
+      const close = document.createElement('button');
+      close.textContent = 'Done';
+      close.onclick = () => dialog.remove();
+      dialog.addEventListener('cancel', () => dialog.remove());
+      dialog.append(explanation, htmlButton, screenshotButton, close, status);
+      document.body.append(dialog);
+      dialog.showModal();
+    });
+    return true;
+  }
+
   const initializers = [
+    initializeMenuSupport,
     initializeCompactHeader,
     initializeChatMods,
     initializeTripleDpHour,
