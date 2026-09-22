@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.24.0
+// @version      2.24.1
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -65,7 +65,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.24.0";
+  const SCRIPT_VERSION = "2.24.1";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -291,30 +291,43 @@
     const compactQuest = () => {
       const questLink = questSection.querySelector("a");
       const progress = questSection.querySelector("#questupdateid");
-      const questNumber = questLink?.textContent.match(
-        /quest\s+number\s*:\s*([\d,]+)/i,
-      )?.[1];
-      if (!questLink || !progress || !questNumber) return;
-      if (questLink.dataset.lyraniaCompactQuest === questNumber) return;
-
-      questLink.dataset.lyraniaCompactQuest = questNumber;
-      questLink.replaceChildren(
-        document.createTextNode(`Quest Number: ${questNumber}`),
-        document.createElement("br"),
-        document.createTextNode("Progress: "),
-        progress,
-      );
+      if (!questLink || !progress) return;
+      const rawProgress = progress.textContent.trim();
+      const ratio = rawProgress.match(/([\d,]+)\s*\/\s*([\d,]+)/);
+      let percentage = 0;
+      if (ratio) {
+        const current = Number(ratio[1].replace(/,/g, ""));
+        const total = Number(ratio[2].replace(/,/g, ""));
+        if (total > 0) percentage = Math.min(100, Math.max(0, current / total * 100));
+      } else if (/hand\s*in|complete/i.test(rawProgress)) {
+        percentage = 100;
+      }
+      // Keep the native target intact so updategems() can still write to it.
+      // Observe that raw value, but display only the derived percentage.
+      questObserver.disconnect();
+      try {
+        progress.hidden = true;
+        progress.style.setProperty("display", "none", "important");
+        let label = questLink.querySelector(".lyrania-quest-progress-label");
+        if (!label) {
+          label = document.createElement("span");
+          label.className = "lyrania-quest-progress-label";
+        }
+        label.textContent = "Quest Progress: " + Number(percentage.toFixed(1)) + "%";
+        questLink.replaceChildren(label, progress);
+      } finally {
+        questObserver.observe(questSection, {
+          childList: true, characterData: true, subtree: true,
+        });
+      }
     };
+    const questObserver = new MutationObserver(compactQuest);
     compactQuest();
-    new MutationObserver(compactQuest).observe(questSection, {
-      childList: true,
-      subtree: true,
-    });
 
     if (accountSection) serverSection.appendChild(accountSection);
-    countSection.appendChild(questSection);
+    jobsSection.appendChild(questSection);
     const housingSection = document.getElementById("usershousinginfo");
-    if (housingSection) jobsSection.appendChild(housingSection);
+    if (housingSection) serverSection.appendChild(housingSection);
     // Keep future status widgets visible instead of creating implicit grid rows.
     [...statusPanel.children].forEach((section) => {
       if (![serverSection, jobsSection, bonusSection, countSection].includes(section))
