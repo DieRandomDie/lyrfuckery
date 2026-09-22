@@ -1,6 +1,6 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.9.1
+ * Version: 1.9.2
  *
  * Plain custom CSS: load this after Lyrania's own styles.
  * Lyrania 4 Classic: readable black/gray theme.
@@ -4300,4 +4300,40 @@ html, body { height: auto !important; overflow-y: auto !important; }
     grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) !important;
   }
+}
+
+/* 1.9.2: desktop fills the viewport; only individual panels scroll. */
+@media (min-width: 1440px) {
+  html:has(#holder.lyrania-chat-enhancements-has-inventory-dock),
+  body:has(#holder.lyrania-chat-enhancements-has-inventory-dock) {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  #holder.lyrania-chat-enhancements-has-inventory-dock {
+    height: calc(100dvh - 8px) !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 8px);
+    margin: 4px auto;
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 0.85fr);
+    overflow: hidden;
+  }
+  #holder.lyrania-chat-enhancements-has-inventory-dock > .lrow:first-child {
+    max-height: 30dvh;
+    overflow: auto;
+  }
+  html.lyrania-chat-enhancements-compact-header #holder #middlesection,
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100%;
+    align-self: stretch;
+    overflow: hidden;
+  }
+  #holder.lyrania-chat-enhancements-has-inventory-dock #chat_row #chat {
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+  }
+  #holder #chatwindow { overscroll-behavior-y: contain; }
 }
