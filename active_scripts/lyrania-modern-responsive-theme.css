@@ -1,6 +1,6 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.10.0
+ * Version: 1.10.1
  *
  * Plain custom CSS: load this after Lyrania's own styles.
  * Lyrania 4 Classic: readable black/gray theme.
@@ -4351,6 +4351,36 @@ html, body { height: auto !important; overflow-y: auto !important; }
 #lyr-capture-dialog { background: #111; color: #eee; border: 1px solid #888; border-radius: .5rem; width: min(34rem, 90vw); max-height: 85dvh; overflow: auto; font: 16px/1.5 system-ui; }
 #lyr-capture-dialog button { margin: .3rem; padding: .5rem; background: #292929; color: #fff; border: 1px solid #888; white-space: normal; }
 #lyr-capture-dialog::backdrop { background: #000b; }
+/* Keep native label/value DOM order and pair each Guild statistic explicitly. */
+#popup[data-lyrania-reviewed] .lyr-guild-stats {
+  display: grid; grid-template-columns: minmax(6rem, 1fr) minmax(0, 2fr);
+  gap: .45rem .8rem; padding: .65rem; box-sizing: border-box;
+  align-content: start; direction: ltr;
+}
+#popup[data-lyrania-reviewed] .lyr-guild-stats > :is(.lyr-guild-label, .lyr-guild-value) {
+  float: none !important; width: auto !important; min-width: 0; margin: 0 !important;
+  text-align: left !important; overflow-wrap: anywhere; order: 0;
+}
+#popup[data-lyrania-reviewed] .lyr-guild-stats > .lyr-guild-label { grid-column: 1; font-weight: bold; }
+#popup[data-lyrania-reviewed] .lyr-guild-stats > .lyr-guild-value { grid-column: 2; }
+/* Shrine Room is delivered into the battle panel, outside the popup. */
+#content[data-lyr-shrine] {
+  display: flow-root; min-width: 0; max-width: 100%; text-align: left;
+  font-size: 15px; line-height: 1.6; overflow-wrap: anywhere; white-space: normal;
+}
+#content[data-lyr-shrine] .lyr-shrine-section {
+  float: none !important; width: auto !important; max-width: 100%;
+  box-sizing: border-box; clear: both; margin-block: 1rem;
+}
+#content[data-lyr-shrine] :is(.lyr-shrine-damage, .lyr-shrine-boss) {
+  background: #111; border: 1px solid #555; border-radius: .5rem;
+  padding: .8rem !important; margin-bottom: 1rem !important;
+}
+#content[data-lyr-shrine] :is(input, button, select) {
+  box-sizing: border-box; max-width: 100%; white-space: normal; font-size: inherit;
+}
+#content[data-lyr-shrine] input[type="button"] { margin-top: .65rem; }
+#content[data-lyr-shrine] span[style*="#331100"] { color: #d8a882 !important; }
 @container lyr-popup (max-width: 1000px) {
   #popup[data-lyrania-reviewed] .lyr-wide-table,
   #popup[data-lyrania-reviewed] .lyr-wide-table > :is(tbody, thead) { display: block; width: 100% !important; }
@@ -4372,4 +4402,49 @@ html, body { height: auto !important; overflow-y: auto !important; }
   #popup[data-lyrania-reviewed] .lyr-table-heading { display: flex; flex-wrap: wrap; gap: .5rem; }
   #popup[data-lyrania-reviewed] .lyr-table-heading > :is(td, th) { width: auto !important; }
   #popup[data-lyrania-reviewed] .lyr-event-table > tbody > tr > td { display: block; width: auto !important; }
+}
+
+/* Guild logs: separate entries and compact labeled statistics. */
+#popup[data-lyrania-reviewed] table.lyr-log-table {
+  display: block; width: 100% !important; border: 0 !important;
+  margin: .75rem 0 !important; font-size: 15px !important; line-height: 1.5;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table > :is(tbody, thead) { display: block; }
+#popup[data-lyrania-reviewed] table.lyr-log-table :is(.lyr-log-event, .lyr-record) {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: .6rem 1rem; padding: .9rem; margin: 0 0 .75rem;
+  border: 1px solid #555; border-left: 3px solid #888; border-radius: .5rem;
+  background: #101010; text-align: left;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table :is(.lyr-log-event, .lyr-record):nth-child(even) { background: #191919; }
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-log-event { grid-template-columns: minmax(0, 1fr); gap: .4rem; }
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-log-event > td {
+  display: block; width: auto !important; min-width: 0; padding: 0; text-align: left;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-log-event > td:first-child {
+  color: #ddd; font-weight: bold; font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid #444; padding-bottom: .4rem;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-record > td {
+  display: flex; flex-direction: column; gap: .15rem; width: auto !important;
+  min-width: 0; text-align: left; padding: .4rem; border-bottom: 1px solid #333;
+  font-variant-numeric: tabular-nums;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-record > td::before {
+  content: attr(data-lyr-label); color: #bbb; font-weight: bold;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-record > td:first-child {
+  grid-column: 1 / -1; font-weight: bold; font-size: 1.08em;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-table-heading {
+  display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-table-heading > :is(td, th) {
+  width: auto !important; padding: .4rem .6rem; background: #222; border-radius: .3rem;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-log-event > td > table {
+  width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: .6rem;
+}
+#popup[data-lyrania-reviewed] table.lyr-log-table .lyr-log-event > td > table td {
+  padding: .3rem .5rem; border-bottom: 1px solid #444; text-align: left;
 }
