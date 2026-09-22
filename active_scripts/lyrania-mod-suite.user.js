@@ -1,8 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @namespace    https://dev.lyrania.co.uk/
-// @version      2.23.12
+// @version      2.24.0
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -42,9 +41,6 @@
     // Hides Double, Triple, and Quad DP timers while they are inactive.
     hideInactiveDpTimers: true,
 
-    // Preserves action cooldowns across menus and queues the next action.
-    actionTimerFix: true,
-
     // Replaces Buffer XP percentage with projected level information.
     bufferXp: true,
 
@@ -69,11 +65,12 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.23.12";
+  const SCRIPT_VERSION = "2.24.0";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.8.2";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.9.0";
+  const REQUIRED_THEME_VERSION = "1.9.0";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const CHAT_SETTINGS_STORAGE_KEY =
     "lyrania-mod-suite:chat-channel-settings";
@@ -149,17 +146,12 @@
     return "unknown";
   }
 
-  function initializeGameVersionCompatibility() {
-    // Lyrania 4 moved the game and chat rows out of #holder for its native
-    // layouts. The mod's responsive grid intentionally retains the 3.1 shell,
-    // so restore that hierarchy before any other mod initializes. On 3.1 this
-    // branch is never entered and the original DOM is left untouched.
-    if (GAME_MAJOR_VERSION !== 4) return true;
-
+  function initializeCurrentGameLayout() {
+    // This release supports the current Lyrania 4 Classic layout only.
+    if (GAME_MAJOR_VERSION !== 4 || document.body.dataset.hubLayout !== "classic")
+      return false;
     document.documentElement.dataset.lyraniaGameVersion = GAME_VERSION;
-    document.documentElement.dataset.lyraniaGameMajor = String(
-      GAME_MAJOR_VERSION,
-    );
+    document.documentElement.dataset.lyraniaGameMajor = "4";
 
     const holder = document.getElementById("holder");
     const gameRow = document.getElementById("middlesection");
@@ -202,14 +194,31 @@
       return false;
     }
 
-    const visibleInfoBoxes = [...headerRow.children].filter(
-      (element) =>
-        element.matches?.(".headerbox") &&
-        element !== gemBox &&
-        element !== statBox &&
-        element !== menuBox,
+    const characterBox = document.getElementById("tour-identity") ||
+      document.getElementById("usernameli")?.closest(".headerbox");
+    const resourcesBox = document.getElementById("tour-currencies") ||
+      document.getElementById("goldli")?.closest(".headerbox");
+    if (!characterBox || !resourcesBox) return false;
+
+    const serverTime = document.getElementById("serverTime");
+    const serverSection = [...statusPanel.children].find((section) =>
+      section.contains(serverTime),
     );
-    if (visibleInfoBoxes.length < 2) return false;
+    const jobsSection = document.getElementById("tstimers");
+    const accountSection = document.getElementById("usersmartinfo");
+    const bonusSection = document.getElementById("bonusdisplays");
+    const countSection = document.getElementById("sidecounter");
+    const questSection = document.getElementById("questtracker");
+    const weeklyGdp = document.getElementById("weeklygdpword");
+    if (
+      !serverSection ||
+      !jobsSection ||
+      !bonusSection ||
+      !countSection ||
+      !questSection
+    ) {
+      return false;
+    }
 
     const links = [...menuBox.querySelectorAll("a")];
     const usedLinks = new Set();
@@ -279,26 +288,6 @@
 
     menuBox.replaceChildren(panel);
 
-    const serverTime = document.getElementById("serverTime");
-    const serverSection = [...statusPanel.children].find((section) =>
-      section.contains(serverTime),
-    );
-    const jobsSection = document.getElementById("tstimers");
-    const accountSection = document.getElementById("usersmartinfo");
-    const bonusSection = document.getElementById("bonusdisplays");
-    const countSection = document.getElementById("sidecounter");
-    const questSection = document.getElementById("questtracker");
-    const weeklyGdp = document.getElementById("weeklygdpword");
-    if (
-      !serverSection ||
-      !jobsSection ||
-      !bonusSection ||
-      !countSection ||
-      !questSection
-    ) {
-      return false;
-    }
-
     const compactQuest = () => {
       const questLink = questSection.querySelector("a");
       const progress = questSection.querySelector("#questupdateid");
@@ -323,7 +312,14 @@
     });
 
     if (accountSection) serverSection.appendChild(accountSection);
-    serverSection.appendChild(questSection);
+    countSection.appendChild(questSection);
+    const housingSection = document.getElementById("usershousinginfo");
+    if (housingSection) jobsSection.appendChild(housingSection);
+    // Keep future status widgets visible instead of creating implicit grid rows.
+    [...statusPanel.children].forEach((section) => {
+      if (![serverSection, jobsSection, bonusSection, countSection].includes(section))
+        jobsSection.appendChild(section);
+    });
     if (weeklyGdp) countSection.insertBefore(weeklyGdp, countSection.firstChild);
 
     serverSection.classList.add(`${SCRIPT_ID}-status-server`);
@@ -331,8 +327,8 @@
     bonusSection.classList.add(`${SCRIPT_ID}-status-bonuses`);
     countSection.classList.add(`${SCRIPT_ID}-status-counts`);
 
-    visibleInfoBoxes[0].classList.add(`${SCRIPT_ID}-header-character`);
-    visibleInfoBoxes[1].classList.add(`${SCRIPT_ID}-header-resources`);
+    characterBox.classList.add(`${SCRIPT_ID}-header-character`);
+    resourcesBox.classList.add(`${SCRIPT_ID}-header-resources`);
     gemBox.classList.add(`${SCRIPT_ID}-header-removed`);
     statBox.classList.add(`${SCRIPT_ID}-header-removed`);
     statusPanel.classList.add(`${SCRIPT_ID}-header-status`);
@@ -366,43 +362,42 @@
     return true;
   }
 
+  function isMatchingTheme(css) {
+    return typeof css === "string" &&
+      css.includes("Version: " + REQUIRED_THEME_VERSION) && css.includes("--lyr-bg-0:");
+  }
+
   async function loadRemoteTheme() {
+    // Cache only a stylesheet that declares the required version.
     let cachedCss = "";
     try {
       const cached = JSON.parse(localStorage.getItem(REMOTE_THEME_CACHE_KEY));
-      if (cached?.url === REMOTE_THEME_URL && typeof cached.css === "string") {
+      if (cached?.url === REMOTE_THEME_URL && isMatchingTheme(cached.css))
         cachedCss = cached.css;
-        installRemoteTheme(cachedCss);
-      }
-    } catch (_error) {
-      // Continue with the network copy when browser storage is unavailable.
-    }
-
+    } catch (_) { /* Storage is optional. */ }
     try {
       const response = await fetch(REMOTE_THEME_URL, {
-        cache: "no-cache",
-        credentials: "omit",
+        cache: "no-cache", credentials: "omit", signal: AbortSignal.timeout(12000),
       });
-      if (!response.ok)
-        throw new Error(`GitHub returned HTTP ${response.status}`);
-
+      if (!response.ok) throw new Error("Theme HTTP " + response.status);
       const css = await response.text();
-      if (!installRemoteTheme(css))
-        throw new Error("The downloaded theme was not valid CSS text.");
+      if (!isMatchingTheme(css)) throw new Error("Please publish theme " + REQUIRED_THEME_VERSION + " at REMOTE_THEME_URL.");
+      if (!installRemoteTheme(css)) throw new Error("Invalid theme stylesheet.");
       try {
-        localStorage.setItem(
-          REMOTE_THEME_CACHE_KEY,
-          JSON.stringify({
-            url: REMOTE_THEME_URL,
-            css,
-          }),
-        );
-      } catch (_error) {
-        // The live theme still works when browser storage is unavailable.
-      }
+        localStorage.setItem(REMOTE_THEME_CACHE_KEY, JSON.stringify({url: REMOTE_THEME_URL, css}));
+      } catch (_) { /* Installed theme still works. */ }
+      return true;
     } catch (error) {
-      if (!cachedCss)
-        console.warn(`[${SCRIPT_ID}] Could not load the remote theme.`, error);
+      if (cachedCss && installRemoteTheme(cachedCss)) return true;
+      console.warn("[" + SCRIPT_ID + "] Theme could not load; native layout retained.", error);
+      const notice = document.createElement("div");
+      notice.setAttribute("role", "alert");
+      notice.textContent = "Lyrania Mod Suite: theme " + REQUIRED_THEME_VERSION +
+        " is unavailable. Upload the matching CSS to the configured theme URL, then reload.";
+      notice.style.cssText = "position:fixed;bottom:12px;left:12px;right:12px;z-index:2147483647;padding:14px;background:#111;color:#fff;border:1px solid #aaa;font:16px/1.5 sans-serif";
+      notice.addEventListener("click", () => notice.remove());
+      document.body.appendChild(notice);
+      return false;
     }
   }
 
@@ -543,6 +538,12 @@
 
   function lineMatchesSelectedChannel(line) {
     if (selectedChannel === "all") {
+      // Keep actionable boss/contract notices visible even with Globals off.
+      const hasAllowedGlobalLink = [...line.querySelectorAll("a[href]")].some((link) => {
+        const href = (link.getAttribute("href") || "").replace(/\s+/g, "").toLowerCase();
+        return /^javascript:(?:performnav\(9\)|contract\(\));?$/.test(href);
+      });
+      if (hasAllowedGlobalLink) return true;
       if (isGlobalOrBossAnnouncement(line)) return showGlobalChat;
       if (line.querySelector(".whisperchatcolor")) return true;
 
@@ -732,7 +733,13 @@
 
     const chat = document.getElementById("chat");
     if (chat) {
+      const sidebarLayout = window.matchMedia("(min-width: 800px)");
       const constrainSidebarHeight = () => {
+        if (!sidebarLayout.matches) {
+          sidebar.style.removeProperty("height");
+          sidebar.style.removeProperty("max-height");
+          return;
+        }
         const availableHeight = Math.max(
           100,
           Math.floor(chat.getBoundingClientRect().height - 10),
@@ -742,6 +749,7 @@
       };
       constrainSidebarHeight();
       new ResizeObserver(constrainSidebarHeight).observe(chat);
+      sidebarLayout.addEventListener("change", constrainSidebarHeight);
     }
     channelSelect.value = ["all", "global"].includes(selectedChannel)
       ? "0"
@@ -1052,458 +1060,6 @@
     return true;
   }
 
-  function initializeActionTimerFix() {
-    if (!MODS.actionTimerFix || window.__lyraniaActionTimerFixInstalled)
-      return true;
-
-    const actionFunctions = [
-      "auto",
-      "improvedauto",
-      "battle",
-      "improvedbattle",
-      "dungeonbattle",
-      "improveddungeonbattle",
-    ];
-    const menuFunctions = ["moblist", "improvedmoblist", "map", "gmap"];
-    const requiredFunctions = [
-      "timer",
-      "timer2",
-      "finishActionTimer",
-      "scheduleServerAction",
-      "clearServerAction",
-      "performnav",
-      "guildpage",
-      "boss",
-      "gboss",
-      ...actionFunctions,
-      ...menuFunctions,
-    ];
-    if (
-      !window.jQuery ||
-      requiredFunctions.some((name) => typeof window[name] !== "function")
-    )
-      return false;
-
-    window.__lyraniaActionTimerFixInstalled = true;
-    const originalTimer = window.timer;
-    const originalSchedule = window.scheduleServerAction;
-    const originalFinishTimer = window.finishActionTimer;
-    const actionSchedules = new Set();
-    const controlSelector = [
-      "#content .kung_fu_button",
-      "#content #bb",
-      "#content #attackboss",
-      '#content [onclick*="auto("]',
-      '#content [onclick*="battle("]',
-      '#content [onclick*="boss("]',
-      '#content [onclick*="gboss("]',
-    ].join(",");
-    let activeRequests = 0;
-    let navigating = false;
-    let preservedDeadline = 0;
-    let queuedAction = null;
-    let queuedHandle = null;
-    let manualCombatPendingContinue = false;
-    let allowNextMoblistCooldown = false;
-    let navigationAcceptsRequestedCooldown = false;
-    let centralMenuPreservesAuto = false;
-
-    function currentDeadline() {
-      try {
-        const exact =
-          typeof actionTimerEndsAt === "undefined"
-            ? 0
-            : Number(actionTimerEndsAt);
-        if (exact > 0) return exact;
-
-        const remaining = Math.max(
-          typeof timertime === "undefined" ? 0 : Number(timertime) || 0,
-          typeof timer2time === "undefined" ? 0 : Number(timer2time) || 0,
-        );
-        return remaining > 0 ? getEstimatedServerTimestamp() + remaining : 0;
-      } catch (_error) {
-        return 0;
-      }
-    }
-
-    function remainingCooldown() {
-      return Math.max(
-        0,
-        Math.max(currentDeadline(), preservedDeadline) -
-          getEstimatedServerTimestamp(),
-      );
-    }
-
-    const primaryActionSelector = [
-      "#content input#bb",
-      "#content button#bb",
-      "#content #attackboss",
-      '#content input[type="button"][value="Attack!"]',
-      '#content input[type="button"][value="Fight"]',
-      '#content input[type="button"][value="Continue"]',
-    ].join(",");
-
-    function renderQueue() {
-      const timerDisplay = document.getElementById("timer");
-      if (timerDisplay) {
-        if (queuedAction) timerDisplay.dataset.lyraniaActionQueued = "true";
-        else delete timerDisplay.dataset.lyraniaActionQueued;
-      }
-      document
-        .querySelectorAll("[data-lyrania-queued-control]")
-        .forEach((control) => {
-          delete control.dataset.lyraniaQueuedControl;
-        });
-      if (queuedAction?.source?.isConnected) {
-        queuedAction.source.dataset.lyraniaQueuedControl = "true";
-      }
-    }
-
-    function visiblePrimaryAction() {
-      return [...document.querySelectorAll(primaryActionSelector)].find(
-        (control) =>
-          !control.disabled &&
-          !control.closest("#capt, #captchadiv") &&
-          control.getClientRects().length > 0 &&
-          getComputedStyle(control).visibility !== "hidden",
-      );
-    }
-
-    function botCheckIsVisible() {
-      const botCheck = document.querySelector("#capt, #captchadiv");
-      return Boolean(botCheck && botCheck.getClientRects().length > 0);
-    }
-
-    function restorePrimaryActionFocus() {
-      if (remainingCooldown() > 0 || activeRequests > 0 || queuedAction) return;
-      if (botCheckIsVisible()) return;
-
-      const popupHolder = document.getElementById("popupholder");
-      if (popupHolder && getComputedStyle(popupHolder).visibility === "visible")
-        return;
-
-      const active = document.activeElement;
-      const focusIsFree =
-        !active ||
-        active === document.body ||
-        active === document.documentElement ||
-        !active.isConnected;
-      if (!focusIsFree) return;
-
-      const primaryAction = visiblePrimaryAction();
-      if (!primaryAction) return;
-      try {
-        primaryAction.focus({ preventScroll: true });
-      } catch (_error) {
-        primaryAction.focus();
-      }
-    }
-
-    function isActionSchedule(callback) {
-      return /\b(?:fun|boss|gboss|dungeonbattle|improveddungeonbattle)\s*\(/.test(
-        Function.prototype.toString.call(callback),
-      );
-    }
-
-    window.scheduleServerAction = function (delay, callback) {
-      if (!isActionSchedule(callback)) {
-        return originalSchedule.apply(this, arguments);
-      }
-
-      let handle;
-      handle = originalSchedule.call(this, delay, function (...args) {
-        actionSchedules.delete(handle);
-        return callback.apply(this, args);
-      });
-      actionSchedules.add(handle);
-      return handle;
-    };
-
-    function stopRepeatingActions() {
-      actionSchedules.forEach((handle) => window.clearServerAction(handle));
-      actionSchedules.clear();
-
-      try {
-        const autoWasRunning =
-          (typeof autoing !== "undefined" && Number(autoing) !== 0) ||
-          (typeof am !== "undefined" && Number(am) > 0) ||
-          (typeof funcheck !== "undefined" && Boolean(funcheck));
-
-        if (typeof varstopauto !== "undefined") varstopauto = 1;
-        if (typeof autoing !== "undefined") autoing = 0;
-        if (typeof am !== "undefined") am = 0;
-        if (typeof stopboss !== "undefined") stopboss = 1;
-        if (typeof clearAutoBattleResumeState === "function")
-          clearAutoBattleResumeState();
-        if (autoWasRunning) {
-          fetch("stopauto.php", { credentials: "same-origin" }).catch(() => {});
-        }
-      } catch (error) {
-        console.warn(
-          "[lyrania-action-timer-fix] Could not stop the prior action.",
-          error,
-        );
-      }
-    }
-
-    function cancelQueuedAction() {
-      queuedAction = null;
-      if (queuedHandle) window.clearServerAction(queuedHandle);
-      queuedHandle = null;
-      renderQueue();
-    }
-
-    function clearManualCombatCycle() {
-      manualCombatPendingContinue = false;
-      allowNextMoblistCooldown = false;
-    }
-
-    function beginNavigation(
-      cancelPending = false,
-      acceptRequestedCooldown = false,
-    ) {
-      if (cancelPending) cancelQueuedAction();
-      preservedDeadline = Math.max(preservedDeadline, currentDeadline());
-      navigationAcceptsRequestedCooldown = Boolean(acceptRequestedCooldown);
-      stopRepeatingActions();
-      navigating = true;
-      renderQueue();
-    }
-
-    window.timer = function (delay, ...rest) {
-      const milliseconds = Math.max(0, Number(delay) || 0);
-      if (!navigating) {
-        preservedDeadline = 0;
-        navigationAcceptsRequestedCooldown = false;
-        return originalTimer.call(this, milliseconds, ...rest);
-      }
-
-      // A newly requested mob-list timer is valid only after a manual combat
-      // result's Continue button. Initial Battle navigation and auto completion
-      // should return immediately, while an already-running cooldown is carried.
-      const serverNow = getEstimatedServerTimestamp();
-      const carriedMilliseconds = Math.max(0, preservedDeadline - serverNow);
-      const requestedMilliseconds = navigationAcceptsRequestedCooldown
-        ? milliseconds
-        : 0;
-      const effectiveMilliseconds = Math.max(
-        requestedMilliseconds,
-        carriedMilliseconds,
-      );
-      preservedDeadline =
-        effectiveMilliseconds > 0 ? serverNow + effectiveMilliseconds : 0;
-
-      const result = originalTimer.call(this, effectiveMilliseconds, ...rest);
-      renderQueue();
-      return result;
-    };
-    window.timer2 = function (...args) {
-      return window.timer.apply(this, args);
-    };
-
-    function prepareAction(type) {
-      navigating = false;
-      preservedDeadline = 0;
-      navigationAcceptsRequestedCooldown = false;
-      try {
-        if (type === "boss" && typeof stopboss !== "undefined") stopboss = 0;
-        if (type !== "boss" && typeof varstopauto !== "undefined")
-          varstopauto = 0;
-      } catch (_error) {
-        // The native action will initialize unavailable state.
-      }
-    }
-
-    function scheduleQueueCheck(delay = remainingCooldown()) {
-      if (!queuedAction) return;
-      if (queuedHandle) window.clearServerAction(queuedHandle);
-      queuedHandle = originalSchedule.call(window, Math.max(0, delay), () => {
-        queuedHandle = null;
-        runQueuedAction();
-      });
-    }
-
-    function runQueuedAction() {
-      if (!queuedAction) return;
-      const remaining = remainingCooldown();
-      if (remaining > 0 || activeRequests > 0) {
-        renderQueue();
-        scheduleQueueCheck(remaining || 100);
-        return;
-      }
-
-      const action = queuedAction;
-      cancelQueuedAction();
-      try {
-        originalFinishTimer.call(window);
-      } catch (_error) {
-        // The queued action can initialize its own timer.
-      }
-      prepareAction(action.type);
-      action.original.apply(action.context, action.args);
-    }
-
-    function executeOrQueue(type, original, context, args) {
-      // Repeated Enter presses can reach the old action button before its
-      // request returns. Native fighting/actionprogress guards treat those as
-      // no-ops, so never turn an in-flight repeat into a second queued attack.
-      if (activeRequests > 0) return undefined;
-      if (remainingCooldown() <= 0) {
-        prepareAction(type);
-        return original.apply(context, args);
-      }
-      const activeControl = document.activeElement;
-      const source = activeControl?.matches?.(controlSelector)
-        ? activeControl
-        : null;
-      queuedAction = { type, original, context, args, source };
-      renderQueue();
-      scheduleQueueCheck();
-      return undefined;
-    }
-
-    function wrap(functionName, handler) {
-      const original = window[functionName];
-      window[functionName] = function (...args) {
-        return handler(original, this, args);
-      };
-    }
-
-    window
-      .jQuery(document)
-      .on("ajaxSend.lyraniaActionTimerFix", (_event, request, settings) => {
-        const url = String(settings?.url || "")
-          .split("?")[0]
-          .toLowerCase();
-        if (
-          !/(?:^|\/)(?:auto|improvedauto|battle|improvedbattle|dungeonbattle|improveddungeonbattle|bosses|gboss)\.php$/.test(
-            url,
-          )
-        )
-          return;
-        activeRequests += 1;
-        request.always(() =>
-          window.setTimeout(() => {
-            activeRequests = Math.max(0, activeRequests - 1);
-            runQueuedAction();
-          }, 0),
-        );
-      });
-
-    window.finishActionTimer = function (...args) {
-      const result = originalFinishTimer.apply(this, args);
-      if (
-        botCheckIsVisible() &&
-        document.activeElement?.closest?.("#capt, #captchadiv")
-      ) {
-        document.activeElement.blur();
-      }
-      runQueuedAction();
-      window.setTimeout(restorePrimaryActionFocus, 0);
-      return result;
-    };
-
-    document.addEventListener(
-      "click",
-      (event) => {
-        const control = event.target.closest?.(
-          '#content input[type="button"], #content input[type="submit"], #content button',
-        );
-        if (!control) return;
-
-        const label = String(control.value || control.textContent || "")
-          .trim()
-          .toLowerCase();
-        if (/^(?:attack!?|fight!?)$/.test(label)) {
-          manualCombatPendingContinue = true;
-          allowNextMoblistCooldown = false;
-        } else if (label === "continue") {
-          allowNextMoblistCooldown = manualCombatPendingContinue;
-          manualCombatPendingContinue = false;
-        }
-      },
-      true,
-    );
-
-    wrap("performnav", (original, context, args) => {
-      const menuItem = Number(args[0]);
-      clearManualCombatCycle();
-      if (menuItem === 8 || menuItem === 9) {
-        beginNavigation(true, false);
-        return original.apply(context, args);
-      }
-
-      if (
-        menuItem === 1 &&
-        typeof window.saveAutoBattleResumeState === "function"
-      ) {
-        window.saveAutoBattleResumeState();
-      }
-
-      centralMenuPreservesAuto = true;
-      try {
-        return original.apply(context, args);
-      } finally {
-        centralMenuPreservesAuto = false;
-      }
-    });
-    ["moblist", "improvedmoblist"].forEach((name) =>
-      wrap(name, (original, context, args) => {
-        if (centralMenuPreservesAuto) return original.apply(context, args);
-
-        const acceptRequestedCooldown = allowNextMoblistCooldown;
-        clearManualCombatCycle();
-        beginNavigation(false, acceptRequestedCooldown);
-        return original.apply(context, args);
-      }),
-    );
-    wrap("map", (original, context, args) => {
-      clearManualCombatCycle();
-      beginNavigation(false, false);
-      return original.apply(context, args);
-    });
-    wrap("gmap", (original, context, args) => {
-      beginNavigation(false, false);
-      return original.apply(context, args);
-    });
-    wrap("guildpage", (original, context, args) => {
-      if (Number(args[0]) === 11) {
-        clearManualCombatCycle();
-        beginNavigation(false, false);
-      }
-      return original.apply(context, args);
-    });
-    actionFunctions.forEach((name) =>
-      wrap(name, (original, context, args) =>
-        executeOrQueue("regular", original, context, args),
-      ),
-    );
-    ["boss", "gboss"].forEach((name) =>
-      wrap(name, (original, context, args) => {
-        if (Number(args[0]) === 1) {
-          return executeOrQueue("boss", original, context, args);
-        }
-        clearManualCombatCycle();
-        beginNavigation(false, false);
-        return original.apply(context, args);
-      }),
-    );
-
-    const content = document.getElementById("content");
-    if (content) {
-      let focusFrame = 0;
-      new MutationObserver(() => {
-        if (navigating || queuedAction) renderQueue();
-        if (focusFrame) window.cancelAnimationFrame(focusFrame);
-        focusFrame = window.requestAnimationFrame(() => {
-          focusFrame = 0;
-          restorePrimaryActionFocus();
-        });
-      }).observe(content, { childList: true, subtree: true });
-    }
-    window.setTimeout(restorePrimaryActionFocus, 0);
-    return true;
-  }
   function projectedBufferLevel(level, bufferXp) {
     if (level < 1) return 1;
     const discriminant = (2 * level - 1) ** 2 + (8 * bufferXp) / 25;
@@ -2103,7 +1659,11 @@
   let initialInventoryRetryUsed = false;
   let initialInventoryRetryTimer = 0;
   let activeInventoryRequest = null;
-  let inventoryRequestSequence = 0;
+  const inventoryRequestQueue = [];
+  function dispatchNextInventoryRequest() {
+    if (activeInventoryRequest || !inventoryRequestQueue.length) return;
+    inventoryRequestQueue.shift()();
+  }
 
   function normalizeInventoryTab(tab, fallback = "jewellery") {
     const normalized = String(tab || "").toLowerCase();
@@ -2188,6 +1748,8 @@
         typeof window.lockInventoryActionButton === "function" &&
         !window.lockInventoryActionButton(action)
       ) {
+        if (!activeInventoryRequest && !inventoryRequestQueue.length)
+          setPersistentInventoryStatus("Action is already pending. Please wait.");
         return undefined;
       }
 
@@ -2205,17 +1767,8 @@
           : "",
       );
 
-      inventoryRequestSequence += 1;
-      const requestSequence = inventoryRequestSequence;
-      if (
-        activeInventoryRequest &&
-        activeInventoryRequest.readyState !== XMLHttpRequest.DONE
-      ) {
-        activeInventoryRequest.abort();
-      }
-
+      const requestScroll = pendingInventoryScroll;
       const request = new XMLHttpRequest();
-      activeInventoryRequest = request;
       request.open("POST", "inventory_simplified.php", true);
       request.timeout = 20000;
       request.setRequestHeader(
@@ -2224,15 +1777,15 @@
       );
 
       request.onload = () => {
-        if (requestSequence !== inventoryRequestSequence) return;
-        activeInventoryRequest = null;
         if (request.status < 200 || request.status >= 300) {
+          inventoryRequestQueue.length = 0;
           setPersistentInventoryStatus(
-            "Inventory request failed. Use Refresh to try again.",
+            action ? "Inventory action response unavailable. Refresh to verify the result before trying the action again." : "Inventory request failed. Use Refresh to try again.",
           );
           return;
         }
 
+        pendingInventoryScroll = requestScroll;
         const responseParts = request.responseText.split("[BREAK]");
         if (
           window.popupui === 1 &&
@@ -2287,15 +1840,33 @@
       };
 
       const showRequestError = () => {
-        if (requestSequence !== inventoryRequestSequence) return;
-        activeInventoryRequest = null;
+        inventoryRequestQueue.length = 0;
         setPersistentInventoryStatus(
-          "Inventory request failed. Use Refresh to try again.",
+          action ? "Inventory action response unavailable. Refresh to verify the result before trying the action again." : "Inventory request failed. Use Refresh to try again.",
         );
       };
       request.onerror = showRequestError;
       request.ontimeout = showRequestError;
-      request.send(body.toString());
+      request.onloadend = () => {
+        activeInventoryRequest = null;
+        const elements = getPersistentInventoryElements();
+        if (elements.dock) elements.dock.setAttribute("aria-busy", "false");
+        if (elements.refresh) elements.refresh.disabled = false;
+        dispatchNextInventoryRequest();
+      };
+      inventoryRequestQueue.push(() => {
+        activeInventoryRequest = request;
+        setPersistentInventoryStatus(action ? "Applying inventory action…" : "Loading inventory…", true);
+        try {
+          request.send(body.toString());
+        } catch (error) {
+          activeInventoryRequest = null;
+          showRequestError();
+          dispatchNextInventoryRequest();
+          console.error("[" + SCRIPT_ID + "] Inventory request could not start.", error);
+        }
+      });
+      dispatchNextInventoryRequest();
       return request;
     };
 
@@ -2313,7 +1884,7 @@
     if (refresh) refresh.disabled = busy;
 
     window.clearTimeout(inventoryLoadWatchdog);
-    if (!busy) return;
+    if (!busy || MODS.isolatedInventoryRequests) return;
     inventoryLoadWatchdog = window.setTimeout(() => {
       pendingInventoryScroll = null;
       const current = getPersistentInventoryElements();
@@ -2506,14 +2077,9 @@
         tab: requestedTab === currentTab ? currentTab : null,
         top: scroll?.scrollTop || 0,
       };
-      setPersistentInventoryStatus(
-        document.querySelector(
-          `#${SCRIPT_ID}-inventory-content > #inventory_shell`,
-        )
-          ? "Refreshing inventory…"
-          : "Loading inventory…",
-        true,
-      );
+      if (!MODS.isolatedInventoryRequests) {
+        setPersistentInventoryStatus("Loading inventory…", true);
+      }
 
       try {
         return originalInventorySimple.apply(this, args);
@@ -3125,24 +2691,24 @@
     return true;
   }
 
+  let dungeonMapObserver = null;
+  let dungeonMapObserverTimeout = 0;
   function waitForDungeonMap() {
-    if (enhanceDungeonMap()) return;
-
-    let scheduled = false;
+    dungeonMapObserver?.disconnect();
+    window.clearTimeout(dungeonMapObserverTimeout);
+    const previousMap = document.getElementById("dungeonmapcontainer");
     const observer = new MutationObserver(() => {
-      if (scheduled) return;
-      scheduled = true;
-      requestAnimationFrame(() => {
-        scheduled = false;
-        if (enhanceDungeonMap()) observer.disconnect();
-      });
+      const currentMap = document.getElementById("dungeonmapcontainer");
+      if (currentMap && currentMap !== previousMap && enhanceDungeonMap()) {
+        observer.disconnect();
+        window.clearTimeout(dungeonMapObserverTimeout);
+      }
     });
-
+    dungeonMapObserver = observer;
     observer.observe(document.getElementById("popup") || document.body, {
-      childList: true,
-      subtree: true,
+      childList: true, subtree: true,
     });
-    window.setTimeout(() => observer.disconnect(), 15000);
+    dungeonMapObserverTimeout = window.setTimeout(() => observer.disconnect(), 15000);
   }
 
   function initializeDungeonMapSummary() {
@@ -3152,9 +2718,8 @@
 
     const originalDungeonMap = window.dungeonmap;
     const wrappedDungeonMap = function (...args) {
-      const result = originalDungeonMap.apply(this, args);
       waitForDungeonMap();
-      return result;
+      return originalDungeonMap.apply(this, args);
     };
     wrappedDungeonMap.lyraniaDungeonMapSummaryWrapper = true;
     window.dungeonmap = wrappedDungeonMap;
@@ -3296,23 +2861,19 @@
     initializeCompactBattleResults,
     initializeInlinePopupDock,
     initializeDungeonMapSummary,
-    initializeActionTimerFix,
   ];
 
-  try {
-    if (!initializeGameVersionCompatibility()) {
-      console.warn(
-        `[${SCRIPT_ID}] Lyrania ${GAME_VERSION} compatibility could not initialize.`,
-      );
-    }
-  } catch (error) {
-    console.error(
-      `[${SCRIPT_ID}] Lyrania ${GAME_VERSION} compatibility failed to initialize.`,
-      error,
-    );
+  async function startModSuite() {
+  // Load the separate matching CSS before moving any game elements.
+  if (GAME_MAJOR_VERSION !== 4 || document.body.dataset.hubLayout !== "classic") {
+    console.warn("[" + SCRIPT_ID + "] This release requires Lyrania 4 Classic layout.");
+    return;
   }
+  if (!document.getElementById("holder") || !document.getElementById("middlesection") ||
+      !document.getElementById("chat_row")) return;
+  if (!(await loadRemoteTheme())) return;
+  if (!initializeCurrentGameLayout()) return;
 
-  loadRemoteTheme();
   initializers.forEach((initializeMod) => {
     try {
       if (!initializeMod()) {
@@ -3330,4 +2891,6 @@
 
   checkForModUpdate();
   window.setInterval(checkForModUpdate, UPDATE_CHECK_INTERVAL_MS);
+  }
+  startModSuite().catch((error) => console.error("Lyrania Mod Suite initialization failed", error));
 })();
