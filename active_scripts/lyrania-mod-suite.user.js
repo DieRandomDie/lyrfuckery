@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.24.3
+// @version      2.24.4
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -65,7 +65,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.24.3";
+  const SCRIPT_VERSION = "2.24.4";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -2309,6 +2309,10 @@
     }
     document.getElementById("popupcloser")?.setAttribute("aria-hidden", "true");
     dock.appendChild(popupHolder);
+    // Native outside-click handling exempts .lrow descendants. Include the
+    // grid container itself so its inter-panel gaps are part of the workspace.
+    // #holder's ID-scoped grid CSS takes precedence over native .lrow flex CSS.
+    document.getElementById("holder")?.classList.add("lrow");
     document.documentElement.classList.add(`${SCRIPT_ID}-inline-popup`);
 
     const popupTopbar = document.getElementById("popuptopbar");
