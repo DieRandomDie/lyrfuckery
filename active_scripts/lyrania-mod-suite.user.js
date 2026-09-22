@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.24.1
+// @version      2.24.2
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -65,12 +65,12 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.24.1";
+  const SCRIPT_VERSION = "2.24.2";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
-    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.9.0";
-  const REQUIRED_THEME_VERSION = "1.9.0";
+    "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-modern-responsive-theme.css?v=1.9.1";
+  const REQUIRED_THEME_VERSION = "1.9.1";
   const REMOTE_THEME_CACHE_KEY = "lyrania-mod-suite:remote-theme-cache";
   const CHAT_SETTINGS_STORAGE_KEY =
     "lyrania-mod-suite:chat-channel-settings";
@@ -2861,6 +2861,60 @@
     }
   }
 
+
+  function initializeHousingPanelScroll() {
+    const scrollHousingPanel = () => {
+      const panel = window.popupui === 1
+        ? document.getElementById("popupresdisplay")
+        : document.getElementById("content");
+      if (!panel || !panel.getClientRects().length) return;
+      const panelBounds = panel.getBoundingClientRect();
+      const controls = panel.querySelectorAll("a[href], [onclick]");
+      const hourglassVisible = [...controls].some((control) => {
+        const command = (control.getAttribute("href") || control.getAttribute("onclick") || "")
+          .replace(/\s+/g, "").replace(/^javascript:/i, "");
+        if (!/^build\(['"]use_housingtimer_hourglass['"],['"]all['"],1\);?$/i.test(command)) return false;
+        const style = getComputedStyle(control);
+        if (!control.getClientRects().length || style.visibility !== "visible" || Number(style.opacity) === 0)
+          return false;
+        const bounds = control.getBoundingClientRect();
+        return bounds.bottom > Math.max(panelBounds.top, 0) &&
+          bounds.top < Math.min(panelBounds.bottom, window.innerHeight) &&
+          bounds.right > Math.max(panelBounds.left, 0) &&
+          bounds.left < Math.min(panelBounds.right, window.innerWidth);
+      });
+      if (!hourglassVisible) panel.scrollTop = panel.scrollHeight;
+    };
+    for (const name of ["house", "build"]) {
+      const original = window[name];
+      if (typeof original !== "function") continue;
+      if (original.lyraniaHousingScroll) continue;
+      const wrapped = function (...args) {
+        const result = original.apply(this, args);
+        const request = window.xmlhttp;
+        const onReady = request?.onreadystatechange;
+        if (typeof onReady === "function") {
+          request.onreadystatechange = function (...eventArgs) {
+            const value = onReady.apply(this, eventArgs);
+            if (request.readyState === 4 && request.status === 200) {
+              // Let response markup and its scripts finish layout before scrolling.
+              requestAnimationFrame(() => requestAnimationFrame(() => {
+                if (window.xmlhttp === request && request.readyState === 4 &&
+                    request.onreadystatechange === housingReady) scrollHousingPanel();
+              }));
+            }
+            return value;
+          };
+          const housingReady = request.onreadystatechange;
+        }
+        return result;
+      };
+      wrapped.lyraniaHousingScroll = true;
+      window[name] = wrapped;
+    }
+    return true;
+  }
+
   const initializers = [
     initializeCompactHeader,
     initializeChatMods,
@@ -2874,6 +2928,7 @@
     initializeCompactBattleResults,
     initializeInlinePopupDock,
     initializeDungeonMapSummary,
+    initializeHousingPanelScroll,
   ];
 
   async function startModSuite() {
