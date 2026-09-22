@@ -1,6 +1,6 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.9.2
+ * Version: 1.10.0
  *
  * Plain custom CSS: load this after Lyrania's own styles.
  * Lyrania 4 Classic: readable black/gray theme.
@@ -4336,4 +4336,40 @@ html, body { height: auto !important; overflow-y: auto !important; }
     min-height: 0 !important;
   }
   #holder #chatwindow { overscroll-behavior-y: contain; }
+}
+
+/* Reviewed menus: responsive to the panel width, including browser zoom. */
+#popupresdisplay { container: lyr-popup / inline-size; }
+#popup[data-lyrania-reviewed] { overflow-wrap: anywhere; min-width: 0; }
+#popup[data-lyrania-reviewed] :is(.trade-shell, .purchase-card, .trade-table-wrap, .container, input, select, textarea) { box-sizing: border-box; max-width: 100%; min-width: 0; }
+#popup[data-lyrania-reviewed] :is(.trade-toolbar, .trade-tab-row, .trade-currency-group, .trade-price-input-row) { display: flex; flex-wrap: wrap; gap: .5rem; }
+#popup[data-lyrania-reviewed] :is(.trade-currency-field, .trade-order-desc, .trade-order-price) { min-width: 0; max-width: 100%; }
+#popup[data-lyrania-reviewed] :is(td, th) { overflow-wrap: anywhere; white-space: normal; }
+#popup[data-lyrania-reviewed] .lyr-reset-indent { padding-left: .5rem !important; }
+#popup[data-lyrania-reviewed] .trade-table-wrap { overflow-x: visible; }
+#lyr-support-capture { margin-top: .5rem; font-size: inherit; }
+#lyr-capture-dialog { background: #111; color: #eee; border: 1px solid #888; border-radius: .5rem; width: min(34rem, 90vw); max-height: 85dvh; overflow: auto; font: 16px/1.5 system-ui; }
+#lyr-capture-dialog button { margin: .3rem; padding: .5rem; background: #292929; color: #fff; border: 1px solid #888; white-space: normal; }
+#lyr-capture-dialog::backdrop { background: #000b; }
+@container lyr-popup (max-width: 1000px) {
+  #popup[data-lyrania-reviewed] .lyr-wide-table,
+  #popup[data-lyrania-reviewed] .lyr-wide-table > :is(tbody, thead) { display: block; width: 100% !important; }
+  #popup[data-lyrania-reviewed] .lyr-wide-table .lyr-record { display: block; padding: .65rem 0; border-bottom: 1px solid #666; }
+  #popup[data-lyrania-reviewed] .lyr-wide-table .lyr-record > td { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: .7rem; width: auto !important; text-align: left; }
+  #popup[data-lyrania-reviewed] .lyr-wide-table .lyr-record > td::before { content: attr(data-lyr-label); font-weight: bold; color: #ddd; }
+  #popup[data-lyrania-reviewed] .lyr-wide-table .lyr-table-heading { display: flex; flex-wrap: wrap; gap: .5rem; }
+}
+@container lyr-popup (max-width: 700px) {
+  #popup[data-lyrania-reviewed] :is(.lyr-flow-column, .col-4, .col-6, .col-8, .trade-order-row, .purchase-summary-grid, .jadeskill, .skillinfo, .skilltrain) { float: none !important; width: 100% !important; max-width: 100%; flex: 0 0 100%; margin-left: 0 !important; box-sizing: border-box; }
+  #popup[data-lyrania-reviewed] .row { margin-left: 0; margin-right: 0; }
+  #popup[data-lyrania-reviewed] .offset-2 { margin-left: 0; }
+  #popup[data-lyrania-reviewed] :is(.trade-order-row, .purchase-summary-grid) { display: block; }
+  #popup[data-lyrania-reviewed] :is(.lyr-record-table, .lyr-event-table),
+  #popup[data-lyrania-reviewed] :is(.lyr-record-table, .lyr-event-table) > :is(tbody, thead) { display: block; width: 100% !important; }
+  #popup[data-lyrania-reviewed] .lyr-record { display: block; padding: .65rem 0; border-bottom: 1px solid #666; }
+  #popup[data-lyrania-reviewed] .lyr-record > td { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: .7rem; width: auto !important; text-align: left; }
+  #popup[data-lyrania-reviewed] .lyr-record > td::before { content: attr(data-lyr-label); font-weight: bold; color: #ddd; }
+  #popup[data-lyrania-reviewed] .lyr-table-heading { display: flex; flex-wrap: wrap; gap: .5rem; }
+  #popup[data-lyrania-reviewed] .lyr-table-heading > :is(td, th) { width: auto !important; }
+  #popup[data-lyrania-reviewed] .lyr-event-table > tbody > tr > td { display: block; width: auto !important; }
 }
