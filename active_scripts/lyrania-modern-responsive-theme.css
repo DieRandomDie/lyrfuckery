@@ -1,10 +1,10 @@
 /*
  * Lyrania Modern Responsive Theme
- * Version: 1.8.2
+ * Version: 1.9.0
  *
  * Plain custom CSS: load this after Lyrania's own styles.
- * This revision keeps the menu workspace stable and gives maps more room.
- * Lyrania Mod Suite 2.21.0+ uses this as its single stylesheet.
+ * Lyrania 4 Classic: readable black/gray theme.
+ * Separate stylesheet loaded by Lyrania Mod Suite 2.24.0.
  *
  * Layouts
  *   Full width : 1440px and wider — game workspace + sticky inventory rail
@@ -75,13 +75,13 @@
   color: #aaa;
   background: #111;
   font: inherit;
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1;
   cursor: pointer;
 }
 #lyrania-chat-enhancements-channels .lyrania-channel-toggle.is-enabled {
   color: #fff;
-  background: #286b35;
+  background: #454545;
 }
 #lyrania-chat-enhancements-channels .lyrania-chat-filter:hover,
 #lyrania-chat-enhancements-channels .lyrania-chat-filter:focus-visible {
@@ -137,11 +137,6 @@ html[data-lyrania-game-major="4"]
 #lyrania-chat-enhancements-quick-menu button:focus-visible {
   background: #333;
   outline: none;
-}
-#timer[data-lyrania-action-queued="true"]::after {
-  content: " — Action queued";
-  color: #ffcc33;
-  font-weight: bold;
 }
 #chattabs.lyrania-chat-enhancements-chat-loot-split > #chatpanes {
   display: grid;
@@ -258,7 +253,7 @@ html[data-lyrania-game-major="4"]
   padding: 4px 6px;
   list-style: none;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
 }
 #lyrania-chat-enhancements-loot-summary
   .lyrania-loot-stat
@@ -311,7 +306,7 @@ html[data-lyrania-game-major="4"]
   display: block;
   margin-bottom: 6px;
   color: #ffcc33;
-  font-size: 15px;
+  font-size: 18px;
 }
 #lyrania-chat-enhancements-update-banner div {
   margin-bottom: 10px;
@@ -362,13 +357,13 @@ html[data-lyrania-game-major="4"]
 }
 :where(#lyrania-chat-enhancements-inventory-heading) small {
   color: #aaa;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 :where(#lyrania-chat-enhancements-inventory-heading) strong {
-  font-size: 15px;
+  font-size: 18px;
 }
 :where(#lyrania-chat-enhancements-inventory-refresh) {
   flex: 0 0 auto;
@@ -388,7 +383,7 @@ html[data-lyrania-game-major="4"]
 :where(#lyrania-chat-enhancements-inventory-status) {
   padding: 10px 12px;
   color: #ccc;
-  font-size: 12px;
+  font-size: 14px;
 }
 :where(#lyrania-chat-enhancements-inventory-status):empty {
   display: none;
@@ -427,21 +422,21 @@ html[data-lyrania-game-major="4"]
 
 :root {
   color-scheme: dark;
-  --lyr-bg-0: #070a0f;
-  --lyr-bg-1: #0b111a;
-  --lyr-bg-2: #101925;
-  --lyr-surface: rgba(16, 25, 37, 0.94);
-  --lyr-surface-strong: rgba(20, 31, 45, 0.98);
+  --lyr-bg-0: #050505;
+  --lyr-bg-1: #090909;
+  --lyr-bg-2: #111111;
+  --lyr-surface: rgba(26, 26, 26, 0.94);
+  --lyr-surface-strong: rgba(32, 32, 32, 0.98);
   --lyr-surface-soft: rgba(255, 255, 255, 0.045);
   --lyr-surface-hover: rgba(255, 255, 255, 0.085);
-  --lyr-border: rgba(160, 190, 220, 0.18);
-  --lyr-border-strong: rgba(120, 190, 255, 0.38);
-  --lyr-text: #e8eef6;
-  --lyr-text-soft: #a9b7c8;
-  --lyr-text-faint: #76879b;
-  --lyr-accent: #62b7ff;
-  --lyr-accent-strong: #2e92ec;
-  --lyr-accent-soft: rgba(98, 183, 255, 0.14);
+  --lyr-border: rgba(190, 190, 190, 0.18);
+  --lyr-border-strong: rgba(190, 190, 190, 0.38);
+  --lyr-text: #f2f2f2;
+  --lyr-text-soft: #d0d0d0;
+  --lyr-text-faint: #b5b5b5;
+  --lyr-accent: #d5d5d5;
+  --lyr-accent-strong: #a8a8a8;
+  --lyr-accent-soft: rgba(190, 190, 190, 0.14);
   --lyr-gold: #f2c66d;
   --lyr-success: #61d69b;
   --lyr-warning: #f2bd63;
@@ -457,14 +452,14 @@ html[data-lyrania-game-major="4"]
   --lyr-font:
     ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  --theme-table-border-strong: rgba(120, 190, 255, 0.25);
-  --theme-table-border-soft: rgba(160, 190, 220, 0.14);
-  --theme-table-border-faint: rgba(160, 190, 220, 0.09);
+  --theme-table-border-strong: rgba(190, 190, 190, 0.25);
+  --theme-table-border-soft: rgba(190, 190, 190, 0.14);
+  --theme-table-border-faint: rgba(190, 190, 190, 0.09);
   --datatable-theme-bg-color: transparent;
   --datatable-theme-bg-image: none;
   --inventory-theme-bg-color: transparent;
   --inventory-theme-bg-image: none;
-  --popup-theme-bg-color: #0e1722;
+  --popup-theme-bg-color: #101010;
   --popup-theme-bg-image: none;
   --plat: #f7fbff;
   --gold: #f2c66d;
@@ -499,18 +494,18 @@ body {
   background:
     radial-gradient(
       circle at 10% -10%,
-      rgba(46, 146, 236, 0.17),
+      rgba(190, 190, 190, 0.17),
       transparent 36rem
     ),
     radial-gradient(
       circle at 95% 10%,
-      rgba(78, 92, 180, 0.12),
+      rgba(190, 190, 190, 0.12),
       transparent 32rem
     ),
-    linear-gradient(145deg, var(--lyr-bg-0), var(--lyr-bg-1) 48%, #080d14);
+    linear-gradient(145deg, var(--lyr-bg-0), var(--lyr-bg-1) 48%, #080808);
   background-attachment: fixed;
   font-family: var(--lyr-font);
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.45;
   text-align: left;
 }
@@ -518,7 +513,7 @@ body {
 body,
 body * {
   box-sizing: border-box;
-  scrollbar-color: rgba(120, 190, 255, 0.45) rgba(0, 0, 0, 0.16);
+  scrollbar-color: rgba(190, 190, 190, 0.45) rgba(0, 0, 0, 0.16);
   scrollbar-width: thin;
 }
 
@@ -547,23 +542,23 @@ body *::-webkit-scrollbar-track {
 body *::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 999px;
-  background: rgba(120, 190, 255, 0.4);
+  background: rgba(190, 190, 190, 0.4);
   background-clip: padding-box;
 }
 
 ::selection {
   color: #fff;
-  background: rgba(46, 146, 236, 0.7);
+  background: rgba(190, 190, 190, 0.7);
 }
 
 a {
-  color: #8cc8ff;
+  color: #e0e0e0;
   text-decoration: none;
   text-underline-offset: 0.18em;
 }
 
 a:hover {
-  color: #c3e3ff;
+  color: #ffffff;
   background: transparent;
   text-decoration: underline;
 }
@@ -660,7 +655,7 @@ hr {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.3;
   isolation: isolate;
   --lyr-control-height: 30px;
@@ -705,17 +700,17 @@ hr {
     linear-gradient(145deg, rgba(255, 255, 255, 0.055), transparent 58%),
     var(--lyr-surface);
   box-shadow: var(--lyr-shadow-soft);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.65;
 }
 
 #header .headerbox:hover {
-  border-color: rgba(120, 190, 255, 0.3);
+  border-color: rgba(190, 190, 190, 0.3);
 }
 
 #header .headerbox b {
   color: var(--lyr-text-soft);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 650;
   letter-spacing: 0.025em;
 }
@@ -732,7 +727,7 @@ hr {
 
 html[data-lyrania-game-major="4"] #header .cc-nav-group-label {
   color: var(--lyr-text-soft);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.035em;
   text-transform: uppercase;
@@ -785,7 +780,7 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
 #bonusdisplays,
 #sidecounter,
 #questtracker {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -808,7 +803,7 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
 #equipment h3 {
   margin: 0;
   color: var(--lyr-text);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.06em;
   text-align: left;
   text-transform: uppercase;
@@ -852,8 +847,8 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
   overflow-wrap: anywhere;
   border: 1px solid var(--lyr-border);
   border-radius: 8px;
-  background: rgba(98, 183, 255, 0.055);
-  font-size: 12px;
+  background: rgba(190, 190, 190, 0.055);
+  font-size: 14px;
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
@@ -879,9 +874,9 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
   min-height: 25px;
   margin: 3px 2px 1px 0;
   padding: 3px 6px;
-  border: 1px solid rgba(98, 183, 255, 0.24);
+  border: 1px solid rgba(190, 190, 190, 0.24);
   border-radius: 6px;
-  background: rgba(98, 183, 255, 0.09);
+  background: rgba(190, 190, 190, 0.09);
   font-weight: 700;
   line-height: 1.15;
 }
@@ -928,7 +923,7 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
 
 #loadoutpotions select {
   padding: 3px 6px;
-  font-size: 10.5px;
+  font-size: 13px;
 }
 
 #timer {
@@ -952,7 +947,7 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
   top: auto !important;
   z-index: auto !important;
   min-width: min(180px, 100%);
-  font-size: 10.5px;
+  font-size: 13px;
 }
 
 #content {
@@ -975,14 +970,14 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
 }
 
 #content.lyrania-chat-enhancements-compact-battle-results {
-  font-size: 10.5px;
+  font-size: 13px;
   line-height: 1.25;
 }
 
 #content.lyrania-chat-enhancements-compact-battle-results .battleContainer {
   gap: 6px;
   margin-bottom: 3px !important;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.2;
 }
 
@@ -1019,7 +1014,7 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
   > div:first-child
   > div {
   gap: 2px 8px !important;
-  font-size: 9.5px;
+  font-size: 12px;
 }
 
 #content.lyrania-chat-enhancements-compact-battle-results
@@ -1041,7 +1036,7 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
 
 #content.lyrania-chat-enhancements-compact-battle-results #stopauto input {
   padding: 3px 8px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 #content
@@ -1053,10 +1048,6 @@ html[data-lyrania-game-major="4"] #header .cc-nav-divider {
   min-width: min(112px, 100%);
 }
 
-#content [data-lyrania-queued-control="true"] {
-  border-color: var(--lyr-warning) !important;
-  box-shadow: 0 0 0 2px rgba(242, 189, 99, 0.16) !important;
-}
 
 #bannerholder {
   top: 12px;
@@ -1091,7 +1082,7 @@ input[type="password"] {
   border: 1px solid var(--lyr-border-strong);
   border-radius: var(--lyr-radius-sm);
   color: var(--lyr-text);
-  background: #111c29;
+  background: #181818;
   font: inherit;
   line-height: 1.2;
 }
@@ -1112,7 +1103,7 @@ button:hover,
 input[type="button"]:hover,
 input[type="submit"]:hover,
 input[type="reset"]:hover {
-  border-color: rgba(140, 200, 255, 0.62);
+  border-color: rgba(190, 190, 190, 0.62);
   background: linear-gradient(180deg, #244c70, #193853);
 }
 
@@ -1206,7 +1197,7 @@ input[type="radio"] {
   border-color: var(--lyr-border);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 62%),
-    rgba(8, 15, 23, 0.55);
+    rgba(15, 15, 15, 0.55);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035) inset;
 }
 
@@ -1218,7 +1209,7 @@ input[type="radio"] {
 .purchase-section-heading {
   margin-bottom: 11px;
   color: var(--lyr-text);
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 750;
   letter-spacing: -0.01em;
 }
@@ -1246,7 +1237,7 @@ input[type="radio"] {
 
 .purchase-summary-label {
   color: var(--lyr-text-soft);
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.075em;
 }
 
@@ -1303,9 +1294,9 @@ input[type="radio"] {
 .datatablelogs th {
   padding: 9px 8px !important;
   color: #dce9f6;
-  background: rgba(98, 183, 255, 0.09) !important;
+  background: rgba(190, 190, 190, 0.09) !important;
   border-bottom-color: var(--lyr-border-strong) !important;
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.045em;
   text-transform: uppercase;
 }
@@ -1318,7 +1309,7 @@ input[type="radio"] {
 
 .dataTable tbody tr:hover td,
 .datatablelogs tbody tr:hover td {
-  background: rgba(98, 183, 255, 0.06) !important;
+  background: rgba(190, 190, 190, 0.06) !important;
 }
 
 .dataTables_wrapper,
@@ -1369,7 +1360,7 @@ input[type="radio"] {
   overflow-wrap: anywhere;
   border: 1px solid var(--lyr-border);
   border-radius: var(--lyr-radius);
-  background: rgba(6, 13, 20, 0.6);
+  background: rgba(13, 13, 13, 0.6);
 }
 
 #rightinfo.mapInfoPanel {
@@ -1394,7 +1385,7 @@ input[type="radio"] {
 #rightinfo.mapInfoPanel button {
   min-height: 30px;
   padding: 5px 3px;
-  font-size: 10.5px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -1432,7 +1423,7 @@ input[type="radio"] {
 
 #dungeonmapcontainer .map_room_moblist_grid {
   font-family: var(--lyr-font);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 750;
   text-shadow: 0 1px 2px #000;
 }
@@ -1442,7 +1433,7 @@ input[type="radio"] {
   box-sizing: border-box;
   overflow: hidden;
   border-radius: 4px;
-  background: #101923;
+  background: #161616;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
 
@@ -1456,9 +1447,9 @@ input[type="radio"] {
   z-index: 2;
   display: block;
   box-sizing: border-box;
-  font-size: 12px !important;
+  font-size: 14px !important;
   line-height: 1;
-  background: var(--lyr-room-bg, rgba(30, 43, 56, 0.94));
+  background: var(--lyr-room-bg, rgba(43, 43, 43, 0.94));
   text-shadow: none;
   -webkit-text-stroke: 0 !important;
 }
@@ -1525,7 +1516,7 @@ input[type="radio"] {
   > a:not(:has(> .dungeon_room_status_description))::before {
   content: "M";
   color: var(--lyr-room-label, #aebdca);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -1547,7 +1538,7 @@ input[type="radio"] {
 }
 
 .mapLayout .mapContainer .maproom_current_location {
-  --lyr-room-bg: rgba(20, 89, 128, 0.96);
+  --lyr-room-bg: rgba(190, 190, 190, 0.96);
   --lyr-room-label: #bcecff;
   box-shadow: 0 0 0 2px #79d7ff inset;
 }
@@ -1564,12 +1555,12 @@ input[type="radio"] {
   align-items: center;
   justify-content: center;
   padding: 0 3px;
-  border: 1px solid rgba(174, 189, 202, 0.45);
+  border: 1px solid rgba(190, 190, 190, 0.45);
   border-radius: 3px;
   color: #aebdca !important;
-  background: rgba(7, 12, 18, 0.88);
+  background: rgba(12, 12, 12, 0.88);
   font-family: var(--lyr-font);
-  font-size: 8px !important;
+  font-size: 12px !important;
   font-weight: 750;
   line-height: 10px;
   text-shadow: none;
@@ -1586,7 +1577,7 @@ input[type="radio"] {
   content: "P";
   margin-right: 1px;
   color: #7f93a5;
-  font-size: 7px;
+  font-size: 12px;
 }
 
 .mapLayout .mapContainer .players_in_room::before {
@@ -1630,7 +1621,7 @@ input[type="radio"] {
 #chatresizehandle .chat-resize-grip {
   width: 82px;
   height: 4px;
-  background: rgba(140, 200, 255, 0.42);
+  background: rgba(190, 190, 190, 0.42);
   box-shadow: none;
 }
 
@@ -1656,8 +1647,8 @@ input[type="radio"] {
   overflow-x: hidden !important;
   border: 1px solid var(--lyr-border);
   border-radius: 9px;
-  background: rgba(5, 10, 16, 0.42);
-  font-size: 12px;
+  background: rgba(10, 10, 10, 0.42);
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -1681,7 +1672,7 @@ div.chatline:hover {
 #lyrania-chat-enhancements-channels {
   border-color: var(--lyr-border) !important;
   border-radius: 10px !important;
-  background: rgba(5, 10, 16, 0.72) !important;
+  background: rgba(10, 10, 10, 0.72) !important;
 }
 
 #lyrania-chat-enhancements-channels .lyrania-chat-filter {
@@ -1696,7 +1687,7 @@ div.chatline:hover {
 
 #lyrania-chat-enhancements-channels .lyrania-channel-toggle {
   border-color: var(--lyr-border) !important;
-  background: #101924 !important;
+  background: #161616 !important;
 }
 
 #lyrania-chat-enhancements-channels .lyrania-channel-toggle.is-enabled {
@@ -1743,11 +1734,11 @@ div.chatline:hover {
   z-index: 2;
   margin: -6px -6px 4px !important;
   padding: 6px;
-  background: rgba(9, 16, 24, 0.97);
+  background: rgba(16, 16, 16, 0.97);
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-heading strong {
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.035em;
   text-transform: uppercase;
 }
@@ -1755,13 +1746,13 @@ div.chatline:hover {
 #lyrania-chat-enhancements-loot-summary button {
   min-height: 26px;
   padding: 3px 7px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-total {
   margin: 0 0 5px !important;
   color: var(--lyr-text-soft);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-grid {
@@ -1782,8 +1773,8 @@ div.chatline:hover {
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat[open] {
   grid-column: 1 / -1;
-  border-color: rgba(98, 183, 255, 0.28);
-  background: rgba(98, 183, 255, 0.055);
+  border-color: rgba(190, 190, 190, 0.28);
+  background: rgba(190, 190, 190, 0.055);
 }
 
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat > summary {
@@ -1796,7 +1787,7 @@ div.chatline:hover {
   overflow: hidden;
   list-style: none;
   color: #edf6ff;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.2;
   cursor: pointer;
   position: relative;
@@ -1833,7 +1824,7 @@ div.chatline:hover {
   min-width: 0;
   overflow-wrap: anywhere;
   color: #f5f9fe;
-  font-size: 9px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -1852,7 +1843,7 @@ div.chatline:hover {
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.14);
   color: #f4f8fc;
-  font-size: 9px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
   text-align: right;
@@ -1861,7 +1852,7 @@ div.chatline:hover {
 #lyrania-chat-enhancements-loot-summary .lyrania-loot-stat-values small {
   display: block;
   color: var(--lyr-text-faint);
-  font-size: 7px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1905,14 +1896,14 @@ div.chatline:hover {
 #lyrania-chat-enhancements-quick-menu {
   border-color: var(--lyr-border-strong) !important;
   border-radius: 10px !important;
-  background: #0c1520 !important;
+  background: #101010 !important;
   box-shadow: var(--lyr-shadow) !important;
 }
 
 #lyrania-chat-enhancements-update-banner {
   border-color: rgba(242, 198, 109, 0.48) !important;
   border-radius: 12px !important;
-  background: #111a24 !important;
+  background: #141414 !important;
   box-shadow: var(--lyr-shadow) !important;
 }
 
@@ -1945,7 +1936,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   z-index: 1;
   height: 38px;
   border-bottom: 1px solid var(--lyr-border);
-  background: rgba(18, 29, 42, 0.98);
+  background: rgba(30, 30, 30, 0.98);
   content: "";
   pointer-events: none;
 }
@@ -1966,7 +1957,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   background: transparent;
   box-shadow: none;
   font-family: var(--lyr-font);
-  font-size: 11.5px;
+  font-size: 14px;
   pointer-events: auto;
 }
 
@@ -1987,7 +1978,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   flex: 0 0 38px;
   height: 38px;
   border-bottom: 1px solid var(--lyr-border);
-  background: rgba(18, 29, 42, 0.98);
+  background: rgba(30, 30, 30, 0.98);
   cursor: default !important;
 }
 
@@ -1999,13 +1990,13 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   min-width: 145px;
   max-width: calc(100% - 68px);
   min-height: 30px;
-  font-size: 10.5px;
+  font-size: 13px;
 }
 
 #lyrania-chat-enhancements-popup-dock #popupclosetextcontainer {
   right: 4px;
   margin-top: 3px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 #lyrania-chat-enhancements-popup-dock #popupclosetextcontainer a {
@@ -2064,7 +2055,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
 .glt-elm,
 .tippy-box {
   color: var(--lyr-text);
-  background: #111c29;
+  background: #181818;
   border: 1px solid var(--lyr-border-strong);
   border-radius: 10px;
   box-shadow: var(--lyr-shadow);
@@ -2089,7 +2080,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   border-radius: var(--lyr-radius-lg);
   color: var(--lyr-text);
   background:
-    linear-gradient(150deg, rgba(98, 183, 255, 0.055), transparent 34%),
+    linear-gradient(150deg, rgba(190, 190, 190, 0.055), transparent 34%),
     var(--lyr-surface-strong);
   box-shadow: var(--lyr-shadow);
 }
@@ -2118,7 +2109,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
 #lyrania-chat-enhancements-inventory-heading strong {
   flex: 0 0 auto;
   color: #f5f9fe;
-  font-size: 16px;
+  font-size: 19px;
   letter-spacing: -0.01em;
 }
 
@@ -2143,7 +2134,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   color: var(--lyr-text-soft);
   border: 0;
   background: none;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
   text-overflow: ellipsis;
@@ -2244,7 +2235,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   margin: 0 auto 8px;
   padding: 7px 2px 6px;
   border-bottom: 1px solid var(--lyr-border);
-  background: rgba(14, 23, 34, 0.975);
+  background: rgba(24, 24, 24, 0.975);
   backdrop-filter: blur(12px);
 }
 
@@ -2254,7 +2245,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   justify-content: center;
   gap: 4px;
   width: 100%;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .inventory-tab-nav .purchase-tab-separator {
@@ -2285,11 +2276,11 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
 }
 
 .inventory-tab-nav .purchase-tab-link.is-active {
-  border-color: rgba(98, 183, 255, 0.42);
+  border-color: rgba(190, 190, 190, 0.42);
   color: #eef8ff;
   background: var(--lyr-accent-soft);
   text-decoration: none;
-  box-shadow: 0 0 0 1px rgba(98, 183, 255, 0.08) inset;
+  box-shadow: 0 0 0 1px rgba(190, 190, 190, 0.08) inset;
 }
 
 .inventory-section-shell {
@@ -2305,7 +2296,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
 .inventory-orb-note,
 .inventory-enchant-inline-note {
   color: var(--lyr-text-soft);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -2367,7 +2358,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
 .inventory-consumable-table tr:hover td,
 .inventory-datatable tbody tr:hover td,
 .inventory-datatable.dataTable tbody tr:hover td {
-  background: rgba(98, 183, 255, 0.055) !important;
+  background: rgba(190, 190, 190, 0.055) !important;
 }
 
 .inventory-equipped-meta {
@@ -2397,7 +2388,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
 .inventory-jewel-toolbar-count,
 .inventory-jewel-page-summary {
   color: var(--lyr-text-soft);
-  font-size: 11px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2423,12 +2414,12 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   border-color: var(--lyr-border);
   color: var(--lyr-text-soft);
   background: rgba(255, 255, 255, 0.03);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .inventory-filter-chip.is-active,
 .inventory-filter-chip:hover {
-  border-color: rgba(98, 183, 255, 0.42);
+  border-color: rgba(190, 190, 190, 0.42);
   color: #fff;
   background: var(--lyr-accent-soft);
 }
@@ -2444,7 +2435,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
 
 .inventory-page-link.is-active,
 .inventory-page-link:hover {
-  border-color: rgba(98, 183, 255, 0.46);
+  border-color: rgba(190, 190, 190, 0.46);
   color: #fff;
   background: var(--lyr-accent-soft);
 }
@@ -2502,7 +2493,7 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
 
 .inventory-enchant-utility-title {
   color: #eaf5ff;
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 750;
 }
 
@@ -2534,12 +2525,12 @@ html.lyrania-chat-enhancements-inline-popup #popupcloser {
   min-height: 25px;
   margin: 1px 2px;
   border-radius: 5px;
-  background: rgba(98, 183, 255, 0.075);
+  background: rgba(190, 190, 190, 0.075);
 }
 
 .inventory-enchant-actions-column a:hover,
 .inventory-actions-column a:hover {
-  background: rgba(98, 183, 255, 0.17);
+  background: rgba(190, 190, 190, 0.17);
   text-decoration: none;
 }
 
@@ -2619,7 +2610,7 @@ a.text-fail {
   padding: 3px;
   border: 1px solid var(--theme-table-border-faint);
   border-radius: 7px;
-  background: rgba(98, 183, 255, 0.045) !important;
+  background: rgba(190, 190, 190, 0.045) !important;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable thead th {
@@ -2634,7 +2625,7 @@ a.text-fail {
   border: 1px solid transparent !important;
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.025) !important;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.15;
   text-align: center !important;
   white-space: normal !important;
@@ -2676,7 +2667,7 @@ a.text-fail {
   overflow-wrap: anywhere;
   border: 0 !important;
   background: transparent !important;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.25;
   text-align: left !important;
   white-space: normal !important;
@@ -2689,7 +2680,7 @@ a.text-fail {
   display: block;
   margin-bottom: 1px;
   color: var(--lyr-text-faint);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.045em;
   line-height: 1.1;
@@ -2697,8 +2688,8 @@ a.text-fail {
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-datatable tbody tr:hover {
-  border-color: rgba(98, 183, 255, 0.3);
-  background: rgba(98, 183, 255, 0.055) !important;
+  border-color: rgba(190, 190, 190, 0.3);
+  background: rgba(190, 190, 190, 0.055) !important;
 }
 
 /* Jewellery: selection + name, six compact stats, then actions. */
@@ -2723,7 +2714,7 @@ a.text-fail {
   grid-column: 2 / -1;
   align-self: center;
   color: #f4f8fc;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 750;
 }
 
@@ -2818,7 +2809,7 @@ a.text-fail {
   grid-column: 2 / -1;
   align-self: center;
   color: #f4f8fc;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 750;
 }
 
@@ -2885,7 +2876,7 @@ a.text-fail {
   tbody
   td:nth-child(1) {
   color: #f4f8fc;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 750;
 }
 
@@ -2932,7 +2923,7 @@ a.text-fail {
   tbody
   td:nth-child(1) {
   color: #f4f8fc;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 750;
 }
 
@@ -3028,7 +3019,7 @@ a.text-fail {
   border-right: 1px solid var(--theme-table-border-faint) !important;
   border-radius: 0 !important;
   background: transparent !important;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 20px;
   text-align: center !important;
   text-overflow: ellipsis;
@@ -3087,7 +3078,7 @@ a.text-fail {
   tbody
   td:first-child {
   color: #f4f8fc;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-align: left !important;
 }
@@ -3146,7 +3137,7 @@ a.text-fail {
   min-height: 20px;
   margin: 0 1px;
   padding: 1px 3px;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 18px;
 }
 
@@ -3165,7 +3156,7 @@ a.text-fail {
   min-width: 48px;
   min-height: 26px;
   padding: 3px 5px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 #lyrania-chat-enhancements-inventory-dock .inventory-consumable-actions,
@@ -3226,7 +3217,7 @@ a.text-fail {
 #lyrania-chat-enhancements-inventory-dock .inventory-equipped-meta {
   align-self: center;
   color: var(--lyr-text-faint);
-  font-size: 9px;
+  font-size: 12px;
   text-align: right;
 }
 
@@ -3449,7 +3440,7 @@ a.text-fail {
   }
 
   body {
-    font-size: 13px;
+    font-size: 16px;
     background-attachment: scroll;
   }
 
@@ -3466,7 +3457,7 @@ a.text-fail {
   #header .headerbox {
     min-height: 0;
     padding: 8px 9px;
-    font-size: 11px;
+    font-size: 13px;
   }
 
   #middlesection {
@@ -3825,7 +3816,7 @@ html.lyrania-chat-enhancements-compact-header
   padding: 7px;
   overflow-x: auto !important;
   overflow-y: hidden !important;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.35;
 }
 
@@ -3836,7 +3827,7 @@ html.lyrania-chat-enhancements-compact-header
   padding: 0 7px !important;
   overflow: hidden auto;
   border: 0 !important;
-  font-size: 11px !important;
+  font-size: 13px !important;
   line-height: 1.35 !important;
   scrollbar-gutter: auto;
 }
@@ -3873,7 +3864,7 @@ html.lyrania-chat-enhancements-compact-header
 #header
   #side1.lyrania-chat-enhancements-header-status
   :is(#tstimer, #usersmartinfo, #bonusdisplays, #sidecounter, #questtracker) {
-  font-size: 11px !important;
+  font-size: 13px !important;
   line-height: 1.35 !important;
 }
 
@@ -3916,7 +3907,7 @@ html.lyrania-chat-enhancements-compact-header
   .lyrania-chat-enhancements-status-server
   #usersmartinfo
   * {
-  font-size: 11px !important;
+  font-size: 13px !important;
   line-height: 1.35 !important;
 }
 
@@ -3933,7 +3924,7 @@ html.lyrania-chat-enhancements-compact-header
 
 #lyrania-chat-enhancements-header-menu-panel {
   width: 100%;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.55;
   text-align: left;
 }
@@ -3951,7 +3942,7 @@ html.lyrania-chat-enhancements-compact-header
   #lyrania-chat-enhancements-header-menu-panel
   .cc-nav-group-label {
   color: var(--lyr-text-soft);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.035em;
   text-transform: uppercase;
@@ -4116,4 +4107,120 @@ html.lyrania-chat-enhancements-compact-header
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* 1.9.0: current Classic layout, accessible text and neutral chrome. */
+html.lyrania-chat-enhancements-compact-header body[data-hub-layout="classic"]
+  #header .lrow > .headerbox {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--lyr-border);
+  line-height: 1.55;
+}
+html.lyrania-chat-enhancements-compact-header #header
+  :is(.lyrania-chat-enhancements-header-character,
+      .lyrania-chat-enhancements-header-resources,
+      .lyrania-chat-enhancements-header-menu) {
+  min-height: 0;
+}
+html.lyrania-chat-enhancements-compact-header #header
+  #side1.lyrania-chat-enhancements-header-status {
+  height: auto !important;
+  min-height: 0;
+  max-height: none;
+  grid-template-rows: auto;
+  align-items: start;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  line-height: 1.5 !important;
+}
+html.lyrania-chat-enhancements-compact-header #header
+  #side1.lyrania-chat-enhancements-header-status > div {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  white-space: normal;
+  line-height: 1.5 !important;
+}
+html.lyrania-chat-enhancements-compact-header #header #usershousinginfo {
+  margin-top: 8px;
+}
+html.lyrania-chat-enhancements-compact-header #header #questtracker {
+  margin-top: 8px;
+}
+html.lyrania-chat-enhancements-compact-header #header #questtracker a {
+  white-space: normal;
+}
+html.lyrania-chat-enhancements-compact-header #header
+  #lyrania-chat-enhancements-header-menu-panel .cc-nav-group {
+  white-space: normal;
+}
+#header #side1.lyrania-chat-enhancements-header-status
+  :is(#tstimer, #usersmartinfo, #usershousinginfo, #bonusdisplays, #sidecounter, #questtracker),
+#header #side1.lyrania-chat-enhancements-header-status #usershousinginfo * {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+#chatwindow { line-height: 1.55; }
+#content { font-size: 13px; line-height: 1.5; }
+#lyrania-chat-enhancements-inventory-content { font-size: 14px; line-height: 1.5; }
+#lyrania-chat-enhancements-channels .lyrania-chat-filter,
+#lyrania-chat-enhancements-channels .lyrania-channel-toggle {
+  height: auto;
+  min-height: 26px;
+  line-height: 1.4;
+}
+#lyrania-chat-enhancements-channels .lyrania-channel-row {
+  grid-template-columns: minmax(0, 1fr) 36px;
+}
+#lyrania-chat-enhancements-channels .lyrania-no-toggle {
+  grid-template-columns: minmax(0, 1fr);
+}
+#lyrania-chat-enhancements-channels .lyrania-channel-toggle.is-enabled {
+  color: #fff;
+  background: #454545 !important;
+}
+html.lyrania-chat-enhancements-compact-header #header
+  #side1.lyrania-chat-enhancements-header-status .lyrania-chat-enhancements-status-jobs * {
+  white-space: normal;
+}
+@container lyr-header (min-width: 900px) {
+  html.lyrania-chat-enhancements-compact-header #header
+    > .lyrania-chat-enhancements-compact-header-row {
+    grid-template-rows: auto auto;
+  }
+}
+@container lyr-header (min-width: 1350px) {
+  html.lyrania-chat-enhancements-compact-header #header
+    > .lyrania-chat-enhancements-compact-header-row {
+    grid-template-rows: auto;
+  }
+}
+/* Keep the page scrollable when enlarged text/header cannot fit the viewport. */
+@media (min-width: 1440px) {
+  html, body { height: auto; overflow-y: auto !important; }
+  #holder.lyrania-chat-enhancements-has-inventory-dock {
+    height: auto;
+    min-height: calc(100dvh - 8px);
+    grid-template-rows: auto var(--lyr-workspace-height) minmax(340px, 1fr);
+    overflow: visible;
+  }
+  #holder.lyrania-chat-enhancements-has-inventory-dock
+    > #lyrania-chat-enhancements-inventory-dock {
+    height: calc(100dvh - 8px);
+    max-height: calc(100dvh - 8px);
+  }
+}
+@media (min-width: 800px) {
+  html.lyrania-chat-enhancements-compact-header #middlesection {
+    grid-template-columns: minmax(0, 1.25fr) minmax(136px, 0.42fr) minmax(0, 1fr);
+  }
+}
+@media (min-width: 1000px) {
+  html.lyrania-chat-enhancements-compact-header #middlesection:has(#main .mapLayout) {
+    grid-template-columns: minmax(0, 2fr) minmax(136px, 0.42fr) minmax(0, 1fr);
+  }
+}
+@media (max-width: 799px) {
+  #lyrania-chat-enhancements-channels { height: auto; max-height: 190px; }
 }
