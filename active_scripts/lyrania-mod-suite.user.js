@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.25.3
+// @version      2.25.4
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -65,7 +65,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.25.3";
+  const SCRIPT_VERSION = "2.25.4";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -313,7 +313,11 @@
           label = document.createElement("span");
           label.className = "lyrania-quest-progress-label";
         }
-        label.textContent = "Quest Progress: " + Number(percentage.toFixed(1)) + "%";
+        const complete = percentage >= 100;
+        questLink.dataset.lyrQuestState = complete ? "complete" : "active";
+        label.textContent = complete
+          ? "Quest complete · 100%"
+          : "Quest Progress: " + Number(percentage.toFixed(1)) + "%";
         questLink.replaceChildren(label, progress);
       } finally {
         questObserver.observe(questSection, {
@@ -372,6 +376,75 @@
       document.head.appendChild(style);
     }
     style.textContent = css;
+    let fixes = document.getElementById(`${SCRIPT_ID}-layout-fixes`);
+    if (!fixes) {
+      fixes = document.createElement("style");
+      fixes.id = `${SCRIPT_ID}-layout-fixes`;
+      document.head.appendChild(fixes);
+    }
+    fixes.textContent = `
+      #content.lyrania-chat-enhancements-compact-battle-results > .lrow {
+        justify-content: center;
+        width: 100%;
+      }
+      #content.lyrania-chat-enhancements-compact-battle-results > .lrow > .flex-content {
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: none;
+        margin-inline: auto;
+        text-align: center;
+      }
+      #content.lyrania-chat-enhancements-compact-battle-results .flex-content > div:first-child {
+        justify-content: center;
+      }
+      #content.lyrania-chat-enhancements-compact-battle-results .flex-content > :is(.text-center, .treausry_payout),
+      #content.lyrania-chat-enhancements-compact-battle-results #stopauto {
+        width: 100%;
+        text-align: center;
+      }
+      #questtracker a[data-lyr-quest-state="complete"] {
+        border-color: #61c990 !important;
+        background: rgba(44, 143, 83, .28) !important;
+        color: #d7ffe6 !important;
+      }
+      #questtracker a[data-lyr-quest-state="complete"] .lyrania-quest-progress-label {
+        color: #9bffc4 !important;
+        font-weight: 700;
+      }
+      @container lyr-popup (max-width: 700px) {
+        #popup[data-lyr-trading] .lyr-record-table > :is(thead, tbody) > .lyr-table-heading {
+          display: none !important;
+        }
+        #popup[data-lyr-trading] .lyr-record-table > :is(thead, tbody) > .lyr-record {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 5px 8px;
+          padding: 8px !important;
+          margin: 0 0 8px;
+          border: 1px solid var(--lyr-border, #555);
+          border-radius: 7px;
+        }
+        #popup[data-lyr-trading] .lyr-record-table .lyr-record > td {
+          display: flex !important;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+          width: auto !important;
+          padding: 3px 5px !important;
+          border: 0;
+          text-align: left !important;
+        }
+        #popup[data-lyr-trading] .lyr-record-table .lyr-record > td::before {
+          color: var(--lyr-text-soft, #bbb);
+          font-size: 10px;
+          line-height: 1.2;
+          text-transform: uppercase;
+        }
+        #popup[data-lyr-trading] .lyr-record-table .lyr-record > td:last-child {
+          grid-column: 1 / -1;
+        }
+      }
+    `;
     return true;
   }
 
@@ -2954,9 +3027,11 @@
     const annotate = () => {
       observer.disconnect();
       const text = popup.textContent;
-      const reviewed = !!popup.querySelector('.trade-shell, #jade_temple_ui, #guildname, #shop_gdp, #glogbox, #dungeontresdonate') ||
+      const trading = ['3', '57'].includes(document.getElementById('popupnav')?.value);
+      const reviewed = trading || !!popup.querySelector('.trade-shell, #jade_temple_ui, #guildname, #shop_gdp, #glogbox, #dungeontresdonate') ||
         /Quest \d+:|Welcome to the Lyrania Wishing Well|Guild Inventory|Current Ranks|Back to Guild/.test(text);
       popup.toggleAttribute('data-lyrania-reviewed', reviewed);
+      popup.toggleAttribute('data-lyr-trading', trading);
       if (popup.querySelector('#guildname')) {
         for (const group of popup.querySelectorAll('div')) {
           const cells = [...group.children];
