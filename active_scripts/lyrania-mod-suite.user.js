@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.25.4
+// @version      2.25.5
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -65,7 +65,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.25.4";
+  const SCRIPT_VERSION = "2.25.5";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -963,6 +963,8 @@
   }
 
   function installQuickMenu() {
+    // Capture player-name clicks before the game's inline whisper() handler,
+    // which calls closepage() and would hide the dock before our menu opens.
     document.addEventListener("click", (event) => {
       const chatName = event.target.closest?.("#chatwindow .chatname");
       if (chatName) {
@@ -975,7 +977,7 @@
       if (!event.target.closest?.(`#${SCRIPT_ID}-quick-menu`)) {
         closeQuickMenu();
       }
-    });
+    }, true);
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeQuickMenu();
