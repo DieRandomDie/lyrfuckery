@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.25.6
+// @version      2.25.7
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -65,7 +65,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.25.6";
+  const SCRIPT_VERSION = "2.25.7";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -2786,30 +2786,27 @@
           getComputedStyle(element).visibility === "visible");
       if (!root) return;
       const panel = root.closest("#popupresdisplay") || root;
-      const panelBounds = panel.getBoundingClientRect();
-      const controls = root.querySelectorAll("a[href], [onclick]");
-      const hourglassVisible = [...controls].some((control) => {
-        const matches = [control.getAttribute("href"), control.getAttribute("onclick")]
-          .some((value) => /\bbuild\(['"]use_housingtimer_hourglass['"],['"]all['"],1\)/i
-            .test((value || "").replace(/\s+/g, "")));
-        if (!matches) return false;
-        const style = getComputedStyle(control);
-        if (!control.getClientRects().length || style.visibility !== "visible" || Number(style.opacity) === 0)
-          return false;
-        const bounds = control.getBoundingClientRect();
-        return bounds.bottom > Math.max(panelBounds.top, 0) &&
-          bounds.top < Math.min(panelBounds.bottom, window.innerHeight) &&
-          bounds.right > Math.max(panelBounds.left, 0) &&
-          bounds.left < Math.min(panelBounds.right, window.innerWidth);
+      const controls = root.querySelectorAll("a[href], [onclick], button, input[type=button]");
+      const hasBuildHourglass = [...controls].some((control) => {
+        const action = [control.getAttribute("href"), control.getAttribute("onclick")].join(" ");
+        const label = control.textContent || control.value || "";
+        const matches = /use_housingtimer_hourglass/i.test(action) ||
+          /Use saved up QoL hourglass time to speed things up/i.test(label);
+        // Presence in the rendered page matters, even when above the scroll viewport.
+        return matches && control.getClientRects().length > 0 &&
+          getComputedStyle(control).visibility === "visible";
       });
-      if (!hourglassVisible) {
-        // Scroll the actual overflow containers, including native nested panels.
-        const containers = [panel, root, ...root.querySelectorAll("*")];
-        for (const container of new Set(containers)) {
-          if (container.scrollHeight <= container.clientHeight) continue;
-          if (!/(?:auto|scroll)/.test(getComputedStyle(container).overflowY)) continue;
-          container.scrollTo({ top: container.scrollHeight, behavior: "instant" });
-        }
+      // Include the battle panel's scroll ancestor as well as the popup scroller.
+      const containers = [panel, root, ...root.querySelectorAll("*")];
+      for (let ancestor = root.parentElement; ancestor && ancestor !== document.body;
+          ancestor = ancestor.parentElement) {
+        containers.push(ancestor);
+        if (ancestor.id === "main" || ancestor.id === "popupresdisplay") break;
+      }
+      for (const container of new Set(containers)) {
+        if (container.scrollHeight <= container.clientHeight) continue;
+        if (!/(?:auto|scroll)/.test(getComputedStyle(container).overflowY)) continue;
+        container.scrollTo({ top: hasBuildHourglass ? 0 : container.scrollHeight, behavior: "instant" });
       }
     };
     const schedule = () => {
