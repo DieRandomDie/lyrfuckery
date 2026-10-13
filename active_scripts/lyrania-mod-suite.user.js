@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lyrania Mod Suite
 // @namespace    https://lyrania.co.uk/
-// @version      2.25.5
+// @version      2.25.6
 // @description  A configurable collection of chat, timer, statistics, inventory, and interface improvements for Lyrania.
 // @author       Eric Salazar
 // @match        https://lyrania.co.uk/game.php*
@@ -50,8 +50,8 @@
     // Keeps all six simplified-inventory tabs in a permanent responsive panel.
     persistentInventory: true,
 
-    // Gives inventory its own request so it cannot interrupt battle actions.
-    isolatedInventoryRequests: true,
+    // Use the current game client for endpoints, tokens and confirmations.
+    isolatedInventoryRequests: false,
 
     // Condenses battle results without removing live counters or controls.
     compactBattleResults: true,
@@ -65,7 +65,7 @@
 
   const SCRIPT_ID = "lyrania-chat-enhancements";
   const SCRIPT_NAME = "Lyrania Mod Suite";
-  const SCRIPT_VERSION = "2.25.5";
+  const SCRIPT_VERSION = "2.25.6";
   const SCRIPT_DOWNLOAD_URL =
     "https://raw.githubusercontent.com/DieRandomDie/lyrfuckery/main/active_scripts/lyrania-mod-suite.user.js";
   const REMOTE_THEME_URL =
@@ -1792,196 +1792,6 @@
     return normalizeInventoryTab(shell?.dataset.currentTab);
   }
 
-  function wrapIsolatedInventoryRequests() {
-    if (!MODS.isolatedInventoryRequests) return true;
-    const originalInventorySimple = window.inventorySimple;
-    if (
-      originalInventorySimple?.lyraniaIsolatedInventoryVersion ===
-      SCRIPT_VERSION
-    ) {
-      return true;
-    }
-    if (typeof originalInventorySimple !== "function") return false;
-
-    const antiRaceActions = new Set([
-      "purchase_lockbox",
-      "use_lockbox",
-      "conjure_enchant",
-      "add_jewel_mod",
-      "add_jewel_mod_confirm",
-      "map_trade",
-    ]);
-
-    const readValue = (id) => document.getElementById(id)?.value || "";
-    const readChecked = (id) => Boolean(document.getElementById(id)?.checked);
-
-    const wrappedInventorySimple = function (...args) {
-      const action = String(args[1] || "");
-      const actionCode = Number.parseInt(args[2], 10);
-      const popupScroll = document.getElementById("popupresdisplay");
-      const preservePopupScroll =
-        args[0] === "enchants" && action === "enchant_table_state";
-      const preservedPopupScrollTop = preservePopupScroll
-        ? (popupScroll?.scrollTop ?? null)
-        : null;
-
-      if (action === "loadout" && actionCode === 1) {
-        const loadoutName = window.prompt(
-          "What would you like to call this loadout?",
-        );
-        if (!loadoutName) {
-          window.setTimeout(() => window.inventorySimple("jewellery"), 0);
-          return undefined;
-        }
-        args[3] = loadoutName;
-        args[4] = readValue("pet");
-      } else if (
-        action === "loadout" &&
-        (actionCode === 2 || actionCode === 3)
-      ) {
-        args[3] = readValue("loadout");
-        args[4] = readValue("pet");
-      }
-
-      if (action === "use_lockbox") args[2] = readValue("lockboxquant");
-      if (action === "purchase_lockbox")
-        args[2] = readValue("buy_lockboxquant");
-      if (action === "remove_enchant_confirm")
-        args[3] = readChecked("enchantsavable");
-      if (
-        antiRaceActions.has(action) &&
-        typeof window.lockInventoryActionButton === "function" &&
-        !window.lockInventoryActionButton(action)
-      ) {
-        if (!activeInventoryRequest && !inventoryRequestQueue.length)
-          setPersistentInventoryStatus("Action is already pending. Please wait.");
-        return undefined;
-      }
-
-      const body = new URLSearchParams({ tab: String(args[0] || "jewellery") });
-      if (args[1] !== undefined) body.set("action", String(args[1]));
-      for (let index = 2; index < args.length; index += 1) {
-        if (args[index] !== undefined) {
-          body.set(`extrainfo${index - 1}`, String(args[index]));
-        }
-      }
-      body.set(
-        "csrf_token",
-        typeof window.lyrCsrfToken !== "undefined"
-          ? String(window.lyrCsrfToken)
-          : "",
-      );
-
-      const requestScroll = pendingInventoryScroll;
-      const request = new XMLHttpRequest();
-      request.open("POST", "inventory_simplified.php", true);
-      request.timeout = 20000;
-      request.setRequestHeader(
-        "Content-Type",
-        "application/x-www-form-urlencoded",
-      );
-
-      request.onload = () => {
-        if (request.status < 200 || request.status >= 300) {
-          inventoryRequestQueue.length = 0;
-          setPersistentInventoryStatus(
-            action ? "Inventory action response unavailable. Refresh to verify the result before trying the action again." : "Inventory request failed. Use Refresh to try again.",
-          );
-          return;
-        }
-
-        pendingInventoryScroll = requestScroll;
-        const responseParts = request.responseText.split("[BREAK]");
-        if (
-          window.popupui === 1 &&
-          typeof window.openpopuppane === "function"
-        ) {
-          window.openpopuppane(responseParts[0]);
-        } else {
-          const content = document.getElementById("content");
-          if (content) content.innerHTML = responseParts[0];
-        }
-
-        responseParts.slice(1).forEach((script) => {
-          if (!script.trim()) return;
-          try {
-            window.eval(script);
-          } catch (error) {
-            console.error(
-              `[${SCRIPT_ID}] Inventory response script failed.`,
-              error,
-            );
-          }
-        });
-
-        if (typeof window.InventoryPageInit === "function")
-          window.InventoryPageInit();
-        if (
-          args[0] === "consumables" &&
-          typeof window.renderInventoryConsumableInlineResult === "function"
-        ) {
-          window.renderInventoryConsumableInlineResult();
-        }
-
-        const inventoryIsDocked = Boolean(
-          document.querySelector(
-            `#${SCRIPT_ID}-inventory-content > #inventory_shell`,
-          ),
-        );
-        if (
-          !inventoryIsDocked &&
-          preservedPopupScrollTop !== null &&
-          popupScroll
-        ) {
-          popupScroll.scrollTop = preservedPopupScrollTop;
-        } else if (
-          !inventoryIsDocked &&
-          args[0] === "enchants" &&
-          args[1] !== undefined &&
-          popupScroll
-        ) {
-          popupScroll.scrollTo({ top: 0, behavior: "smooth" });
-        }
-      };
-
-      const showRequestError = () => {
-        inventoryRequestQueue.length = 0;
-        setPersistentInventoryStatus(
-          action ? "Inventory action response unavailable. Refresh to verify the result before trying the action again." : "Inventory request failed. Use Refresh to try again.",
-        );
-      };
-      request.onerror = showRequestError;
-      request.ontimeout = showRequestError;
-      request.onloadend = () => {
-        activeInventoryRequest = null;
-        const elements = getPersistentInventoryElements();
-        if (elements.dock) elements.dock.setAttribute("aria-busy", "false");
-        if (elements.refresh) elements.refresh.disabled = false;
-        dispatchNextInventoryRequest();
-      };
-      inventoryRequestQueue.push(() => {
-        activeInventoryRequest = request;
-        setPersistentInventoryStatus(action ? "Applying inventory action…" : "Loading inventory…", true);
-        try {
-          request.send(body.toString());
-        } catch (error) {
-          activeInventoryRequest = null;
-          showRequestError();
-          dispatchNextInventoryRequest();
-          console.error("[" + SCRIPT_ID + "] Inventory request could not start.", error);
-        }
-      });
-      dispatchNextInventoryRequest();
-      return request;
-    };
-
-    wrappedInventorySimple.lyraniaIsolatedInventoryVersion = SCRIPT_VERSION;
-    wrappedInventorySimple.lyraniaOriginalInventorySimple =
-      originalInventorySimple;
-    window.inventorySimple = wrappedInventorySimple;
-    return true;
-  }
-
   function setPersistentInventoryStatus(message, busy = false) {
     const { dock, status, refresh } = getPersistentInventoryElements();
     if (dock) dock.setAttribute("aria-busy", String(busy));
@@ -2182,6 +1992,10 @@
         tab: requestedTab === currentTab ? currentTab : null,
         top: scroll?.scrollTop || 0,
       };
+      if (args[1]) {
+        initialInventoryRequestPending = false;
+        window.clearTimeout(initialInventoryRetryTimer);
+      }
       if (!MODS.isolatedInventoryRequests) {
         setPersistentInventoryStatus("Loading inventory…", true);
       }
@@ -3190,7 +3004,6 @@
     initializeInactiveDpTimerHider,
     initializeBufferXp,
     initializePersistentLootLog,
-    wrapIsolatedInventoryRequests,
     initializePersistentInventory,
     initializeCompactBattleResults,
     initializeInlinePopupDock,
